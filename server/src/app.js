@@ -8,8 +8,7 @@ const rateLimit = require("express-rate-limit");
 const crypto = require("crypto");
 const path = require("path");
 
-const connectDb = require("./config/db");
-const { seedSuperAdmin } = require("./config/seed");
+// DB connect/seed are intentionally not imported here (see note below).
 
 const authRoutes = require("./routes/auth.routes");
 const schoolRoutes = require("./routes/school.routes");
@@ -37,12 +36,8 @@ app.use((req, res, next) => {
 });
 
 
-// 2. DATABASE CONNECT
-connectDb().then(() => {
-  seedSuperAdmin().catch((err) => {
-    console.error("Error seeding super admin", err);
-  });
-});
+// NOTE: Do not connect to MongoDB on module import.
+// CI uses `require("./src/app")` as a syntax smoke test; DB connection must happen in `src/server.js`.
 
 
 // 3. SECURITY MIDDLEWARE

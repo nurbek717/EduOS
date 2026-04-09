@@ -1,5 +1,7 @@
 const http = require("http");
 const app = require("./app");
+const connectDb = require("./config/db");
+const { seedSuperAdmin } = require("./config/seed");
 
 const PORT = process.env.PORT || 5000;
 
@@ -19,5 +21,13 @@ process.on("uncaughtException", (err) => {
 server.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`Backend server listening on port ${PORT}`);
+});
+
+// Connect DB after HTTP server starts (and only when starting the server).
+connectDb().then(() => {
+  seedSuperAdmin().catch((err) => {
+    // eslint-disable-next-line no-console
+    console.error("Error seeding super admin", err);
+  });
 });
 
