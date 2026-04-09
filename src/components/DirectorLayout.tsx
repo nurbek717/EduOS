@@ -1,0 +1,364 @@
+import { ReactNode, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { LayoutDashboard, Users, ChevronRight, ChevronDown, BookOpen, GraduationCap, UserCircle, Wallet, CalendarDays, FileText, Settings, MessageCircle, Send, PhoneCall } from "lucide-react";
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import HeaderActions from "@/components/dashboard/HeaderActions";
+import { useTranslation } from "react-i18next";
+
+type DirectorSection = "dashboard" | "students" | "teachers" | "school_admins" | "classes" | "schedule" | "payments" | "exams" | "settings" | "support";
+
+interface DirectorLayoutProps {
+  children: ReactNode;
+  title?: string;
+  subtitle?: string;
+  currentSection?: DirectorSection;
+  onSectionChange?: (section: DirectorSection) => void;
+  currentStudentsView?: "list" | "attach";
+  onStudentsViewChange?: (view: "list" | "attach") => void;
+  searchItems?: Array<{ id: string; title: string; subtitle?: string; section: DirectorSection }>;
+  headerNotifications?: Array<{ id: string; text: string; at: string; section: DirectorSection }>;
+  subscriptionInfo?: {
+    planName: string;
+    startDate?: string | null;
+    endDate?: string | null;
+    contractNumber?: string | null;
+    status?: "active" | "expired";
+    daysLeft?: number | null;
+  };
+}
+
+const DirectorLayout = ({
+  children,
+  title,
+  subtitle,
+  currentSection = "dashboard",
+  onSectionChange,
+  currentStudentsView = "list",
+  onStudentsViewChange,
+  searchItems,
+  headerNotifications,
+  subscriptionInfo,
+}: DirectorLayoutProps) => {
+  const navigate = useNavigate();
+  const { t } = useTranslation("layout");
+  const rawUser = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
+  const currentUser = rawUser ? JSON.parse(rawUser) : null;
+  const isSchoolAdmin = currentUser?.role === "school_admin";
+  const dashboardHomePath = isSchoolAdmin ? "/school-admin/dashboard" : "/director/dashboard";
+  const dashboardLabel = isSchoolAdmin ? t("schoolAdmin.fallbackName") : t("director.fallbackName");
+  const dashboardLabelUpper = isSchoolAdmin ? t("schoolAdmin.badge") : t("director.badge");
+  const [studentsDropdownOpen, setStudentsDropdownOpen] = useState(false);
+  const navItems: { label: string; section: DirectorSection; icon: typeof LayoutDashboard }[] = [
+    { label: t("director.nav.dashboard"), section: "dashboard", icon: LayoutDashboard },
+    { label: t("director.nav.students"), section: "students", icon: Users },
+    { label: t("director.nav.teachers"), section: "teachers", icon: GraduationCap },
+    { label: t("director.nav.classes"), section: "classes", icon: BookOpen },
+    { label: t("director.nav.schedule"), section: "schedule", icon: CalendarDays },
+    { label: t("director.nav.payments"), section: "payments", icon: Wallet },
+    { label: t("director.nav.exams"), section: "exams", icon: FileText },
+    { label: t("director.nav.support"), section: "support", icon: MessageCircle },
+    { label: t("director.nav.settings"), section: "settings", icon: Settings },
+  ];
+
+  if (!isSchoolAdmin) {
+    navItems.splice(3, 0, { label: t("director.nav.schoolAdmins"), section: "school_admins", icon: UserCircle });
+  }
+
+  const sectionLabels: Record<DirectorSection, string> = {
+    dashboard: t("director.nav.dashboard"),
+    students: t("director.nav.students"),
+    teachers: t("director.nav.teachers"),
+    school_admins: t("director.nav.schoolAdmins"),
+    classes: t("director.nav.classes"),
+    schedule: t("director.nav.schedule"),
+    payments: t("director.nav.payments"),
+    exams: t("director.nav.exams"),
+    support: t("director.nav.support"),
+    settings: t("director.nav.settings"),
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("auth_user");
+    navigate("/login");
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  useEffect(() => {
+    if (!isSchoolAdmin) return;
+    if (currentSection === "students") setStudentsDropdownOpen(true);
+  }, [currentSection, isSchoolAdmin]);
+
+
+  return (
+    <SidebarProvider>
+      <Sidebar side="left" collapsible="icon" className="border-r [&_[data-sidebar=sidebar]]:bg-[#1d61a5]">
+        <SidebarHeader className="border-b border-sidebar-border p-4 group-data-[collapsible=icon]:px-2">
+          <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <GraduationCap className="h-5 w-5" />
+            </div>
+            <div className="flex flex-col gap-0.5 overflow-hidden group-data-[collapsible=icon]:hidden">
+              <span className="truncate text-sm font-semibold text-white">
+                {dashboardLabelUpper}
+              </span>
+              <span className="truncate text-xs text-white">
+                {t("director.panel")}
+              </span>
+            </div>
+          </div>
+        </SidebarHeader>
+
+        <SidebarContent>
+          <SidebarGroup className="group-data-[collapsible=icon]:px-1">
+            <SidebarGroupLabel className="text-white">{t("common.sections")}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navItems.map((item) => {
+                  const isActive = item.section === currentSection;
+                  const isStudentsItem = isSchoolAdmin && item.section === "students";
+                  return (
+                    <SidebarMenuItem key={item.label}>
+                      {isStudentsItem ? (
+                        <div className="group-data-[collapsible=icon]:hidden">
+                          <SidebarMenuButton
+                            isActive={isActive}
+                            className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:justify-center text-white hover:bg-white/10 hover:text-white data-[active=true]:bg-white/15 data-[active=true]:text-accent"
+                            onClick={() => {
+                              onSectionChange?.("students");
+                              setStudentsDropdownOpen((prev) => !prev);
+                            }}
+                          >
+                            <Users className="h-4 w-4" />
+                            <span className="flex-1">{item.label}</span>
+                            <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${studentsDropdownOpen ? "rotate-180" : ""}`} />
+                          </SidebarMenuButton>
+
+                          {studentsDropdownOpen && (
+                            <div className="mt-1 space-y-1 pl-3">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  onSectionChange?.("students");
+                                  onStudentsViewChange?.("list");
+                                }}
+                                className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs text-white/80 hover:bg-white/10 ${
+                                  currentStudentsView === "list" ? "bg-white/10 text-amber-200" : ""
+                                }`}
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className={`inline-flex h-2 w-2 items-center justify-center rounded-full border ${
+                                    currentStudentsView === "list" ? "border-amber-500" : "border-white/40"
+                                  }`}
+                                >
+                                  <span
+                                    className={`h-1 w-1 rounded-full ${
+                                      currentStudentsView === "list" ? "bg-amber-500" : "bg-transparent"
+                                    }`}
+                                  />
+                                </span>
+                                O&apos;quvchilar ro&apos;yxati
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  onSectionChange?.("students");
+                                  onStudentsViewChange?.("attach");
+                                }}
+                                className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs text-white/80 hover:bg-white/10 ${
+                                  currentStudentsView === "attach" ? "bg-white/10 text-amber-200" : ""
+                                }`}
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className={`inline-flex h-2 w-2 items-center justify-center rounded-full border ${
+                                    currentStudentsView === "attach" ? "border-amber-500" : "border-white/40"
+                                  }`}
+                                >
+                                  <span
+                                    className={`h-1 w-1 rounded-full ${
+                                      currentStudentsView === "attach" ? "bg-amber-500" : "bg-transparent"
+                                    }`}
+                                  />
+                                </span>
+                                O&apos;quvchini biriktirish
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <SidebarMenuButton
+                          isActive={isActive}
+                          className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:justify-center text-white hover:bg-white/10 hover:text-white data-[active=true]:bg-white/15 data-[active=true]:text-accent"
+                          onClick={() => onSectionChange?.(item.section)}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.label}</span>
+                        </SidebarMenuButton>
+                      )}
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+
+        <SidebarFooter className="border-t border-sidebar-border p-2">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 rounded-md px-2 py-2 text-sm group-data-[collapsible=icon]:justify-center">
+              <Avatar className="h-8 w-8">
+                {currentUser?.photoUrl ? (
+                  <AvatarImage src={currentUser.photoUrl} alt="" className="object-cover" />
+                ) : null}
+                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                  {currentUser?.name ? getInitials(currentUser.name) : isSchoolAdmin ? "SA" : "DR"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-1 flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
+                <span className="truncate font-medium text-white">
+                  {currentUser?.name || dashboardLabel}
+                </span>
+                <span className="truncate text-xs text-white">
+                  {currentUser?.email}
+                </span>
+              </div>
+            </div>
+          </div>
+        </SidebarFooter>
+      </Sidebar>
+
+      <SidebarInset>
+        <div className="flex flex-1 flex-col overflow-auto">
+          <div className="flex h-[71px] shrink-0 items-center justify-between gap-4 border-b bg-background px-6 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <SidebarTrigger className="h-8 w-8 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700" />
+              <ChevronRight className="h-4 w-4 shrink-0" />
+              <span className="font-medium text-foreground">
+                {sectionLabels[currentSection]}
+              </span>
+            </div>
+            <HeaderActions
+              navItems={navItems}
+              currentSection={currentSection}
+              onSectionChange={onSectionChange}
+              profileTargetSection="settings"
+              settingsTargetSection="settings"
+              currentUserName={currentUser?.name}
+              currentUserPhotoUrl={currentUser?.photoUrl}
+              initialsFallback={currentUser?.name ? getInitials(currentUser.name) : isSchoolAdmin ? "SA" : "DR"}
+              notificationStorageKey={`dashboard:${isSchoolAdmin ? "school_admin" : "director"}:notifications`}
+              notifications={headerNotifications}
+              searchItems={searchItems}
+              onLogout={handleLogout}
+              compactHeader
+              subscriptionLabel={
+                typeof subscriptionInfo?.daysLeft === "number"
+                  ? `${subscriptionInfo.daysLeft} kun qoldi`
+                  : "15 kun qoldi"
+              }
+              subscriptionInfo={subscriptionInfo}
+            />
+          </div>
+          <div className="flex-1 overflow-auto p-6">
+            {(title || subtitle) && (
+              <div className="mb-8">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                  {title || (isSchoolAdmin ? t("schoolAdmin.layoutTitle") : t("director.layoutTitle"))}
+                </h1>
+                {subtitle && (
+                  <p className="mt-1 text-muted-foreground">{subtitle}</p>
+                )}
+                <div className="mt-3 h-1 w-12 rounded-full bg-primary" />
+              </div>
+            )}
+            {children}
+          </div>
+        </div>
+
+
+{/* Support icons */}
+        <div className="pointer-events-none fixed bottom-5 right-5 z-40 hidden font-sans md:block">
+          <div className="flex items-center gap-3 pointer-events-auto">
+            <div className="support-fab-group support-phone-idle group relative">
+              <a
+                href="tel:+998931330120"
+                className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-orange-200 bg-white shadow-lg"
+                aria-label="Telefon orqali murojaat"
+              >
+                <span className="support-phone-shell inline-flex h-12 w-12 items-center justify-center rounded-full bg-orange-500 text-white">
+                  <PhoneCall className="support-phone-icon h-5 w-5" />
+                </span>
+              </a>
+
+              <div className="pointer-events-none absolute bottom-[calc(100%+10px)] right-0 w-[320px] rounded-[26px] border border-orange-200 bg-white p-5 opacity-0 shadow-2xl transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100">
+                <div className="flex items-start gap-3">
+                  <div className="support-phone-shell flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
+                    <PhoneCall className="support-phone-icon h-5 w-5" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="font-sans text-base font-bold text-slate-800">Murojaat uchun</h3>
+                    <p className="text-sm leading-snug text-slate-600">Telefon orqali murojaat qiling.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="support-fab-group group relative">
+              <a
+                href="https://t.me/codo_kaze"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-orange-200 bg-white shadow-lg"
+                aria-label="Telegram orqali murojaat"
+              >
+                <span className="support-phone-shell inline-flex h-12 w-12 items-center justify-center rounded-full bg-orange-500 text-white">
+                  <Send className="h-5 w-5" />
+                </span>
+              </a>
+
+              <div className="pointer-events-none absolute bottom-[calc(100%+10px)] right-0 w-[320px] rounded-[26px] border border-orange-200 bg-white p-5 opacity-0 shadow-2xl transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100">
+                <div className="flex items-start gap-3">
+                  <div className="support-phone-shell flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
+                    <Send className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="font-sans text-base font-bold text-slate-800">Murojaat uchun</h3>
+                    <p className="text-sm leading-snug text-slate-600">Telegram orqali murojaat qiling.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+};
+
+export default DirectorLayout;
+

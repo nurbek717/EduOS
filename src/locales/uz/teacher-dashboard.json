@@ -1,0 +1,418 @@
+{
+  "days": {
+    "monday": "Dushanba",
+    "tuesday": "Seshanba",
+    "wednesday": "Chorshanba",
+    "thursday": "Payshanba",
+    "friday": "Juma",
+    "saturday": "Shanba",
+    "sunday": "Yakshanba"
+  },
+  "common": {
+    "loading": "Yuklanmoqda...",
+    "loadingClasses": "Sinflar yuklanmoqda...",
+    "refresh": "Yangilash",
+    "send": "Yuborish",
+    "sending": "Yuborilmoqda...",
+    "saving": "Saqlanmoqda...",
+    "close": "Yopish",
+    "today": "Bugun",
+    "room": "Xona {{room}}",
+    "roomMissing": "Xona ko'rsatilmagan",
+    "roomUnset": "Xona belgilanmagan",
+    "classTeacher": "Sinf rahbari",
+    "subjectTeacher": "Fan o'qituvchisi",
+    "noChange": "O'zgartirmaslik",
+    "cancel": "Bekor qilish",
+    "save": "Saqlash"
+  },
+  "toasts": {
+    "error": "Xatolik!",
+    "success": "Muvaffaqiyatli!",
+    "saved": "Saqlandi",
+    "insufficient": "Ma'lumot yetarli emas",
+    "info": "Ma'lumot",
+    "invalidScore": "Noto'g'ri ball",
+    "deleted": "O'chirildi"
+  },
+  "errors": {
+    "generic": "Xatolik yuz berdi",
+    "fetchClasses": "Sinflar ro'yxatini yuklashda xatolik yuz berdi.",
+    "fetchStudents": "O'quvchilar ro'yxatini yuklashda xatolik yuz berdi.",
+    "fetchGrades": "Baholar ro'yxatini yuklashda xatolik yuz berdi.",
+    "fetchSchedule": "Dars jadvalini yuklashda xatolik yuz berdi.",
+    "fetchHomework": "Uy vazifalarini yuklashda xatolik yuz berdi.",
+    "fetchExams": "Imtihonlarni yuklashda xatolik yuz berdi.",
+    "fetchQuestions": "Savollarni yuklashda xatolik yuz berdi.",
+    "fetchExamResults": "Imtihon natijalarini yuklashda xatolik yuz berdi.",
+    "fetchAnswers": "Javoblarni yuklashda xatolik yuz berdi.",
+    "fetchSupportThreads": "Murojaatlar ro'yxatini yuklab bo'lmadi.",
+    "fetchSupportMessages": "Xabarlarni yuklab bo'lmadi.",
+    "sendSupportMessage": "Xabar yuborilmadi.",
+    "teacherLoginRequired": "Avval tizimga o'qituvchi sifatida kiring.",
+    "saveQuestion": "Savolni saqlashda xatolik yuz berdi.",
+    "gradeAnswer": "Javoblarni baholashda xatolik yuz berdi.",
+    "createGrade": "Bahoni qo'yishda xatolik yuz berdi.",
+    "updateGrade": "Bahoni yangilashda xatolik yuz berdi.",
+    "deleteGrade": "Bahoni o'chirishda xatolik yuz berdi.",
+    "createHomework": "Uy vazifa yaratishda xatolik yuz berdi.",
+    "updateHomework": "Uy vazifani yangilashda xatolik yuz berdi.",
+    "deleteHomework": "Uy vazifani o'chirishda xatolik yuz berdi.",
+    "gradeHomework": "Topshiriqni baholashda xatolik yuz berdi.",
+    "createStudent": "O'quvchi yaratishda xatolik yuz berdi.",
+    "updateStudent": "O'quvchini yangilashda xatolik yuz berdi."
+  },
+  "fallback": {
+    "student": "O'quvchi",
+    "subject": "Fan",
+    "noClass": "Sinf yo'q",
+    "exam": "Imtihon"
+  },
+  "search": {
+    "class": "Sinf"
+  },
+  "notifications": {
+    "noClasses": "Sizga hali sinf biriktirilmagan.",
+    "noStudents": "Biriktirilgan sinflarda hali o'quvchilar yo'q.",
+    "noLessonsToday": "Bugun dars jadvalida siz uchun dars yo'q.",
+    "firstLesson": "Bugungi birinchi dars: {{className}} • {{time}}",
+    "lastGrade": "So'nggi baholash: {{student}} ({{subject}}) - {{grade}}",
+    "homeroomCount": "Siz {{count}} ta sinfga rahbarsiz.",
+    "newChatMessage": "{{parent}} ({{student}}) yangi xabar yubordi."
+  },
+  "overview": {
+    "title": "O'qituvchi kabineti umumiy ko'rinishi",
+    "desc": "Bugungi darslar, biriktirilgan sinflar va eng so'nggi baholashlar bir joyda.",
+    "stats": {
+      "assignedClasses": "Biriktirilgan sinflar",
+      "assignedClassesHint": "Dars berayotgan sinflaringiz",
+      "totalStudents": "Jami o'quvchilar",
+      "totalStudentsHint": "Sinflar bo'yicha umumiy son",
+      "todayLessons": "Bugungi darslar",
+      "todayLessonsHint": "Faqat bugungi jadval",
+      "homeroom": "Sinf rahbarligi",
+      "homeroomHint": "Rahbarlik qilayotgan sinflar"
+    },
+    "todayScheduleTitle": "Bugungi dars jadvali",
+    "todayScheduleDesc": "Faqat bugunga to'g'ri keladigan darslaringiz ko'rsatiladi.",
+    "noTodaySchedule": "Bugun uchun dars jadvali topilmadi.",
+    "myClassesTitle": "Mening sinflarim",
+    "myClassesDesc": "Sinf rahbarligi va bugungi dars yuklamasi bo'yicha tartiblangan ko'rinish.",
+    "classMeta": "{{students}} o'quvchi, bugun {{lessons}} ta dars",
+    "nextLessonAt": "{{time}} dagi dars",
+    "noLessonToday": "Bugun dars yo'q",
+    "nextLessonInfo": "{{subject}}{{room, select, '' {} other {, xona {{room}}}}}",
+    "nextLessonMissing": "Keyingi dars jadvalga kiritilmagan",
+    "noClasses": "Sizga hali sinf biriktirilmagan.",
+    "latestGradesTitle": "So'nggi baholar",
+    "latestGradesDesc": "Oxirgi qo'yilgan baholar kengaytirilgan jadval ko'rinishida."
+  },
+  "table": {
+    "student": "O'quvchi",
+    "class": "Sinf",
+    "subject": "Fan",
+    "grade": "Baho",
+    "date": "Sana"
+  },
+  "students": {
+    "title": "O'quvchilarni qo'shish",
+    "form": {
+      "selectClass": "Sinfni tanlang",
+      "classPlaceholder": "Sinf tanlang",
+      "noHomeroomWarning": "Sizga hali birorta ham sinf rahbari sifatida biriktirilmagan. Avval direktor sinfni biriktirishi kerak.",
+      "studentName": "O'quvchi ismi",
+      "studentNamePlaceholder": "Ism Familiya",
+      "parentName": "Ota-ona ismi",
+      "parentNamePlaceholder": "Masalan: Karimov Akmal",
+      "parentPhone": "Ota-ona telefon raqami",
+      "parentPhonePlaceholder": "+998 90 123 45 67",
+      "address": "Uy manzili",
+      "addressPlaceholder": "Toshkent shahri, Chilonzor...",
+      "password": "Parol",
+      "passwordPlaceholder": "Kamida 6 ta belgi",
+      "addStudent": "Yangi o'quvchi qo'shish",
+      "validation": {
+        "required": "Ism, email, parol va sinf tanlash majburiy."
+      },
+      "created": "Yangi o'quvchi yaratildi."
+    },
+    "table": {
+      "email": "Email",
+      "parent": "Ota-ona",
+      "phone": "Telefon",
+      "address": "Manzil",
+      "loading": "O'quvchilar yuklanmoqda...",
+      "empty": "Hozircha birorta ham o'quvchi topilmadi."
+    },
+    "actions": {
+      "edit": "Tahrirlash"
+    },
+    "edit": {
+      "title": "O'quvchini tahrirlash",
+      "newPasswordOptional": "Yangi parol (ixtiyoriy)",
+      "newPasswordPlaceholder": "Agar o'zgartirmoqchi bo'lsangiz kiriting",
+      "profilePhoto": "Profil rasmi (Face ID davomat)",
+      "upload": "Yuklash",
+      "remove": "O'chirish",
+      "updated": "O'quvchi ma'lumotlari yangilandi."
+    }
+  },
+  "classes": {
+    "title": "Mening sinflarim",
+    "empty": "Hozircha sizga biriktirilgan sinflar topilmadi.",
+    "studentCount": "{{count}} ta o'quvchi",
+    "homeroom": "Siz ushbu sinf rahbarisiz",
+    "dialogTitle": "{{className}} sinfi o'quvchilari",
+    "dialogEmpty": "Bu sinf uchun hali o'quvchilar qo'shilmagan."
+  },
+  "grades": {
+    "title": "Baholar",
+    "empty": "Hozircha baholar mavjud emas.",
+    "loading": "Baholar yuklanmoqda...",
+    "created": "Baho qo'yildi.",
+    "deleted": "Baho o'chirildi.",
+    "confirmDelete": "Bu bahoni o'chirmoqchimisiz?",
+    "filters": {
+      "class": "Sinf bo'yicha filter",
+      "allClasses": "Barcha sinflar"
+    },
+    "form": {
+      "studentPlaceholder": "O'quvchini tanlang",
+      "gradePlaceholder": "Tanlang",
+      "dateOptional": "Sana (ixtiyoriy)",
+      "submit": "Bahoni qo'yish"
+    },
+    "validation": {
+      "required": "O'quvchi va bahoni tanlash majburiy."
+    },
+    "actions": {
+      "edit": "Bahoni tahrirlash",
+      "delete": "Bahoni o'chirish"
+    },
+    "edit": {
+      "title": "Baho tahrirlash",
+      "saved": "Baho yangilandi.",
+      "error": "Bahoni yangilashda xatolik yuz berdi."
+    }
+  },
+  "homework": {
+    "title": "Uy vazifalari",
+    "loading": "Uy vazifalar yuklanmoqda...",
+    "empty": "Hozircha uy vazifalar topilmadi.",
+    "created": "Uy vazifa qo'shildi.",
+    "updated": "Uy vazifa yangilandi.",
+    "deleted": "Uy vazifa o'chirildi.",
+    "confirmDelete": "Uy vazifani o'chirishni tasdiqlaysizmi?",
+    "filters": {
+      "class": "Sinf bo'yicha filter",
+      "allClasses": "Barcha sinflar"
+    },
+    "form": {
+      "classPlaceholder": "Sinfni tanlang",
+      "description": "Tavsif",
+      "descriptionPlaceholder": "Uy vazifa tavsifi",
+      "deadline": "Deadline",
+      "fileOptional": "Fayl (ixtiyoriy)",
+      "add": "Qo'shish"
+    },
+    "validation": {
+      "required": "Sinf, tavsif va deadline majburiy."
+    },
+    "table": {
+      "description": "Tavsif",
+      "deadline": "Deadline",
+      "submissions": "Topshirish",
+      "file": "Fayl",
+      "pending": "Kutilyapti: {{count}}",
+      "last": "Oxirgi: {{date}}",
+      "notSubmitted": "Hali topshirilmagan",
+      "openFile": "Faylni ochish"
+    },
+    "actions": {
+      "viewSubmissions": "Topshirganlarni ko'rish",
+      "edit": "Tahrirlash",
+      "delete": "O'chirish",
+      "readOnly": "Faqat ko'rish"
+    },
+    "monitor": {
+      "title": "Topshirish monitoringi",
+      "summary": "Jami: {{total}} | Topshirgan: {{submitted}} | Kutilyapti: {{pending}}",
+      "empty": "Hali birorta ham topshirish yo'q.",
+      "ungraded": "Baholanmagan",
+      "teacherComment": "Teacher izohi",
+      "table": {
+        "submittedDate": "Yuborilgan sana",
+        "answerText": "Javob matni",
+        "file": "Fayl"
+      },
+      "actions": {
+        "grade": "Bahola",
+        "regrade": "Qayta bahola"
+      }
+    },
+    "grading": {
+      "title": "Topshiriqni baholash",
+      "scoreLabel": "Baho (1 - 100)",
+      "commentPlaceholder": "Topshiriq bo'yicha izoh yozing...",
+      "scoreRange": "Ball 1 dan 100 gacha bo'lishi kerak.",
+      "saved": "Topshiriq baholandi va umumiy reytingga qo'shildi.",
+      "save": "Bahoni saqlash"
+    },
+    "edit": {
+      "title": "Uy vazifani tahrirlash",
+      "description": "Tavsif",
+      "descriptionPlaceholder": "Uy vazifa tavsifi",
+      "newFileOptional": "Yangi fayl (ixtiyoriy)"
+    }
+  },
+  "exams": {
+    "title": "Imtihonlar",
+    "desc": "O'quvchi javoblari avto tekshirilmaydi. Har bir javobni o'qituvchi qo'lda baholaydi.",
+    "loading": "Imtihonlar yuklanmoqda...",
+    "empty": "Hozircha imtihon topilmadi.",
+    "durationMin": "{{value}} min",
+    "table": {
+      "title": "Sarlavha",
+      "duration": "Davomiylik",
+      "timeRange": "Vaqt oralig'i",
+      "status": "Holat",
+      "action": "Amal"
+    },
+    "status": {
+      "active": "Aktiv",
+      "draft": "Draft"
+    },
+    "actions": {
+      "questions": "Savollar",
+      "uploadQuestion": "Savol yuklash",
+      "results": "Natijalar"
+    },
+    "results": {
+      "title": "Natijalar: {{exam}}",
+      "score": "Ball",
+      "manualPending": "Manual qolgan",
+      "review": "Tekshiruv",
+      "loading": "Natijalar yuklanmoqda...",
+      "empty": "Hozircha urinishlar yo'q.",
+      "actions": {
+        "review": "Tekshirish",
+        "view": "Ko'rish"
+      }
+    }
+  },
+  "schedule": {
+    "title": "Dars jadvali",
+    "weeklyTitle": "Haftalik dars jadvali",
+    "weeklyDesc": "Bu yerda faqat o'zingiz dars beradigan sinflar va fanlar bo'yicha jadval ko'rsatiladi.",
+    "todayLessonAt": "Bugun sizda {{time}} da dars bor.",
+    "noLessonToday": "Bugun sizda dars yo'q.",
+    "lessonsCount": "{{count}} ta dars",
+    "noLessonShort": "Dars yo'q",
+    "noLessonThisDay": "Bu kunda dars rejalashtirilmagan."
+  },
+  "support": {
+    "title": "Murojaatlar",
+    "desc": "Ota-onalardan kelgan chatlar ro'yxati.",
+    "noRequests": "Hali murojaat yo'q.",
+    "chatTitle": "Chat oynasi",
+    "chatDesc": "Tanlangan ota-ona bilan real-time yozishma.",
+    "selectThread": "Chap tomondan murojaatni tanlang.",
+    "messagesLoading": "Xabarlar yuklanmoqda...",
+    "noMessages": "Hali xabar yo'q.",
+    "messagePlaceholder": "Xabar yozing..."
+  },
+  "face": {
+    "title": "Face ID davomat",
+    "desc": "Sinfni tanlang, kameraga qarang va \"Davomatni belgilash\" tugmasini bosing. Tizim yuzingizni tanib, o'quvchini davomatga qo'yadi.",
+    "classRequired": "Sinf (majburiy)",
+    "selectClass": "Sinfni tanlang",
+    "cameraOpenFailed": "Kamera ochilmadi. Ruxsat bering.",
+    "cameraOn": "Kamerani yoqish",
+    "modelsLoadFailed": "Face ID modellari yuklanmadi.",
+    "notDetected": "Yuz aniqlanmadi. Kameraga to'g'ri qarang.",
+    "markFailed": "Davomat belgilanmadi",
+    "marked": "{{student}} davomatga qo'yildi",
+    "processing": "Aniqlanmoqda...",
+    "markAttendance": "Davomatni belgilash",
+    "cameraOff": "Kamerani o'chirish"
+  },
+  "profile": {
+    "title": "Profil rasmi (Face ID davomat)",
+    "desc": "O'z profil rasmingizni yuklang yoki o'chiring. Face ID davomat tizimida ishlatiladi.",
+    "saveFailed": "Saqlashda xatolik",
+    "requiredFields": "Ism va email majburiy.",
+    "deleteFailed": "O'chirishda xatolik",
+    "photoSaved": "Profil rasmi saqlandi.",
+    "photoDeleted": "Profil rasmi o'chirildi.",
+    "information": "Profil ma'lumotlari",
+    "edit": "Tahrirlash",
+    "personalDetails": "Shaxsiy ma'lumotlar",
+    "firstName": "Ism",
+    "lastName": "Familiya",
+    "emailAddress": "Email manzili",
+    "phone": "Telefon",
+    "bio": "Bio",
+    "gender": "Jinsi",
+    "dateOfBirth": "Tug'ilgan sana",
+    "nationalId": "Milliy ID",
+    "address": "Manzil",
+    "country": "Mamlakat",
+    "cityState": "Shahar/Viloyat",
+    "postalCode": "Pochta indeksi",
+    "taxId": "Soliq ID",
+    "locationDisplay": "Uzbekistan/Tashkent",
+    "changePhoto": "Rasmni almashtirish",
+    "uploadPhoto": "Rasm yuklash",
+    "removePhoto": "Rasmni o'chirish"
+  },
+  "questionDialog": {
+    "title": "Savol yuklash: {{exam}}",
+    "questionText": "Savol matni",
+    "questionPlaceholder": "Savol matnini yozing...",
+    "type": "Turi",
+    "typeTest": "Test",
+    "typeText": "Matnli",
+    "points": "Ball",
+    "correct": "To'g'ri javob",
+    "optionA": "A varianti",
+    "optionB": "B varianti",
+    "optionC": "C varianti",
+    "optionD": "D varianti",
+    "save": "Savolni saqlash",
+    "saved": "Savol qo'shildi.",
+    "correctLabel": "To'g'ri javob",
+    "viewTitle": "Savollar: {{exam}}",
+    "viewLoading": "Savollar yuklanmoqda...",
+    "viewEmpty": "Hozircha savol kiritilmagan.",
+    "validation": {
+      "questionRequired": "Savol matnini kiriting.",
+      "pointsRange": "Ball 1 dan 100 gacha bo'lishi kerak.",
+      "minOptions": "Test uchun kamida 2 ta variant kiriting.",
+      "correctOptionRequired": "To'g'ri javob bo'sh bo'lmagan variantlardan bo'lishi kerak."
+    }
+  },
+  "review": {
+    "title": "Imtihon tekshiruvi {{student}}",
+    "loading": "Javoblar yuklanmoqda...",
+    "empty": "Javoblar topilmadi.",
+    "type": "Turi",
+    "maxScore": "Maks ball: {{score}}",
+    "evaluated": "Baholangan",
+    "pending": "Kutilmoqda",
+    "studentAnswer": "O'quvchi javobi:",
+    "noAnswer": "(Javob kiritilmagan)",
+    "correctMarked": "To'g'ri javob belgilangan",
+    "wrongMarked": "Noto'g'ri javob belgilangan",
+    "score": "Ball",
+    "commentOptional": "Izoh (ixtiyoriy)",
+    "commentPlaceholder": "Izoh",
+    "submitted": "Yuborildi",
+    "saveAll": "Barchasini saqlash",
+    "noNewGrades": "Saqlash uchun yangi baholar topilmadi.",
+    "questionFallback": "Savol",
+    "scoreRequired": "{{order}}-savol uchun ball kiriting.",
+    "scoreRange": "{{order}}-savol uchun ball 0 dan {{max}} gacha bo'lishi kerak.",
+    "savedCount": "{{count}} ta savol baholandi.",
+    "timeout": "Serverdan javob kelmadi (timeout). Qayta urinib ko'ring."
+  }
+}

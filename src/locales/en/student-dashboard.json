@@ -1,0 +1,230 @@
+{
+  "days": {
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday"
+  },
+  "common": {
+    "loading": "Loading...",
+    "refresh": "Refresh",
+    "prev": "Previous",
+    "next": "Next",
+    "cancel": "Cancel",
+    "save": "Save",
+    "sending": "Sending..."
+  },
+  "toasts": {
+    "error": "Error",
+    "insufficientData": "Insufficient data",
+    "submitted": "Submitted",
+    "incompleteAnswers": "Answers are incomplete",
+    "examSubmitted": "Exam submitted"
+  },
+  "errors": {
+    "homeworkLoad": "Failed to load homework",
+    "homeworkLoadDesc": "Error while loading homework",
+    "examsLoad": "Failed to load exams",
+    "examsLoadDesc": "Error while loading exams",
+    "gradesLoad": "Failed to load grades",
+    "gradesLoadDesc": "Error while loading grades",
+    "attendanceLoad": "Failed to load attendance",
+    "attendanceLoadDesc": "Error while loading attendance",
+    "scheduleLoad": "Failed to load timetable",
+    "scheduleLoadDesc": "Error while loading timetable",
+    "homeworkSubmit": "Failed to submit homework",
+    "homeworkSubmitDesc": "Error while submitting homework",
+    "examStart": "Failed to start exam",
+    "examStartDesc": "Error while starting exam",
+    "examSubmit": "Failed to submit exam",
+    "examSubmitDesc": "Error while submitting exam",
+    "nameSave": "Failed to save",
+    "nameSaveDesc": "Could not save"
+  },
+  "validation": {
+    "submissionRequired": "Enter answer text or attach a file.",
+    "examAnswerAll": "Answer all questions before submitting the exam."
+  },
+  "messages": {
+    "homeworkSubmitted": "Your homework was submitted successfully.",
+    "examSubmittedFinal": "Result saved. Percent: {{percent}}%",
+    "examSubmittedManual": "Answers sent. Waiting for manual review.",
+    "nameSaved": "Name saved"
+  },
+  "fallback": {
+    "subject": "Subject",
+    "homework": "Homework"
+  },
+  "attendanceStatus": {
+    "present": "present",
+    "late": "late",
+    "absent": "absent"
+  },
+  "search": {
+    "grade": "Grade: {{grade}}",
+    "attendance": "Attendance: {{status}}"
+  },
+  "notifications": {
+    "firstLesson": "First lesson today: {{subject}} ({{time}})",
+    "noLessonToday": "No lessons found in today's timetable.",
+    "nextLesson": "Next lesson: {{day}} {{time}} ({{subject}})",
+    "homeworkDue": "Deadline is approaching for {{subject}}.",
+    "exam": "Exam: {{title}} ({{time}})",
+    "newGrade": "New grade: {{subject}} - {{grade}}",
+    "attendancePresent": "Attendance: you were present today.",
+    "attendanceLate": "Attendance: late mark recorded.",
+    "attendanceAbsent": "Attendance: you are marked absent today."
+  },
+  "overview": {
+    "statsTitle": "General statistics",
+    "statsDesc": "Main indicators in your cabinet are shown with real-time updates.",
+    "avgGrade": "Average grade",
+    "avgGradeHint": "Based on grades in the system",
+    "subjectCount": "Subjects count",
+    "gradedSubjects": "Subjects with grades",
+    "homework": "Homework",
+    "classAssigned": "Assigned to class",
+    "attendance": "Attendance",
+    "currentMonth": "Current month",
+    "summaryTitle": "Summary",
+    "summaryDesc": "View detailed information in timetable, grades, and homework sections.",
+    "summaryHint": "From the left menu, select \"Schedule\", \"Grades\" or \"Homework\"."
+  },
+  "schedule": {
+    "nextLesson": "Next lesson",
+    "teacherMissing": "Teacher is not specified",
+    "room": "Room {{room}}",
+    "roomDash": "Room —",
+    "noLesson": "No lesson found in timetable.",
+    "todayLessons": "Today's lessons",
+    "onDay": "on {{day}}",
+    "weeklyLessons": "Weekly lessons",
+    "weeklyCount": "Total for the week",
+    "weeklyTitle": "Weekly timetable",
+    "weeklyDesc": "Lessons by day. Today is highlighted.",
+    "linkedClass": "Assigned class: {{class}}",
+    "unknownClass": "Unknown",
+    "emptyForClass": "Timetable is not entered yet for class {{class}}. Contact school admin.",
+    "emptyGeneric": "Timetable is not entered yet for your class. Contact school admin.",
+    "lessonsCount": "{{count}} items",
+    "noLessonShort": "No lesson"
+  },
+  "grades": {
+    "title": "Grades",
+    "desc": "Grades assigned by teachers.",
+    "searchPlaceholder": "Search by subject, teacher, or grade",
+    "allSubjects": "All subjects",
+    "allQuarters": "All quarters",
+    "q1": "Quarter 1",
+    "q2": "Quarter 2",
+    "q3": "Quarter 3",
+    "q4": "Quarter 4",
+    "empty": "No matching grades found.",
+    "total": "Total: {{count}} • Page {{page}}/{{total}}",
+    "table": {
+      "subject": "Subject",
+      "teacher": "Teacher",
+      "grade": "Grade",
+      "date": "Date"
+    }
+  },
+  "exams": {
+    "title": "Exams",
+    "desc": "You can start an exam only in the scheduled time. You cannot reopen after submit.",
+    "empty": "No exams for your class yet.",
+    "duration": "{{value}} min",
+    "submitted": "Submitted",
+    "starting": "Opening...",
+    "resume": "Resume",
+    "start": "Start",
+    "noReentry": "Re-entry not allowed",
+    "opensLater": "Will open on time",
+    "status": {
+      "upcoming": "Upcoming",
+      "active": "Active",
+      "inProgress": "In progress",
+      "completed": "Completed",
+      "ended": "Ended"
+    },
+    "table": {
+      "title": "Title",
+      "timeRange": "Time range",
+      "duration": "Duration",
+      "status": "Status",
+      "result": "Result",
+      "action": "Action"
+    }
+  },
+  "homework": {
+    "title": "Homework",
+    "desc": "Homework and deadlines assigned to your class.",
+    "empty": "No homework yet.",
+    "graded": "Graded: {{score}}",
+    "submitted": "Submitted ({{date}})",
+    "overdue": "Overdue",
+    "pending": "Pending",
+    "open": "Open",
+    "myFile": "My file",
+    "teacherComment": "Teacher comment",
+    "resubmit": "Resubmit",
+    "submit": "Submit",
+    "table": {
+      "subject": "Subject",
+      "teacher": "Teacher",
+      "task": "Task",
+      "deadline": "Deadline",
+      "status": "Status",
+      "file": "File",
+      "action": "Action"
+    }
+  },
+  "examDialog": {
+    "defaultTitle": "Exam",
+    "remainingTime": "Remaining time: {{time}}",
+    "autoClose": "When time ends, server will close automatically. You cannot reopen submitted exam.",
+    "answerAll": "Submit button is disabled until all questions are answered.",
+    "points": "Points: {{value}}",
+    "answerPlaceholder": "Write your answer...",
+    "submit": "Submit exam"
+  },
+  "submissionDialog": {
+    "title": "Submit homework",
+    "deadline": "Deadline: {{date}}",
+    "answerLabel": "Answer text",
+    "answerPlaceholder": "Write your homework solution...",
+    "fileLabel": "Attach file (optional)"
+  },
+  "profile": {
+    "title": "Profile (Face ID attendance)",
+    "description": "Your profile photo is set by teacher or director. You can only edit your name.",
+    "requiredFields": "Name and email are required.",
+    "saveFailed": "Save failed",
+    "photoSaved": "Profile photo saved.",
+    "information": "Profile Information",
+    "edit": "Edit",
+    "changePhoto": "Change photo",
+    "personalDetails": "Personal Details",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "emailAddress": "Email address",
+    "phone": "Phone",
+    "bio": "Bio",
+    "gender": "Gender",
+    "dateOfBirth": "Date of Birth",
+    "nationalId": "National ID",
+    "address": "Address",
+    "country": "Country",
+    "cityState": "City/State",
+    "postalCode": "Postal Code",
+    "taxId": "TAX ID",
+    "locationDisplay": "Uzbekistan/Tashkent",
+    "imageAlt": "Profile",
+    "photoSet": "Your profile photo is set by teacher or director. Contact them to change it.",
+    "photoNotSet": "No photo is set. Contact teacher or school director - they will set your profile photo for Face ID attendance.",
+    "name": "Name",
+    "namePlaceholder": "Your name"
+  }
+}

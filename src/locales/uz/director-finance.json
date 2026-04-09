@@ -1,0 +1,139 @@
+{
+  "title": "Moliyaviy bo'lim",
+  "subtitleManage": "Kirim-chiqim, o'quvchi to'lovlari, qarzdorlik va xodim maoshlarini bitta oynada boshqaring.",
+  "subtitleView": "Kirim-chiqim, o'quvchi to'lovlari, qarzdorlik va xodim maoshlarini nazorat qiling.",
+  "moneyFormat": "{{value}} so'm",
+  "income": "Kirim",
+  "expense": "Chiqim",
+  "save": "Saqlash",
+  "saving": "Saqlanmoqda...",
+  "update": "Yangilash",
+  "errorTitle": "Xatolik!",
+  "savedTitle": "Saqlandi",
+  "updatedTitle": "Yangilandi",
+  "deletedTitle": "O'chirildi",
+  "cards": {
+    "monthIncome": "Shu oy kirim",
+    "monthExpense": "Shu oy chiqim",
+    "yearIncome": "Shu yil kirim",
+    "yearExpense": "Shu yil chiqim",
+    "studentDebt": "O'quvchi qarzdorligi",
+    "studentDebtDesc": "Joriy yil bo'yicha to'lanmay qolgan jami summa.",
+    "salaryPending": "Maosh qoldig'i",
+    "salaryPendingDesc": "Shu oy hali to'lanmagan xodim maoshi qoldig'i."
+  },
+  "charts": {
+    "monthlyTitle": "Oylik kirim va chiqim",
+    "monthlyDesc": "{{year}} yil bo'yicha oyma-oy moliyaviy harakat.",
+    "yearlyTitle": "Yillik kirim va chiqim",
+    "yearlyDesc": "So'nggi 5 yil bo'yicha umumiy moliyaviy natijalar."
+  },
+  "forms": {
+    "type": "Turi",
+    "category": "Kategoriya",
+    "amount": "Summa",
+    "date": "Sana",
+    "note": "Izoh",
+    "student": "O'quvchi",
+    "staff": "Xodim",
+    "transactionNoteExample": "Masalan, homiylik puli",
+    "studentPaymentNoteExample": "Masalan, mart oyi kontrakti",
+    "salaryPaymentNoteExample": "Masalan, mart oyi maoshi",
+    "transaction": {
+      "title": "Kirim yoki chiqim qo'shish",
+      "desc": "Manual transaction yozuvi orqali har qanday moliyaviy harakatni kiriting."
+    },
+    "studentPayment": {
+      "title": "O'quvchi to'lovi qo'shish",
+      "desc": "O'quvchi tomonidan to'langan pulni darhol moliyaviy hisobotga kiriting.",
+      "submit": "To'lovni qo'shish"
+    },
+    "salaryPayment": {
+      "title": "Xodim maoshi to'lovi",
+      "desc": "To'langan maosh summasini kiriting va oy yakunida qoldiqni kuzating.",
+      "submit": "Maosh to'lovini qo'shish"
+    }
+  },
+  "studentTable": {
+    "title": "O'quvchi to'lovlari va qarzdorlik",
+    "descManage": "Har bir o'quvchi uchun oylik summa, to'lovlar va joriy yil qarzdorligini boshqaring.",
+    "descView": "Har bir o'quvchi uchun oylik summa, to'lovlar va joriy yil qarzdorligini kuzating.",
+    "student": "O'quvchi",
+    "class": "Sinf",
+    "monthlyFee": "Oylik to'lov",
+    "paidMonth": "Shu oy to'ladi",
+    "paidYear": "Shu yil to'ladi",
+    "debt": "Qarz",
+    "empty": "Hozircha moliyaviy nazorat uchun o'quvchilar topilmadi."
+  },
+  "staffTable": {
+    "title": "Xodimlar maoshi nazorati",
+    "descManage": "Xodimlar uchun oylik maosh, to'langan summa va qolgan miqdorni kuzating.",
+    "descView": "Xodimlar uchun oylik maosh, to'langan summa va qolgan miqdorni nazorat qiling.",
+    "staff": "Xodim",
+    "role": "Rol",
+    "monthlySalary": "Oylik maosh",
+    "paidMonth": "Shu oy to'landi",
+    "paidYear": "Shu yil to'landi",
+    "remaining": "Qoldiq",
+    "empty": "Hozircha moliyaviy nazorat uchun xodimlar topilmadi."
+  },
+  "transactions": {
+    "title": "So'nggi moliyaviy yozuvlar",
+    "descManage": "Kiritilgan barcha kirim va chiqimlar shu yerda saqlanadi.",
+    "descView": "Kiritilgan barcha kirim va chiqimlar shu yerda ko'rinadi.",
+    "date": "Sana",
+    "type": "Turi",
+    "category": "Kategoriya",
+    "note": "Izoh",
+    "subject": "Subyekt",
+    "amount": "Summa",
+    "general": "Umumiy",
+    "empty": "Hozircha moliyaviy transactionlar mavjud emas."
+  },
+  "roles": {
+    "director": "Direktor",
+    "schoolAdmin": "Maktab admini",
+    "teacher": "O'qituvchi"
+  },
+  "categories": {
+    "student_fee": "O'quvchi to'lovi",
+    "salary": "Xodim maoshi",
+    "donation": "Homiylik",
+    "grant": "Grant",
+    "other_income": "Boshqa kirim",
+    "utilities": "Kommunal",
+    "maintenance": "Ta'mirlash",
+    "supplies": "Jihoz va sarf",
+    "tax": "Soliq",
+    "bonus": "Bonus",
+    "other_expense": "Boshqa chiqim",
+    "other": "Boshqa"
+  },
+  "loadingFinanceData": "Moliyaviy ma'lumotlar yuklanmoqda...",
+  "loadingStaffData": "Xodimlar maoshi ma'lumotlari yuklanmoqda...",
+  "messages": {
+    "transactionAdded": "Moliyaviy transaction qo'shildi.",
+    "studentPaymentAdded": "O'quvchi to'lovi qo'shildi.",
+    "salaryPaymentAdded": "Xodim maoshi to'lovi qo'shildi.",
+    "studentFeeUpdated": "O'quvchi uchun oylik to'lov saqlandi.",
+    "staffSalaryUpdated": "Xodimning oylik maoshi saqlandi.",
+    "transactionDeleted": "Transaction ro'yxatdan olib tashlandi."
+  },
+  "errors": {
+    "financeLoad": "Moliyaviy ma'lumotlarni yuklab bo'lmadi",
+    "financeLoadDesc": "Moliyaviy bo'limni yuklashda xatolik yuz berdi.",
+    "transactionSave": "Transaction saqlanmadi",
+    "transactionSaveDesc": "Transaction qo'shishda xatolik yuz berdi.",
+    "studentPaymentSave": "O'quvchi to'lovi saqlanmadi",
+    "studentPaymentSaveDesc": "O'quvchi to'lovini saqlashda xatolik yuz berdi.",
+    "salaryPaymentSave": "Maosh to'lovi saqlanmadi",
+    "salaryPaymentSaveDesc": "Maosh to'lovini saqlashda xatolik yuz berdi.",
+    "studentFeeUpdate": "Oylik to'lov yangilanmadi",
+    "studentFeeUpdateDesc": "O'quvchi oylik to'lovini saqlashda xatolik yuz berdi.",
+    "staffSalaryUpdate": "Oylik maosh yangilanmadi",
+    "staffSalaryUpdateDesc": "Xodim maoshini saqlashda xatolik yuz berdi.",
+    "transactionDelete": "Transaction o'chirilmadi",
+    "transactionDeleteDesc": "Transactionni o'chirishda xatolik yuz berdi."
+  }
+}

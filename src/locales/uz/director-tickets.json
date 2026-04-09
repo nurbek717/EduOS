@@ -1,0 +1,56 @@
+{
+  "title": "Murojaatlar",
+  "searchPlaceholder": "Qidirish...",
+  "filters": {
+    "all": "Barchasi",
+    "open": "Ochiq",
+    "inProgress": "Jarayonda",
+    "closed": "Yopilgan"
+  },
+  "status": {
+    "open": "Ochiq",
+    "in_progress": "Jarayonda",
+    "closed": "Yopilgan",
+    "close": "Yopish"
+  },
+  "priority": {
+    "high": "Yuqori",
+    "medium": "O'rtacha",
+    "low": "Past"
+  },
+  "dialogs": {
+    "createTitle": "Yangi murojaat yaratish",
+    "createDescription": "Admin bilan bog'lanish uchun murojaat sarlavhasi va tavsifini kiriting.",
+    "titleLabel": "Sarlavha",
+    "titlePlaceholder": "Masalan: Tizim xatoligi",
+    "descriptionLabel": "Tavsif",
+    "descriptionPlaceholder": "Muammo haqida batafsil yozing...",
+    "priorityLabel": "Muhimlik darajasi",
+    "submit": "Yuborish"
+  },
+  "empty": {
+    "list": "Murojaatlar topilmadi",
+    "selectTitle": "Murojaatni tanlang",
+    "selectDescription": "Murojaat tafsilotlarini ko'rish va admin bilan muloqot qilish uchun ro'yxatdan birini tanlang."
+  },
+  "chat": {
+    "messagePlaceholder": "Xabar yo'llash...",
+    "closedNotice": "Ushbu murojaat yopilgan.",
+    "idPrefix": "ID"
+  },
+  "sender": {
+    "director": "Direktor"
+  },
+  "toasts": {
+    "error": "Xatolik",
+    "success": "Muvaffaqiyatli",
+    "updated": "Yangilandi",
+    "created": "Yangi murojaat yuborildi.",
+    "statusUpdated": "Murojaat holati o'zgartirildi."
+  },
+  "errors": {
+    "createFailed": "Ticket yaratib bo'lmadi",
+    "sendFailed": "Xabar yuborib bo'lmadi",
+    "statusChangeFailed": "Statusni o'zgartirib bo'lmadi"
+  }
+}

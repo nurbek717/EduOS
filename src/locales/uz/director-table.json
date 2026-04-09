@@ -1,0 +1,43 @@
+{
+  "classes": "Sinflar",
+  "subjects": "Fanlar",
+  "classTeacher": "Sinf rahbari",
+  "notAssigned": "Biriktirilmagan",
+  "studentsCount": "O'quvchilar",
+  "rank": "Reyting",
+  "addClass": "Sinf qo'shish",
+  "addSubject": "Fan qo'shish",
+  "newClassName": "Yangi sinf nomi",
+  "newClassExample": "Masalan, 5A",
+  "newSubjectName": "Yangi fan nomi",
+  "newSubjectExample": "Masalan, Matematika",
+  "selectTeacher": "Sinf rahbarini tanlang",
+  "selectTeacherGeneric": "O'qituvchi tanlang",
+  "class": "Sinf",
+  "selectClass": "Sinf tanlang",
+  "subject": "Fan",
+  "selectSubject": "Fan tanlang",
+  "teacher": "O'qituvchi",
+  "loadingClasses": "Sinflar yuklanmoqda...",
+  "loadingSubjects": "Fanlar yuklanmoqda...",
+  "emptyClasses": "Hozircha birorta ham sinf yaratilmagan.",
+  "emptyClassesAdmin": "Hozircha birorta ham sinf yaratilmagan. Yangi sinf nomini yozib, qo'shishingiz mumkin.",
+  "emptySubjects": "Hozircha birorta ham fan yaratilmagan.",
+  "emptySubjectsAdmin": "Hozircha birorta ham fan yaratilmagan. Yangi fan nomini yozib, qo'shishingiz mumkin.",
+  "rankPosition": "{{rank}}-o'rin",
+  "trends": {
+    "up": "O'sish",
+    "down": "Pasayish",
+    "stable": "Barqaror",
+    "noData": "Ma'lumot yo'q",
+    "reason": {
+      "up": "Baholar yaxshilangan, davomat barqaror.",
+      "upWithAttendance": "Baholar yaxshi. Davomatda {{absent}} kelmagan, {{late}} kechikish bor.",
+      "down": "Sabab: o'rtacha baho o'tgan oyga nisbatan pasaygan.",
+      "downWithAttendance": "Sabab: {{absent}} kelmagan, {{late}} kechikish va baho pasayishi.",
+      "stable": "Davomat va baholar barqaror.",
+      "stableWithAttendance": "Holat barqaror. {{absent}} kelmagan, {{late}} kechikish bor.",
+      "noData": "Bu oy uchun yetarli baho yoki davomat ma'lumoti yo'q."
+    }
+  }
+}

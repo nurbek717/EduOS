@@ -1,0 +1,24 @@
+{
+  "name": "school-management-backend",
+  "version": "1.0.0",
+  "description": "Multi-school SaaS school management backend (Node.js, Express, MongoDB, JWT)",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "NODE_ENV=production node src/server.js",
+    "seed:demo": "node src/config/seed-demo.js",
+    "backfill:school-days": "node src/scripts/backfill-school-created-day.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.2.4",
+    "multer": "^2.1.1"
+  }
+}

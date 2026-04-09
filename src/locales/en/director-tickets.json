@@ -1,0 +1,56 @@
+{
+  "title": "Tickets",
+  "searchPlaceholder": "Search...",
+  "filters": {
+    "all": "All",
+    "open": "Open",
+    "inProgress": "In progress",
+    "closed": "Closed"
+  },
+  "status": {
+    "open": "Open",
+    "in_progress": "In progress",
+    "closed": "Closed",
+    "close": "Close"
+  },
+  "priority": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "dialogs": {
+    "createTitle": "Create new ticket",
+    "createDescription": "Enter title and description to contact the admin.",
+    "titleLabel": "Title",
+    "titlePlaceholder": "For example: System error",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Describe the issue in detail...",
+    "priorityLabel": "Priority",
+    "submit": "Send"
+  },
+  "empty": {
+    "list": "No tickets found",
+    "selectTitle": "Select a ticket",
+    "selectDescription": "Choose a ticket from the list to view details and chat with admin."
+  },
+  "chat": {
+    "messagePlaceholder": "Send a message...",
+    "closedNotice": "This ticket is closed.",
+    "idPrefix": "ID"
+  },
+  "sender": {
+    "director": "Director"
+  },
+  "toasts": {
+    "error": "Error",
+    "success": "Success",
+    "updated": "Updated",
+    "created": "New ticket has been sent.",
+    "statusUpdated": "Ticket status has been updated."
+  },
+  "errors": {
+    "createFailed": "Failed to create ticket",
+    "sendFailed": "Failed to send message",
+    "statusChangeFailed": "Failed to change status"
+  }
+}

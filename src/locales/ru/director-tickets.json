@@ -1,0 +1,56 @@
+{
+  "title": "Обращения",
+  "searchPlaceholder": "Поиск...",
+  "filters": {
+    "all": "Все",
+    "open": "Открыт",
+    "inProgress": "В процессе",
+    "closed": "Закрыт"
+  },
+  "status": {
+    "open": "Открыт",
+    "in_progress": "В процессе",
+    "closed": "Закрыт",
+    "close": "Закрыть"
+  },
+  "priority": {
+    "high": "Высокий",
+    "medium": "Средний",
+    "low": "Низкий"
+  },
+  "dialogs": {
+    "createTitle": "Создать новое обращение",
+    "createDescription": "Введите заголовок и описание обращения для связи с админом.",
+    "titleLabel": "Заголовок",
+    "titlePlaceholder": "Например: Ошибка системы",
+    "descriptionLabel": "Описание",
+    "descriptionPlaceholder": "Подробно опишите проблему...",
+    "priorityLabel": "Приоритет",
+    "submit": "Отправить"
+  },
+  "empty": {
+    "list": "Обращения не найдены",
+    "selectTitle": "Выберите обращение",
+    "selectDescription": "Выберите одно обращение из списка, чтобы посмотреть детали и общаться с админом."
+  },
+  "chat": {
+    "messagePlaceholder": "Отправить сообщение...",
+    "closedNotice": "Это обращение закрыто.",
+    "idPrefix": "ID"
+  },
+  "sender": {
+    "director": "Директор"
+  },
+  "toasts": {
+    "error": "Ошибка",
+    "success": "Успешно",
+    "updated": "Обновлено",
+    "created": "Новое обращение отправлено.",
+    "statusUpdated": "Статус обращения изменен."
+  },
+  "errors": {
+    "createFailed": "Не удалось создать обращение",
+    "sendFailed": "Не удалось отправить сообщение",
+    "statusChangeFailed": "Не удалось изменить статус"
+  }
+}

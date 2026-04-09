@@ -1,0 +1,235 @@
+{
+  "common": {
+    "actions": "Действия",
+    "cancel": "Отмена",
+    "close": "Закрыть",
+    "delete": "Удалить",
+    "email": "Email",
+    "loading": "Загрузка...",
+    "moreCount": "... еще {{count}}",
+    "name": "Имя",
+    "password": "Пароль",
+    "refresh": "Обновить",
+    "save": "Сохранить",
+    "saving": "Сохранение...",
+    "view": "Просмотр"
+  },
+  "toasts": {
+    "error": "Ошибка!",
+    "success": "Успешно!",
+    "saved": "Сохранено",
+    "deleted": "Удалено",
+    "insufficient": "Недостаточно данных"
+  },
+  "errors": {
+    "fetchSchools": "Не удалось загрузить список школ.",
+    "fetchStats": "Не удалось загрузить статистику.",
+    "fetchUsers": "Не удалось загрузить список пользователей.",
+    "fetchSubscriptions": "Не удалось загрузить подписки.",
+    "fetchExams": "Не удалось загрузить список экзаменов.",
+    "fetchExamResults": "Не удалось загрузить результаты экзамена.",
+    "superAdminLoginRequired": "Сначала войдите как супер-админ.",
+    "createSubscription": "Не удалось добавить подписку.",
+    "createSchool": "Не удалось создать школу.",
+    "fetchUserDetails": "Не удалось загрузить данные пользователя.",
+    "updateUser": "Не удалось обновить пользователя.",
+    "deleteUser": "Не удалось удалить пользователя.",
+    "assignDirector": "Не удалось назначить директора.",
+    "deleteSchool": "Не удалось удалить школу."
+  },
+  "roles": {
+    "director": "Директор",
+    "schoolAdmin": "Админ школы",
+    "teacher": "Учитель",
+    "student": "Ученик",
+    "parent": "Родитель"
+  },
+  "table": {
+    "class": "Класс",
+    "subject": "Предмет",
+    "status": "Статус",
+    "score": "Балл",
+    "percent": "Процент"
+  },
+  "notifications": {
+    "subscriptionExpired": "Подписка школы {{schoolName}} истекла.",
+    "subscriptionEnding": "Подписка школы {{schoolName}} истекает через {{daysLeft}} дн.",
+    "withoutSchoolAdmin": "В {{count}} школах нет администратора школы.",
+    "withoutDirector": "В {{count}} школах не назначен директор."
+  },
+  "overview": {
+    "title": "Обзор",
+    "description": "Состояние управления платформой и точки, требующие контроля.",
+    "summaryDescription": "Текущее состояние школ и пользователей на платформе.",
+    "intro": "Здесь вы видите рост платформы, управленческие пробелы и школы, которым нужно внимание.",
+    "active": "Активные",
+    "inactive": "Неактивные",
+    "activeSchools": "Активные школы",
+    "inactiveSchools": "Неактивные школы",
+    "goToSubscriptions": "Перейти к подпискам",
+    "subscriptionCount": "Подписок осталось",
+    "withoutAdminSchools": "Школы без админа",
+    "newSchoolsLast7Days": "Школы за последние 7 дней",
+    "totalSchools": "Всего школ",
+    "totalUsers": "Всего пользователей",
+    "totalDirectors": "Всего директоров",
+    "totalSchoolAdmins": "Всего админов школ",
+    "chartLoading": "Загрузка графика...",
+    "attention": {
+      "title": "Требует внимания",
+      "description": "Показывает школы, где нужны действия по управлению или активности.",
+      "empty": "Сейчас нет критичных предупреждений по платформе."
+    },
+    "cards": {
+      "totalSchools": {
+        "title": "Всего школ",
+        "description": "Общее количество школ на платформе"
+      },
+      "activeSchools": {
+        "title": "Активные школы",
+        "description": "Школы с назначенным директором или админом"
+      },
+      "subscriptionEnding": {
+        "title": "Окончание подписки",
+        "description": "Школы с подпиской, близкой к окончанию"
+      },
+      "withoutSchoolAdmin": {
+        "title": "Без админа школы",
+        "description": "Школы без операционного администратора"
+      },
+      "totalUsers": {
+        "title": "Всего пользователей",
+        "description": "Все пользователи системы"
+      },
+      "newSchoolsLast7Days": {
+        "title": "Школы за 7 дней",
+        "description": "Количество недавно добавленных школ"
+      }
+    }
+  },
+  "schools": {
+    "description": "Список всех школ и добавление новой школы",
+    "addNew": "Добавить школу",
+    "createTitle": "Создать новую школу",
+    "created": "Новая школа создана.",
+    "deleted": "Школа {{schoolName}} удалена из базы данных.",
+    "fallback": "Школа",
+    "confirmDelete": "Удалить школу {{schoolName}} и все связанные данные?",
+    "noDirector": "Директор не назначен",
+    "empty": {
+      "title": "В системе пока нет школ",
+      "hint": "Нажмите кнопку выше, чтобы добавить школу"
+    },
+    "actions": {
+      "editDirector": "Редактировать директора",
+      "assignDirector": "Назначить директора",
+      "delete": "Удалить школу"
+    },
+    "table": {
+      "name": "Название",
+      "address": "Адрес",
+      "phone": "Телефон",
+      "director": "Директор",
+      "createdAt": "Дата создания"
+    },
+    "form": {
+      "name": "Название школы *",
+      "namePlaceholder": "Введите название школы",
+      "address": "Адрес",
+      "addressPlaceholder": "Адрес",
+      "phone": "Телефон",
+      "directorInfo": "Данные директора (необязательно)",
+      "directorInfoHint": "Если заполнить, аккаунт директора создастся автоматически.",
+      "directorName": "Имя",
+      "directorNamePlaceholder": "Имя директора"
+    },
+    "assignDirector": {
+      "title": "Назначить директора",
+      "titleWithSchool": "Назначить директора для {{schoolName}}",
+      "name": "Имя директора *",
+      "namePlaceholder": "Имя Фамилия",
+      "email": "Email директора *",
+      "password": "Пароль директора *",
+      "passwordPlaceholder": "Минимум 6 символов",
+      "submit": "Назначить",
+      "success": "Директор назначен школе.",
+      "validation": {
+        "required": "Введите имя, email и пароль директора."
+      }
+    }
+  },
+  "subscriptions": {
+    "description": "Укажите срок подписки для школы",
+    "created": "Подписка сохранена.",
+    "expired": "Срок истек",
+    "daysLeft": "Осталось {{count}} дн.",
+    "daysShort": "{{count}} дн.",
+    "empty": "Подписок пока нет",
+    "loading": "Загрузка подписок...",
+    "listTitle": "Список подписок",
+    "table": {
+      "school": "Школа",
+      "endDate": "Дата окончания",
+      "daysLeft": "Осталось дней"
+    },
+    "form": {
+      "school": "Школа *",
+      "schoolPlaceholder": "Выберите школу",
+      "days": "На сколько дней *",
+      "submit": "Добавить подписку"
+    },
+    "validation": {
+      "selectSchool": "Выберите школу.",
+      "days": "Количество дней должно быть больше 0."
+    }
+  },
+  "exams": {
+    "description": "Мониторинг всех экзаменов и результатов для супер-админа.",
+    "loading": "Загрузка экзаменов...",
+    "empty": "Экзамены пока не найдены.",
+    "durationMin": "{{value}} мин",
+    "status": {
+      "published": "Опубликован",
+      "draft": "Черновик"
+    },
+    "table": {
+      "exam": "Экзамен",
+      "duration": "Длительность",
+      "status": "Статус",
+      "results": "Результаты"
+    },
+    "results": {
+      "defaultTitle": "Результаты экзамена",
+      "title": "Результаты: {{exam}}",
+      "manualPending": "Ожидает ручной проверки",
+      "loading": "Загрузка результатов...",
+      "empty": "Результаты не найдены."
+    }
+  },
+  "users": {
+    "title": "Директора",
+    "description": "Управляйте директорами на платформе.",
+    "searchPlaceholder": "Поиск по имени или email директора",
+    "loading": "Загрузка пользователей...",
+    "unassigned": "Не назначено",
+    "updated": "Данные пользователя обновлены.",
+    "deleted": "Пользователь удален.",
+    "confirmDelete": "Вы уверены, что хотите удалить этого пользователя?",
+    "table": {
+      "user": "Пользователь",
+      "role": "Роль",
+      "school": "Школа",
+      "createdAt": "Дата создания"
+    },
+    "empty": {
+      "title": "Подходящие пользователи не найдены",
+      "hint": "Попробуйте изменить поиск"
+    },
+    "edit": {
+      "title": "Редактировать пользователя",
+      "titleWithRole": "Редактирование данных роли: {{role}}",
+      "newPasswordOptional": "Новый пароль (необязательно)",
+      "newPasswordPlaceholder": "Оставьте пустым, если не меняете"
+    }
+  }
+}

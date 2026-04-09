@@ -1,0 +1,418 @@
+{
+  "days": {
+    "monday": "Понедельник",
+    "tuesday": "Вторник",
+    "wednesday": "Среда",
+    "thursday": "Четверг",
+    "friday": "Пятница",
+    "saturday": "Суббота",
+    "sunday": "Воскресенье"
+  },
+  "common": {
+    "loading": "Загрузка...",
+    "loadingClasses": "Загрузка классов...",
+    "refresh": "Обновить",
+    "send": "Отправить",
+    "sending": "Отправка...",
+    "saving": "Сохранение...",
+    "close": "Закрыть",
+    "today": "Сегодня",
+    "room": "Кабинет {{room}}",
+    "roomMissing": "Кабинет не указан",
+    "roomUnset": "Кабинет не назначен",
+    "classTeacher": "Классный руководитель",
+    "subjectTeacher": "Учитель предмета",
+    "noChange": "Не изменять",
+    "cancel": "Отмена",
+    "save": "Сохранить"
+  },
+  "toasts": {
+    "error": "Ошибка!",
+    "success": "Успешно!",
+    "saved": "Сохранено",
+    "insufficient": "Недостаточно данных",
+    "info": "Информация",
+    "invalidScore": "Неверный балл",
+    "deleted": "Удалено"
+  },
+  "errors": {
+    "generic": "Произошла ошибка",
+    "fetchClasses": "Не удалось загрузить список классов.",
+    "fetchStudents": "Не удалось загрузить список учеников.",
+    "fetchGrades": "Не удалось загрузить оценки.",
+    "fetchSchedule": "Не удалось загрузить расписание.",
+    "fetchHomework": "Не удалось загрузить домашние задания.",
+    "fetchExams": "Не удалось загрузить экзамены.",
+    "fetchQuestions": "Не удалось загрузить вопросы.",
+    "fetchExamResults": "Не удалось загрузить результаты экзамена.",
+    "fetchAnswers": "Не удалось загрузить ответы.",
+    "fetchSupportThreads": "Не удалось загрузить обращения.",
+    "fetchSupportMessages": "Не удалось загрузить сообщения.",
+    "sendSupportMessage": "Сообщение не отправлено.",
+    "teacherLoginRequired": "Сначала войдите как учитель.",
+    "saveQuestion": "Не удалось сохранить вопрос.",
+    "gradeAnswer": "Не удалось проверить ответы.",
+    "createGrade": "Не удалось выставить оценку.",
+    "updateGrade": "Не удалось обновить оценку.",
+    "deleteGrade": "Не удалось удалить оценку.",
+    "createHomework": "Не удалось создать домашнее задание.",
+    "updateHomework": "Не удалось обновить домашнее задание.",
+    "deleteHomework": "Не удалось удалить домашнее задание.",
+    "gradeHomework": "Не удалось оценить сдачу задания.",
+    "createStudent": "Не удалось создать ученика.",
+    "updateStudent": "Не удалось обновить данные ученика."
+  },
+  "fallback": {
+    "student": "Ученик",
+    "subject": "Предмет",
+    "noClass": "Без класса",
+    "exam": "Экзамен"
+  },
+  "search": {
+    "class": "Класс"
+  },
+  "notifications": {
+    "noClasses": "Вам пока не назначен класс.",
+    "noStudents": "В назначенных классах пока нет учеников.",
+    "noLessonsToday": "Сегодня у вас нет уроков по расписанию.",
+    "firstLesson": "Первый урок сегодня: {{className}} • {{time}}",
+    "lastGrade": "Последняя оценка: {{student}} ({{subject}}) - {{grade}}",
+    "homeroomCount": "Вы классный руководитель {{count}} классов.",
+    "newChatMessage": "{{parent}} ({{student}}) отправил(а) новое сообщение."
+  },
+  "overview": {
+    "title": "Обзор кабинета учителя",
+    "desc": "Сегодняшние уроки, назначенные классы и последние оценки в одном месте.",
+    "stats": {
+      "assignedClasses": "Назначенные классы",
+      "assignedClassesHint": "Классы, где вы ведете",
+      "totalStudents": "Всего учеников",
+      "totalStudentsHint": "Общее число по классам",
+      "todayLessons": "Уроки сегодня",
+      "todayLessonsHint": "Только расписание на сегодня",
+      "homeroom": "Классное руководство",
+      "homeroomHint": "Классы под руководством"
+    },
+    "todayScheduleTitle": "Расписание на сегодня",
+    "todayScheduleDesc": "Показываются только уроки на сегодня.",
+    "noTodaySchedule": "На сегодня расписание не найдено.",
+    "myClassesTitle": "Мои классы",
+    "myClassesDesc": "Сортировка по классному руководству и нагрузке на сегодня.",
+    "classMeta": "{{students}} учеников, сегодня {{lessons}} уроков",
+    "nextLessonAt": "Урок в {{time}}",
+    "noLessonToday": "Сегодня уроков нет",
+    "nextLessonInfo": "{{subject}}{{room, select, '' {} other {, кабинет {{room}}}}}",
+    "nextLessonMissing": "Следующий урок не внесен в расписание",
+    "noClasses": "Вам пока не назначен класс.",
+    "latestGradesTitle": "Последние оценки",
+    "latestGradesDesc": "Недавно выставленные оценки в расширенном виде таблицы."
+  },
+  "table": {
+    "student": "Ученик",
+    "class": "Класс",
+    "subject": "Предмет",
+    "grade": "Оценка",
+    "date": "Дата"
+  },
+  "students": {
+    "title": "Добавить учеников",
+    "form": {
+      "selectClass": "Выберите класс",
+      "classPlaceholder": "Выберите класс",
+      "noHomeroomWarning": "Вам пока не назначен ни один класс как классному руководителю. Сначала директор должен назначить класс.",
+      "studentName": "Имя ученика",
+      "studentNamePlaceholder": "Имя Фамилия",
+      "parentName": "Имя родителя",
+      "parentNamePlaceholder": "Например: Иванов Иван",
+      "parentPhone": "Телефон родителя",
+      "parentPhonePlaceholder": "+998 90 123 45 67",
+      "address": "Домашний адрес",
+      "addressPlaceholder": "г. Ташкент, Чиланзар...",
+      "password": "Пароль",
+      "passwordPlaceholder": "Минимум 6 символов",
+      "addStudent": "Добавить нового ученика",
+      "validation": {
+        "required": "Имя, email, пароль и класс обязательны."
+      },
+      "created": "Новый ученик создан."
+    },
+    "table": {
+      "email": "Email",
+      "parent": "Родитель",
+      "phone": "Телефон",
+      "address": "Адрес",
+      "loading": "Загрузка учеников...",
+      "empty": "Пока не найдено ни одного ученика."
+    },
+    "actions": {
+      "edit": "Редактировать"
+    },
+    "edit": {
+      "title": "Редактировать ученика",
+      "newPasswordOptional": "Новый пароль (необязательно)",
+      "newPasswordPlaceholder": "Введите, если хотите изменить",
+      "profilePhoto": "Фото профиля (Face ID посещаемость)",
+      "upload": "Загрузить",
+      "remove": "Удалить",
+      "updated": "Данные ученика обновлены."
+    }
+  },
+  "classes": {
+    "title": "Мои классы",
+    "empty": "Назначенные классы пока не найдены.",
+    "studentCount": "{{count}} учеников",
+    "homeroom": "Вы классный руководитель этого класса",
+    "dialogTitle": "Ученики класса {{className}}",
+    "dialogEmpty": "Для этого класса пока не добавлены ученики."
+  },
+  "grades": {
+    "title": "Оценки",
+    "empty": "Пока нет оценок.",
+    "loading": "Загрузка оценок...",
+    "created": "Оценка выставлена.",
+    "deleted": "Оценка удалена.",
+    "confirmDelete": "Удалить эту оценку?",
+    "filters": {
+      "class": "Фильтр по классу",
+      "allClasses": "Все классы"
+    },
+    "form": {
+      "studentPlaceholder": "Выберите ученика",
+      "gradePlaceholder": "Выберите",
+      "dateOptional": "Дата (необязательно)",
+      "submit": "Выставить оценку"
+    },
+    "validation": {
+      "required": "Ученик и оценка обязательны."
+    },
+    "actions": {
+      "edit": "Редактировать оценку",
+      "delete": "Удалить оценку"
+    },
+    "edit": {
+      "title": "Редактировать оценку",
+      "saved": "Оценка обновлена.",
+      "error": "Не удалось обновить оценку."
+    }
+  },
+  "homework": {
+    "title": "Домашние задания",
+    "loading": "Загрузка домашних заданий...",
+    "empty": "Домашние задания пока не найдены.",
+    "created": "Домашнее задание добавлено.",
+    "updated": "Домашнее задание обновлено.",
+    "deleted": "Домашнее задание удалено.",
+    "confirmDelete": "Подтвердите удаление домашнего задания.",
+    "filters": {
+      "class": "Фильтр по классу",
+      "allClasses": "Все классы"
+    },
+    "form": {
+      "classPlaceholder": "Выберите класс",
+      "description": "Описание",
+      "descriptionPlaceholder": "Описание домашнего задания",
+      "deadline": "Срок",
+      "fileOptional": "Файл (необязательно)",
+      "add": "Добавить"
+    },
+    "validation": {
+      "required": "Класс, описание и срок обязательны."
+    },
+    "table": {
+      "description": "Описание",
+      "deadline": "Срок",
+      "submissions": "Сдано",
+      "file": "Файл",
+      "pending": "Ожидают сдачу: {{count}}",
+      "last": "Последняя сдача: {{date}}",
+      "notSubmitted": "Еще не сдано",
+      "openFile": "Открыть файл"
+    },
+    "actions": {
+      "viewSubmissions": "Проверить сдачи",
+      "edit": "Редактировать",
+      "delete": "Удалить",
+      "readOnly": "Только просмотр"
+    },
+    "monitor": {
+      "title": "Мониторинг сдачи работ",
+      "summary": "Всего: {{total}} | Сдано: {{submitted}} | Ожидают сдачу: {{pending}}",
+      "empty": "Пока нет ни одной сданной работы.",
+      "ungraded": "Не оценено",
+      "teacherComment": "Комментарий учителя",
+      "table": {
+        "submittedDate": "Дата отправки",
+        "answerText": "Текст ответа",
+        "file": "Файл"
+      },
+      "actions": {
+        "grade": "Оценить",
+        "regrade": "Переоценить"
+      }
+    },
+    "grading": {
+      "title": "Оценка задания",
+      "scoreLabel": "Оценка (1 - 100)",
+      "commentPlaceholder": "Напишите комментарий по заданию...",
+      "scoreRange": "Оценка должна быть от 1 до 100.",
+      "saved": "Задание оценено и добавлено в общий рейтинг.",
+      "save": "Сохранить оценку"
+    },
+    "edit": {
+      "title": "Редактировать домашнее задание",
+      "description": "Описание",
+      "descriptionPlaceholder": "Описание домашнего задания",
+      "newFileOptional": "Новый файл (необязательно)"
+    }
+  },
+  "exams": {
+    "title": "Экзамены",
+    "desc": "Ответы учеников не проверяются автоматически. Каждый ответ проверяется учителем вручную.",
+    "loading": "Загрузка экзаменов...",
+    "empty": "Экзамены пока не найдены.",
+    "durationMin": "{{value}} мин",
+    "table": {
+      "title": "Заголовок",
+      "duration": "Длительность",
+      "timeRange": "Временной диапазон",
+      "status": "Статус",
+      "action": "Действие"
+    },
+    "status": {
+      "active": "Активен",
+      "draft": "Черновик"
+    },
+    "actions": {
+      "questions": "Вопросы",
+      "uploadQuestion": "Загрузить вопрос",
+      "results": "Результаты"
+    },
+    "results": {
+      "title": "Результаты: {{exam}}",
+      "score": "Балл",
+      "manualPending": "Осталось вручную",
+      "review": "Проверка",
+      "loading": "Загрузка результатов...",
+      "empty": "Попыток пока нет.",
+      "actions": {
+        "review": "Проверить",
+        "view": "Просмотр"
+      }
+    }
+  },
+  "schedule": {
+    "title": "Расписание",
+    "weeklyTitle": "Недельное расписание",
+    "weeklyDesc": "Здесь отображаются только ваши классы и предметы.",
+    "todayLessonAt": "Сегодня у вас урок в {{time}}.",
+    "noLessonToday": "Сегодня у вас нет уроков.",
+    "lessonsCount": "{{count}} уроков",
+    "noLessonShort": "Нет урока",
+    "noLessonThisDay": "На этот день уроки не запланированы."
+  },
+  "support": {
+    "title": "Обращения",
+    "desc": "Список чатов от родителей.",
+    "noRequests": "Пока нет обращений.",
+    "chatTitle": "Окно чата",
+    "chatDesc": "Переписка в реальном времени с выбранным родителем.",
+    "selectThread": "Выберите обращение слева.",
+    "messagesLoading": "Загрузка сообщений...",
+    "noMessages": "Пока нет сообщений.",
+    "messagePlaceholder": "Введите сообщение..."
+  },
+  "face": {
+    "title": "Face ID посещаемость",
+    "desc": "Выберите класс, смотрите в камеру и нажмите \"Отметить посещаемость\". Система распознает лицо и отметит посещаемость.",
+    "classRequired": "Класс (обязательно)",
+    "selectClass": "Выберите класс",
+    "cameraOpenFailed": "Не удалось открыть камеру. Разрешите доступ.",
+    "cameraOn": "Включить камеру",
+    "modelsLoadFailed": "Не удалось загрузить модели Face ID.",
+    "notDetected": "Лицо не обнаружено. Смотрите прямо в камеру.",
+    "markFailed": "Не удалось отметить посещаемость",
+    "marked": "{{student}} отмечен(а) как присутствующий(ая)",
+    "processing": "Обработка...",
+    "markAttendance": "Отметить посещаемость",
+    "cameraOff": "Выключить камеру"
+  },
+  "profile": {
+    "title": "Фото профиля (Face ID посещаемость)",
+    "desc": "Загрузите или удалите фото профиля. Используется в Face ID посещаемости.",
+    "saveFailed": "Ошибка сохранения",
+    "requiredFields": "Имя и эл. почта обязательны.",
+    "deleteFailed": "Ошибка удаления",
+    "photoSaved": "Фото профиля сохранено.",
+    "photoDeleted": "Фото профиля удалено.",
+    "information": "Информация профиля",
+    "edit": "Изменить",
+    "personalDetails": "Личные данные",
+    "firstName": "Имя",
+    "lastName": "Фамилия",
+    "emailAddress": "Эл. почта",
+    "phone": "Телефон",
+    "bio": "О себе",
+    "gender": "Пол",
+    "dateOfBirth": "Дата рождения",
+    "nationalId": "Национальный ID",
+    "address": "Адрес",
+    "country": "Страна",
+    "cityState": "Город/Область",
+    "postalCode": "Почтовый индекс",
+    "taxId": "ИНН",
+    "locationDisplay": "Узбекистан/Ташкент",
+    "changePhoto": "Сменить фото",
+    "uploadPhoto": "Загрузить фото",
+    "removePhoto": "Удалить фото"
+  },
+  "questionDialog": {
+    "title": "Загрузка вопроса: {{exam}}",
+    "questionText": "Текст вопроса",
+    "questionPlaceholder": "Введите текст вопроса...",
+    "type": "Тип",
+    "typeTest": "Тест",
+    "typeText": "Текстовый",
+    "points": "Баллы",
+    "correct": "Правильный ответ",
+    "optionA": "Вариант A",
+    "optionB": "Вариант B",
+    "optionC": "Вариант C",
+    "optionD": "Вариант D",
+    "save": "Сохранить вопрос",
+    "saved": "Вопрос добавлен.",
+    "correctLabel": "Правильный ответ",
+    "viewTitle": "Вопросы: {{exam}}",
+    "viewLoading": "Загрузка вопросов...",
+    "viewEmpty": "Пока вопросы не добавлены.",
+    "validation": {
+      "questionRequired": "Введите текст вопроса.",
+      "pointsRange": "Баллы должны быть от 1 до 100.",
+      "minOptions": "Для теста нужно минимум 2 варианта.",
+      "correctOptionRequired": "Правильный ответ должен быть среди непустых вариантов."
+    }
+  },
+  "review": {
+    "title": "Проверка экзамена {{student}}",
+    "loading": "Загрузка ответов...",
+    "empty": "Ответы не найдены.",
+    "type": "Тип",
+    "maxScore": "Макс. балл: {{score}}",
+    "evaluated": "Проверено",
+    "pending": "Ожидает",
+    "studentAnswer": "Ответ ученика:",
+    "noAnswer": "(Ответ не введен)",
+    "correctMarked": "Отмечен правильный ответ",
+    "wrongMarked": "Отмечен неверный ответ",
+    "score": "Балл",
+    "commentOptional": "Комментарий (необязательно)",
+    "commentPlaceholder": "Комментарий",
+    "submitted": "Отправлено",
+    "saveAll": "Сохранить все",
+    "noNewGrades": "Нет новых оценок для сохранения.",
+    "questionFallback": "Вопрос",
+    "scoreRequired": "Введите балл для вопроса {{order}}.",
+    "scoreRange": "Балл для вопроса {{order}} должен быть от 0 до {{max}}.",
+    "savedCount": "Проверено вопросов: {{count}}.",
+    "timeout": "Нет ответа от сервера (таймаут). Попробуйте снова."
+  }
+}

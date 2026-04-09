@@ -1,0 +1,230 @@
+{
+  "days": {
+    "monday": "Dushanba",
+    "tuesday": "Seshanba",
+    "wednesday": "Chorshanba",
+    "thursday": "Payshanba",
+    "friday": "Juma",
+    "saturday": "Shanba",
+    "sunday": "Yakshanba"
+  },
+  "common": {
+    "loading": "Yuklanmoqda...",
+    "refresh": "Yangilash",
+    "prev": "Oldingi",
+    "next": "Keyingi",
+    "cancel": "Bekor qilish",
+    "save": "Saqlash",
+    "sending": "Yuborilmoqda..."
+  },
+  "toasts": {
+    "error": "Xatolik",
+    "insufficientData": "Ma'lumot yetarli emas",
+    "submitted": "Topshirildi",
+    "incompleteAnswers": "Javoblar to'liq emas",
+    "examSubmitted": "Imtihon topshirildi"
+  },
+  "errors": {
+    "homeworkLoad": "Uy vazifalarini yuklab bo'lmadi",
+    "homeworkLoadDesc": "Uy vazifalarini yuklashda xatolik",
+    "examsLoad": "Imtihonlarni yuklab bo'lmadi",
+    "examsLoadDesc": "Imtihonlarni yuklashda xatolik",
+    "gradesLoad": "Baholarni yuklab bo'lmadi",
+    "gradesLoadDesc": "Baholarni yuklashda xatolik",
+    "attendanceLoad": "Davomatni yuklab bo'lmadi",
+    "attendanceLoadDesc": "Davomatni yuklashda xatolik",
+    "scheduleLoad": "Dars jadvalini yuklab bo'lmadi",
+    "scheduleLoadDesc": "Dars jadvalini yuklashda xatolik",
+    "homeworkSubmit": "Uy vazifani topshirishda xatolik yuz berdi",
+    "homeworkSubmitDesc": "Uy vazifani topshirishda xatolik",
+    "examStart": "Imtihonni boshlashda xatolik yuz berdi",
+    "examStartDesc": "Imtihonni boshlashda xatolik",
+    "examSubmit": "Imtihonni topshirishda xatolik yuz berdi",
+    "examSubmitDesc": "Imtihonni topshirishda xatolik",
+    "nameSave": "Saqlashda xatolik",
+    "nameSaveDesc": "Saqlanmadi"
+  },
+  "validation": {
+    "submissionRequired": "Javob matni yoki fayl kiriting.",
+    "examAnswerAll": "Imtihonni topshirish uchun barcha savollarga javob bering."
+  },
+  "messages": {
+    "homeworkSubmitted": "Uy vazifangiz muvaffaqiyatli yuborildi.",
+    "examSubmittedFinal": "Natija saqlandi. Foiz: {{percent}}%",
+    "examSubmittedManual": "Javoblar yuborildi. Manual tekshiruv kutilmoqda.",
+    "nameSaved": "Ism saqlandi"
+  },
+  "fallback": {
+    "subject": "Fan",
+    "homework": "Uy vazifasi"
+  },
+  "attendanceStatus": {
+    "present": "qatnashdi",
+    "late": "kechikdi",
+    "absent": "kelmadi"
+  },
+  "search": {
+    "grade": "Baho: {{grade}}",
+    "attendance": "Davomat: {{status}}"
+  },
+  "notifications": {
+    "firstLesson": "Bugungi birinchi dars: {{subject}} ({{time}})",
+    "noLessonToday": "Bugun dars jadvalida dars topilmadi.",
+    "nextLesson": "Keyingi dars: {{day}} {{time}} ({{subject}})",
+    "homeworkDue": "{{subject}} bo'yicha topshiriq muddati yaqinlashmoqda.",
+    "exam": "Imtihon: {{title}} ({{time}})",
+    "newGrade": "Yangi baho: {{subject}} - {{grade}}",
+    "attendancePresent": "Davomat: bugun qatnashdingiz.",
+    "attendanceLate": "Davomat: kechikish qayd etilgan.",
+    "attendanceAbsent": "Davomat: bugun kelmagan sifatida qayd etilgansiz."
+  },
+  "overview": {
+    "statsTitle": "Umumiy statistika",
+    "statsDesc": "Shaxsiy kabinetdagi asosiy ko'rsatkichlar real vaqt bilan birga ko'rsatiladi.",
+    "avgGrade": "O'rtacha baho",
+    "avgGradeHint": "Tizimdagi baholar bo'yicha",
+    "subjectCount": "Fanlar soni",
+    "gradedSubjects": "Bahosi bor fanlar",
+    "homework": "Uy vazifalari",
+    "classAssigned": "Sinfiga berilgan",
+    "attendance": "Davomat",
+    "currentMonth": "Joriy oylik",
+    "summaryTitle": "Qisqacha",
+    "summaryDesc": "Dars jadvali, baholar va uy vazifalari bo'limlarida batafsil ma'lumot ko'ring.",
+    "summaryHint": "Chap menyudan \"Dars jadvali\", \"Baholar\" yoki \"Uy vazifalari\"ni tanlang."
+  },
+  "schedule": {
+    "nextLesson": "Keyingi dars",
+    "teacherMissing": "O'qituvchi ko'rsatilmagan",
+    "room": "Xona {{room}}",
+    "roomDash": "Xona —",
+    "noLesson": "Jadvalda dars topilmadi.",
+    "todayLessons": "Bugungi darslar",
+    "onDay": "{{day}} kuni",
+    "weeklyLessons": "Haftalik darslar",
+    "weeklyCount": "Haftalik umumiy son",
+    "weeklyTitle": "Haftalik dars jadvali",
+    "weeklyDesc": "Har kuni bo'yicha darslar. Bugungi kun alohida ajratilgan.",
+    "linkedClass": "Siz biriktirilgan sinf: {{class}}",
+    "unknownClass": "Noma'lum",
+    "emptyForClass": "{{class}} sinfi uchun jadval hali kiritilmagan. Maktab adminiga murojaat qiling.",
+    "emptyGeneric": "Sizning sinfingiz uchun jadval hali kiritilmagan. Maktab adminiga murojaat qiling.",
+    "lessonsCount": "{{count}} ta",
+    "noLessonShort": "Dars yo'q"
+  },
+  "grades": {
+    "title": "Baholar",
+    "desc": "O'qituvchilar tomonidan qo'yilgan baholar.",
+    "searchPlaceholder": "Fan, o'qituvchi yoki baho bo'yicha qidiring",
+    "allSubjects": "Barcha fanlar",
+    "allQuarters": "Barcha choraklar",
+    "q1": "1-chorak",
+    "q2": "2-chorak",
+    "q3": "3-chorak",
+    "q4": "4-chorak",
+    "empty": "Mos baholar topilmadi.",
+    "total": "Jami: {{count}} ta • Sahifa {{page}}/{{total}}",
+    "table": {
+      "subject": "Fan",
+      "teacher": "O'qituvchi",
+      "grade": "Baho",
+      "date": "Sana"
+    }
+  },
+  "exams": {
+    "title": "Imtihonlar",
+    "desc": "Imtihonni faqat belgilangan vaqtda boshlashingiz mumkin. Topshirilgandan keyin qayta kirib bo'lmaydi.",
+    "empty": "Hozircha sizning sinfingiz uchun imtihonlar yo'q.",
+    "duration": "{{value}} daq.",
+    "submitted": "Topshirilgan",
+    "starting": "Kirilmoqda...",
+    "resume": "Davom ettirish",
+    "start": "Boshlash",
+    "noReentry": "Qayta kirish yo'q",
+    "opensLater": "Vaqti kelganda ochiladi",
+    "status": {
+      "upcoming": "Vaqti kelmagan",
+      "active": "Aktiv",
+      "inProgress": "Jarayonda",
+      "completed": "Yakunlangan",
+      "ended": "Tugagan"
+    },
+    "table": {
+      "title": "Sarlavha",
+      "timeRange": "Vaqt oralig'i",
+      "duration": "Davomiylik",
+      "status": "Holat",
+      "result": "Natija",
+      "action": "Amal"
+    }
+  },
+  "homework": {
+    "title": "Uy vazifalari",
+    "desc": "Sinfiga berilgan uy vazifalari va muddatlar.",
+    "empty": "Hozircha uy vazifalari yo'q.",
+    "graded": "Baholangan: {{score}}",
+    "submitted": "Topshirildi ({{date}})",
+    "overdue": "Muddat o'tgan",
+    "pending": "Kutilmoqda",
+    "open": "Ochish",
+    "myFile": "Mening faylim",
+    "teacherComment": "Teacher izohi",
+    "resubmit": "Qayta topshirish",
+    "submit": "Topshirish",
+    "table": {
+      "subject": "Fan",
+      "teacher": "O'qituvchi",
+      "task": "Vazifa",
+      "deadline": "Muddat",
+      "status": "Holat",
+      "file": "Fayl",
+      "action": "Amal"
+    }
+  },
+  "examDialog": {
+    "defaultTitle": "Imtihon",
+    "remainingTime": "Qolgan vaqt: {{time}}",
+    "autoClose": "Vaqt tugagach server avtomatik yopadi. Topshirilgan imtihonga qayta kira olmaysiz.",
+    "answerAll": "Barcha savollarga javob berilmaguncha topshirish tugmasi ochilmaydi.",
+    "points": "Ball: {{value}}",
+    "answerPlaceholder": "Javobingizni yozing...",
+    "submit": "Imtihonni topshirish"
+  },
+  "submissionDialog": {
+    "title": "Uy vazifani topshirish",
+    "deadline": "Muddat: {{date}}",
+    "answerLabel": "Javob matni",
+    "answerPlaceholder": "Uy vazifa yechimini yozing...",
+    "fileLabel": "Fayl biriktirish (ixtiyoriy)"
+  },
+  "profile": {
+    "title": "Profil (Face ID davomat)",
+    "description": "Profil rasmingizni o'qituvchi yoki direktor o'rnatadi. Siz faqat ismingizni tahrirlashingiz mumkin.",
+    "requiredFields": "Ism va email majburiy.",
+    "saveFailed": "Saqlashda xatolik",
+    "photoSaved": "Profil rasmi saqlandi.",
+    "information": "Profil ma'lumotlari",
+    "edit": "Tahrirlash",
+    "changePhoto": "Rasmni almashtirish",
+    "personalDetails": "Shaxsiy ma'lumotlar",
+    "firstName": "Ism",
+    "lastName": "Familiya",
+    "emailAddress": "Email manzil",
+    "phone": "Telefon",
+    "bio": "Qisqacha ma'lumot",
+    "gender": "Jins",
+    "dateOfBirth": "Tug'ilgan sana",
+    "nationalId": "Milliy ID",
+    "address": "Manzil",
+    "country": "Mamlakat",
+    "cityState": "Shahar/Viloyat",
+    "postalCode": "Pochta indeksi",
+    "taxId": "STIR",
+    "locationDisplay": "O'zbekiston/Toshkent",
+    "imageAlt": "Profil",
+    "photoSet": "Profil rasmingiz o'qituvchi yoki direktor tomonidan o'rnatilgan. O'zgartirish uchun ularga murojaat qiling.",
+    "photoNotSet": "Rasm o'rnatilmagan. O'qituvchi yoki maktab direktoriga murojaat qiling - ular sizning profil rasmingizni Face ID davomat uchun qo'yishadi.",
+    "name": "Ism",
+    "namePlaceholder": "Ismingiz"
+  }
+}
