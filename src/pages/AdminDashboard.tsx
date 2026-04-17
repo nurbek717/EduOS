@@ -103,6 +103,7 @@ type SubscriptionItem = {
   id: string;
   schoolId: string;
   schoolName: string;
+  createdAt?: string | null;
   endAt: string;
 };
 
@@ -933,7 +934,7 @@ const AdminDashboard = () => {
       searchItems={searchItems}
       subscriptionInfo={{
         planName: topSubscription?.schoolName || "TEST",
-        startDate: null,
+        startDate: topSubscription?.createdAt || null,
         endDate: topSubscription?.endAt || null,
         contractNumber: topSubscription ? `SUB-${topSubscription.schoolId?.slice?.(-6) || "000000"}` : "MYS-133891/26",
         status: topSubscriptionDaysLeft === 0 ? "expired" : "active",

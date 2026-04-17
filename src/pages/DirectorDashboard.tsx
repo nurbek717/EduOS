@@ -56,6 +56,7 @@ type DirectorOverview = {
     message: string;
   }[];
   subscription?: {
+    startAt: string | null;
     endAt: string | null;
     daysLeft: number | null;
     isExpired: boolean;
@@ -2152,7 +2153,7 @@ const DirectorDashboard = () => {
       searchItems={searchItems}
       subscriptionInfo={{
         planName: "TEST",
-        startDate: null,
+        startDate: overview?.subscription?.startAt || null,
         endDate: overview?.subscription?.endAt || null,
         contractNumber: localStorage.getItem("subscription_contract_number") || "MYS-133891/26",
         status: overview?.subscription?.isExpired ? "expired" : "active",
@@ -3538,8 +3539,8 @@ const DirectorDashboard = () => {
             {section === "teachers" && (
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <div>
-                  <CardTitle>O&apos;qituvchilar</CardTitle>
-                  <CardDescription>Maktabinggizdagi o&apos;qituvchilar ro&apos;yxati.</CardDescription>
+                  <CardTitle className="text-[#212b36] text-bold text-[18px]">O'qituvchilar ro'yxati</CardTitle>
+                  <CardDescription className="text-[#FE9F43] font-medium gap-1 md:text-[12px] md:text-sm">Maktabingizdagi o'qituvchilar ro'yxati.</CardDescription>
                 </div>
                 <div className="flex gap-2">
                   {isSchoolAdmin && (
@@ -3726,13 +3727,7 @@ const DirectorDashboard = () => {
 
               {section === "students" && studentsView === "list" && (
                 <CardContent className="p-0">
-                  <div className="space-y-3 px-6 py-4">
-                    <div className="pb-1">
-                      <h3 className="text-base font-semibold text-foreground">O&apos;quvchilar ro&apos;yxati</h3>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Bu bo&apos;lim faqat qidirish uchun.
-                      </p>
-                    </div>
+                  <div className="space-y-3">
 
                     <form
                       onSubmit={(e) => {

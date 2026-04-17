@@ -793,6 +793,7 @@ const getOverview = async (req, res) => {
         monthExpense: monthExpense[0]?.total || 0,
       },
       subscription: subscriptionDoc ? {
+        startAt: subscriptionDoc.created_at || null,
         endAt: subscriptionDoc.endAt || null,
         daysLeft: subscriptionDoc.endAt ? Math.ceil((new Date(subscriptionDoc.endAt) - now) / (1000 * 60 * 60 * 24)) : null,
         isExpired: subscriptionDoc.endAt ? new Date(subscriptionDoc.endAt) < now : false,

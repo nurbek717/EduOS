@@ -352,6 +352,7 @@ const listSubscriptions = async (req, res) => {
         id: s._id,
         schoolId: s.school?._id ?? null,
         schoolName: s.school?.name ?? "Maktab",
+        createdAt: s.created_at || null,
         endAt: s.endAt,
       })),
     );
