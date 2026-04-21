@@ -243,7 +243,7 @@ const HeaderActions = <T extends string>({
     { code: "en", label: "English", flag: "🇺🇸" },
   ];
   const resolvedSubscription: SubscriptionInfo = subscriptionInfo || {
-    planName: "TEST",
+    planName: "Obuna",
     startDate: null,
     endDate: null,
     contractNumber: "-",
@@ -343,10 +343,10 @@ const HeaderActions = <T extends string>({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="hidden h-8 w-[136.6px] items-center justify-between rounded-[5px] border border-[#c7ddd5] bg-[#eef6f3] px-2.5 text-sm font-semibold text-amber-700 md:inline-flex"
+                className="hidden h-8 min-w-[168px] items-center justify-between gap-2 rounded-[5px] border border-[#c7ddd5] bg-[#eef6f3] px-2.5 text-sm font-semibold text-amber-700 md:inline-flex"
               >
                 <Clock3 className="h-4 w-4 text-amber-600" />
-                <span>{subscriptionLabel}</span>
+                <span className="whitespace-nowrap leading-none">{subscriptionLabel}</span>
                 <ChevronDown className="h-4 w-4 text-slate-500" />
               </button>
             </DropdownMenuTrigger>

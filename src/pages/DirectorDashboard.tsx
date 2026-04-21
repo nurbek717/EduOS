@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import DirectorLayout from "@/components/DirectorLayout";
@@ -7,7 +7,7 @@ import TicketSystem from "@/components/director/TicketSystem";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useRef } from "react";
-import { BookOpen, Users, GraduationCap, UserCircle, Mail, Lock, Eye, EyeOff, Pencil, Trash2, Upload, Plus, Wallet, TrendingUp, TrendingDown, AlertTriangle, Info, ShieldAlert, Phone, MapPin, Camera, Calendar, Search, Eraser } from "lucide-react";
+import { BookOpen, Users, GraduationCap, UserCircle, Mail, Lock, Eye, EyeOff, Pencil, Trash2, Upload, Plus, Wallet, TrendingUp, TrendingDown, AlertTriangle, Info, ShieldAlert, Phone, MapPin, Camera, Calendar, Search, Eraser, ChevronLeft, ChevronRight, ChevronUp, RotateCcw, FileSpreadsheet, FileText } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -18,12 +18,34 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAppLocale } from "@/context/LanguageContext";
 import { useTranslation } from "react-i18next";
+import { normalizeUserRole } from "@/lib/auth";
 
-type DirectorSection = "dashboard" | "students" | "teachers" | "school_admins" | "classes" | "schedule" | "payments" | "exams" | "settings" | "support";
+type DirectorSection = "dashboard" | "students" | "teachers" | "classes" | "schedule" | "payments" | "exams" | "settings" | "support";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const ALL_CLASSES_VALUE = "__all__";
 const DIRECTOR_USERS_PAGE_SIZE = 5;
+const STUDENTS_LIST_PAGE_SIZE = 10;
+
+const resolveSubscriptionPlanName = (
+  startAt?: string | null,
+  endAt?: string | null,
+) => {
+  if (!startAt || !endAt) return "Obuna";
+
+  const startDate = new Date(startAt);
+  const endDate = new Date(endAt);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return "Obuna";
+  }
+
+  const durationMs = endDate.getTime() - startDate.getTime();
+  if (durationMs <= 0) return "Obuna";
+
+  const durationDays = Math.round(durationMs / (1000 * 60 * 60 * 24));
+  if (durationDays >= 330) return "1 yillik";
+  return "1 oylik";
+};
 
 type DirectorOverview = {
   classes: number;
@@ -199,9 +221,13 @@ type StudentRowForParent = {
   photoUrl?: string | null;
   classId?: string;
   className?: string;
+  academicYear?: string;
+  educationLanguage?: string;
+  admissionOrderDate?: string | null;
+  classAcceptedDate?: string | null;
 };
 
-type DirectorManageableRole = "teacher" | "student" | "parent" | "school_admin";
+type DirectorManageableRole = "teacher" | "student" | "parent";
 
 type DirectorManagedUser = {
   id: string;
@@ -210,8 +236,10 @@ type DirectorManagedUser = {
   role: DirectorManageableRole;
   photoUrl?: string | null;
   phone?: string | null;
+  parentName?: string | null;
   debtAmount?: number | null;
   relatedLabel?: string | null;
+  relatedId?: string | null;
   createdAt?: string;
 };
 
@@ -312,7 +340,6 @@ const DirectorDashboard = () => {
     teacher: tFilters("teacher"),
     student: tFilters("student"),
     parent: tFilters("parent"),
-    school_admin: tFilters("schoolAdmin"),
   };
 
   const directorRoleFilterOptions = useMemo<Array<{ value: "all" | DirectorManageableRole; label: string }>>(
@@ -321,13 +348,13 @@ const DirectorDashboard = () => {
       { value: "teacher", label: tFilters("teacher") },
       { value: "student", label: tFilters("student") },
       { value: "parent", label: tFilters("parent") },
-      { value: "school_admin", label: tFilters("schoolAdmin") },
     ],
     [tFilters],
   );
   const rawUser = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
   const currentUser = rawUser ? JSON.parse(rawUser) : null;
-  const isSchoolAdmin = currentUser?.role === "school_admin";
+  const normalizedRole = normalizeUserRole(currentUser?.role);
+  const isSchoolAdmin = normalizedRole === "school_admin";
   const schoolManagerLoginMessage = t("schoolManagerLoginMessage");
   const profileRoleLabel = isSchoolAdmin ? tLayout("schoolAdmin.badge") : tLayout("director.badge");
   const rawSchoolAddress = typeof currentUser?.schoolAddress === "string" ? currentUser.schoolAddress : "";
@@ -381,9 +408,10 @@ const DirectorDashboard = () => {
   })();
   const profileLocationLabel = formattedSchoolAddress || t("profile.locationDisplay");
   const profileLocationHref = `https://www.google.com/maps/search/${encodeURIComponent(rawSchoolAddress || profileLocationLabel)}`;
-  const profileDisplayName = decodeHtmlEntities(currentUser?.name) || (isSchoolAdmin ? tLayout("schoolAdmin.fallbackName") : tLayout("director.fallbackName"));
+  const profileDisplayName = decodeHtmlEntities(currentUser?.name)
+    || (isSchoolAdmin ? tLayout("schoolAdmin.fallbackName") : tLayout("director.fallbackName"));
   const [section, setSection] = useState<DirectorSection>("dashboard");
-  const [studentsView, setStudentsView] = useState<"list" | "attach">("list");
+  const [studentsView, setStudentsView] = useState<"base" | "list" | "attach">("base");
   const [overview, setOverview] = useState<DirectorOverview | null>(null);
   const [headerNotifications, setHeaderNotifications] = useState<DirectorHeaderNotification[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -393,11 +421,11 @@ const DirectorDashboard = () => {
   const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [teacherDialogOpen, setTeacherDialogOpen] = useState(false);
-  const [schoolAdminDialogOpen, setSchoolAdminDialogOpen] = useState(false);
   const [directorUsersLoading, setDirectorUsersLoading] = useState(false);
   const [directorUsers, setDirectorUsers] = useState<DirectorManagedUser[]>([]);
   const [directorUsersSearch, setDirectorUsersSearch] = useState("");
   const [directorUsersRoleFilter, setDirectorUsersRoleFilter] = useState<"all" | DirectorManageableRole>("all");
+  const [studentsClassFilter, setStudentsClassFilter] = useState<string>("all");
   const [directorUsersPage, setDirectorUsersPage] = useState(1);
   const [directorUserDialogOpen, setDirectorUserDialogOpen] = useState(false);
   const [teacherName, setTeacherName] = useState("");
@@ -405,11 +433,6 @@ const DirectorDashboard = () => {
   const [teacherPassword, setTeacherPassword] = useState("");
   const [teacherSubjectId, setTeacherSubjectId] = useState("");
   const [showTeacherPassword, setShowTeacherPassword] = useState(false);
-  const [schoolAdminName, setSchoolAdminName] = useState("");
-  const [schoolAdminEmail, setSchoolAdminEmail] = useState("");
-  const [schoolAdminPassword, setSchoolAdminPassword] = useState("");
-  const [schoolAdminPhone, setSchoolAdminPhone] = useState("");
-  const [showSchoolAdminPassword, setShowSchoolAdminPassword] = useState(false);
 
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newClassName, setNewClassName] = useState("");
@@ -460,6 +483,7 @@ const DirectorDashboard = () => {
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editRelatedId, setEditRelatedId] = useState("");
   const [editPassword, setEditPassword] = useState("");
   const [editSubjectId, setEditSubjectId] = useState("");
 
@@ -536,14 +560,23 @@ const DirectorDashboard = () => {
   const [parentPhone, setParentPhone] = useState("");
   const [parentPassword, setParentPassword] = useState("");
   const [showParentPassword, setShowParentPassword] = useState(false);
+  const [showParentLoginAfterAttach, setShowParentLoginAfterAttach] = useState(false);
 
   const [studentDialogOpen, setStudentDialogOpen] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [studentEmail, setStudentEmail] = useState("");
   const [studentPhone, setStudentPhone] = useState("");
+  const [studentParentName, setStudentParentName] = useState("");
   const [studentPassword, setStudentPassword] = useState("");
   const [studentClassId, setStudentClassId] = useState("");
+  const [attachStudentUserId, setAttachStudentUserId] = useState("");
+  const [attachTargetClassId, setAttachTargetClassId] = useState("");
+  const [attachAcademicYear, setAttachAcademicYear] = useState("");
+  const [attachEducationLanguage, setAttachEducationLanguage] = useState("");
+  const [attachAdmissionOrderDate, setAttachAdmissionOrderDate] = useState("");
+  const [attachClassAcceptedDate, setAttachClassAcceptedDate] = useState("");
   const [showStudentPassword, setShowStudentPassword] = useState(false);
+  const [studentsBaseFiltersOpen, setStudentsBaseFiltersOpen] = useState(true);
 
   const [directorPhotoUrl, setDirectorPhotoUrl] = useState<string | null>(null);
   const [savingDirectorProfile, setSavingDirectorProfile] = useState(false);
@@ -574,6 +607,7 @@ const DirectorDashboard = () => {
   const [studentForPhoto, setStudentForPhoto] = useState<StudentRowForParent | null>(null);
   const [studentPhotoUrl, setStudentPhotoUrl] = useState<string | null>(null);
   const studentPhotoInputRef = useRef<HTMLInputElement>(null);
+  const studentImportInputRef = useRef<HTMLInputElement>(null);
 
   const faceVideoRef = useRef<HTMLVideoElement>(null);
   const faceStreamRef = useRef<MediaStream | null>(null);
@@ -600,7 +634,7 @@ const DirectorDashboard = () => {
     localStorage.setItem("auth_user", JSON.stringify(next));
   };
 
-  const buildProfileFormFromAuth = () => {
+  const buildProfileFormFromAuth = useCallback(() => {
     const raw = localStorage.getItem("auth_user");
     const parsed = raw ? JSON.parse(raw) : {};
     const fullName = decodeHtmlEntities(parsed?.name) || profileDisplayName;
@@ -622,7 +656,7 @@ const DirectorDashboard = () => {
       postalCode: extras.postalCode || "",
       taxId: extras.taxId || "",
     };
-  };
+  }, [currentUser?.email, currentUser?.phone, profileDisplayName, profileRoleLabel]);
 
   const toDateTimeLocalValue = (value?: string | null) => {
     if (!value) return "";
@@ -1192,9 +1226,6 @@ const DirectorDashboard = () => {
   };
 
   const visibleDirectorRoleFilters = useMemo(() => {
-    if (section === "school_admins") {
-      return [];
-    }
     if (section === "teachers") {
       return directorRoleFilterOptions.filter((filter) =>
         filter.value === "all" || filter.value === "teacher",
@@ -1207,10 +1238,8 @@ const DirectorDashboard = () => {
       );
     }
 
-    return isSchoolAdmin
-      ? directorRoleFilterOptions.filter((filter) => filter.value !== "school_admin")
-      : directorRoleFilterOptions;
-  }, [directorRoleFilterOptions, isSchoolAdmin, section]);
+    return directorRoleFilterOptions;
+  }, [directorRoleFilterOptions, section]);
 
   const directorUsersTotal = directorUsers.length;
   const directorUsersTotalPages = Math.max(1, Math.ceil(directorUsersTotal / DIRECTOR_USERS_PAGE_SIZE));
@@ -1222,6 +1251,48 @@ const DirectorDashboard = () => {
     () => directorUsers.slice(directorUsersPageStartIndex, directorUsersPageEndIndex),
     [directorUsers, directorUsersPageStartIndex, directorUsersPageEndIndex],
   );
+
+  const filteredStudentUsers = useMemo(() => {
+    if (section !== "students") return [];
+
+    return directorUsers.filter((user) => {
+      if (studentsClassFilter === "all") return true;
+
+      const related = (user.relatedLabel || "").toLowerCase();
+      const className = classes.find((c) => c._id === studentsClassFilter)?.name?.toLowerCase() || "";
+      return className ? related.includes(className) : true;
+    });
+  }, [classes, directorUsers, section, studentsClassFilter]);
+
+  const filteredStudentUsersTotal = filteredStudentUsers.length;
+  const filteredStudentUsersTotalPages = Math.max(1, Math.ceil(filteredStudentUsersTotal / STUDENTS_LIST_PAGE_SIZE));
+  const safeFilteredStudentUsersPage = Math.min(directorUsersPage, filteredStudentUsersTotalPages);
+  const filteredStudentUsersPageStart = filteredStudentUsersTotal === 0 ? 0 : (safeFilteredStudentUsersPage - 1) * STUDENTS_LIST_PAGE_SIZE;
+  const filteredStudentUsersPageEnd = Math.min(filteredStudentUsersPageStart + STUDENTS_LIST_PAGE_SIZE, filteredStudentUsersTotal);
+
+  const paginatedFilteredStudentUsers = useMemo(
+    () => filteredStudentUsers.slice(filteredStudentUsersPageStart, filteredStudentUsersPageEnd),
+    [filteredStudentUsers, filteredStudentUsersPageEnd, filteredStudentUsersPageStart],
+  );
+
+  const studentPaginationPages = useMemo(() => {
+    const total = filteredStudentUsersTotalPages;
+    const current = safeFilteredStudentUsersPage;
+
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    if (current <= 3) {
+      return [1, 2, 3, 4, 5];
+    }
+
+    if (current >= total - 2) {
+      return [total - 4, total - 3, total - 2, total - 1, total];
+    }
+
+    return [current - 2, current - 1, current, current + 1, current + 2];
+  }, [filteredStudentUsersTotalPages, safeFilteredStudentUsersPage]);
 
   const fetchTimetableForClass = async (classId: string) => {
     if (!token || !classId) return;
@@ -1334,7 +1405,7 @@ const DirectorDashboard = () => {
         }
       }
     }
-  }, [section]);
+  }, [buildProfileFormFromAuth, section]);
 
   useEffect(() => {
     if (section !== "settings") {
@@ -1343,7 +1414,7 @@ const DirectorDashboard = () => {
       setFaceCameraOn(false);
     }
 
-    const isPeopleSection = section === "teachers" || section === "students" || section === "school_admins";
+    const isPeopleSection = section === "teachers" || section === "students";
     const isAcademicSection = section === "classes" || section === "schedule" || section === "exams";
 
     const loadSectionData = async () => {
@@ -1363,7 +1434,7 @@ const DirectorDashboard = () => {
         if ((isPeopleSection || section === "classes" || section === "schedule") && !loadedDirectorDataRef.current.teachers) {
           tasks.push(fetchTeachers());
         }
-        if (isSchoolAdmin && section === "students" && !loadedDirectorDataRef.current.students) {
+        if (section === "students" && !loadedDirectorDataRef.current.students) {
           tasks.push(fetchStudentsForParents());
         }
         if (tasks.length > 0) {
@@ -1381,15 +1452,10 @@ const DirectorDashboard = () => {
 
     void loadSectionData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section, isSchoolAdmin, selectedTimetableClassId]);
+  }, [section, selectedTimetableClassId]);
 
   useEffect(() => {
-    if (section !== "teachers" && section !== "students" && section !== "school_admins") return;
-
-    if (section === "school_admins" && directorUsersRoleFilter !== "school_admin") {
-      setDirectorUsersRoleFilter("school_admin");
-      return;
-    }
+    if (section !== "teachers" && section !== "students") return;
 
     if (section === "teachers" && directorUsersRoleFilter !== "all" && directorUsersRoleFilter !== "teacher") {
       setDirectorUsersRoleFilter("all");
@@ -1414,7 +1480,12 @@ const DirectorDashboard = () => {
   }, [directorUsersTotalPages]);
 
   useEffect(() => {
-    if (section !== "teachers" && section !== "students" && section !== "school_admins") return;
+    if (section !== "students") return;
+    setDirectorUsersPage((prev) => Math.min(prev, filteredStudentUsersTotalPages));
+  }, [filteredStudentUsersTotalPages, section]);
+
+  useEffect(() => {
+    if (section !== "teachers" && section !== "students") return;
     setDirectorUsersPage(1);
   }, [section, directorUsersRoleFilter, directorUsersSearch]);
 
@@ -1528,6 +1599,7 @@ const DirectorDashboard = () => {
           name: studentName,
           email: studentEmail,
           phone: studentPhone || undefined,
+          parentName: studentParentName || undefined,
           password: studentPassword,
           classId: studentClassId,
         }),
@@ -1544,6 +1616,7 @@ const DirectorDashboard = () => {
       setStudentName("");
       setStudentEmail("");
       setStudentPhone("");
+      setStudentParentName("");
       setStudentPassword("");
       setStudentClassId("");
       await fetchStudentsForParents();
@@ -1557,6 +1630,181 @@ const DirectorDashboard = () => {
       });
     }
   };
+
+  const handleAttachStudentToClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) {
+      toast({
+        title: t("errorTitle"),
+        description: schoolManagerLoginMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!attachStudentUserId || !attachAcademicYear || !attachEducationLanguage || !attachTargetClassId || !attachAdmissionOrderDate || !attachClassAcceptedDate) {
+      toast({
+        title: t("insufficientDataTitle"),
+        description: "Barcha maydonlarni to'ldiring.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const res = await apiFetch(`${API_BASE_URL}/api/director/users/${attachStudentUserId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          classId: attachTargetClassId,
+          academicYear: attachAcademicYear,
+          educationLanguage: attachEducationLanguage,
+          admissionOrderDate: attachAdmissionOrderDate,
+          classAcceptedDate: attachClassAcceptedDate,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "O'quvchini sinfga biriktirib bo'lmadi");
+      }
+
+      toast({
+        title: t("savedTitle"),
+        description: "O'quvchi sinfga muvaffaqiyatli biriktirildi.",
+      });
+
+      const attachedStudentId = studentsForParents.find((s) => s.userId === attachStudentUserId)?.id || "";
+      setParentStudentId(attachedStudentId);
+      setShowParentLoginAfterAttach(true);
+      setAttachTargetClassId("");
+      await fetchStudentsForParents();
+      await fetchDirectorUsers({ role: directorUsersRoleFilter, search: directorUsersSearch });
+      await fetchOverview();
+    } catch (err: unknown) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : "Biriktirishda xatolik yuz berdi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const selectedAttachStudent = useMemo(
+    () => studentsForParents.find((s) => s.userId === attachStudentUserId),
+    [attachStudentUserId, studentsForParents],
+  );
+
+  const attachedStudents = useMemo(
+    () => studentsForParents.filter((s) => Boolean(s.userId) && (Boolean(s.classId) || Boolean((s.className || "").trim() && s.className !== "—"))),
+    [studentsForParents],
+  );
+
+  const selectedAttachTargetClass = useMemo(
+    () => classes.find((c) => c._id === attachTargetClassId),
+    [attachTargetClassId, classes],
+  );
+
+  const openGoogleSheets = () => {
+    window.open("https://docs.google.com/spreadsheets/create", "_blank", "noopener,noreferrer");
+  };
+
+  const downloadCsv = (filename: string, headers: string[], rows: string[][]) => {
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["\uFEFF", csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadStudentTemplate = () => {
+    const headers = [
+      "fullName",
+      "email",
+      "phone",
+      "parentName",
+      "className",
+      "academicYear",
+      "educationLanguage",
+      "admissionOrderDate",
+      "classAcceptedDate",
+    ];
+    const rows = [["Ali Valiyev", "student@example.com", "+998901234567", "Valiyeva Dilbar", "5-A", "2025-2026", "uzbek", "2025-09-01", "2025-09-02"]];
+    downloadCsv("students-import-template.csv", headers, rows);
+    openGoogleSheets();
+    toast({
+      title: t("successTitle"),
+      description: "Import shabloni yuklandi.",
+    });
+  };
+
+  const handleExportStudentsBase = () => {
+    const headers = [
+  "FISH",
+  "ID",
+  "Tug'ilgan sana",
+  "Jinsi",
+  "Millati",
+  "Guvohnoma seriya va raqami",
+  "Sinf kodi",
+  "Ta'lim tili",
+  "O'quvchi holati",
+  "Qabul buyruq raqami",
+  "Qabul buyruq sanasi",
+  "Shaxsiy telefon raqami",
+  "Ota-ona yoki vasiy FISH",
+  "Ota-ona yoki vasiy passporti",
+  "Ota-ona yoki vasiy telefon raqami",
+  "Viloyat",
+  "Tuman",
+  "To'liq manzil"
+];
+    const rows = filteredStudentUsers.map((user) => [
+      decodeHtmlEntities(user.name) || "",
+      user.role === "student" ? "student" : "parent",
+      user.phone || "",
+      decodeHtmlEntities(user.parentName) || "",
+      decodeHtmlEntities(user.relatedLabel) || "",
+      user.createdAt ? new Date(user.createdAt).toLocaleDateString(locale) : "",
+    ]);
+    downloadCsv("O'quvchilar-bazasi-ro'yxati'qu ba ro'yxati.csv", headers, rows);
+    openGoogleSheets();
+    toast({
+      title: t("successTitle"),
+      description: "O'quvchilar bazasi eksport qilindi.",
+    });
+  };
+
+  const formatDateForInput = (dateValue?: string | null) => {
+    if (!dateValue) return "";
+    const parsed = new Date(dateValue);
+    if (Number.isNaN(parsed.getTime())) return "";
+    return parsed.toISOString().slice(0, 10);
+  };
+
+  useEffect(() => {
+    if (!selectedAttachStudent) {
+      setAttachAcademicYear("");
+      setAttachEducationLanguage("");
+      setAttachAdmissionOrderDate("");
+      setAttachClassAcceptedDate("");
+      return;
+    }
+
+    setAttachAcademicYear(selectedAttachStudent.academicYear || "");
+    setAttachEducationLanguage(selectedAttachStudent.educationLanguage || "");
+    setAttachAdmissionOrderDate(formatDateForInput(selectedAttachStudent.admissionOrderDate));
+    setAttachClassAcceptedDate(formatDateForInput(selectedAttachStudent.classAcceptedDate));
+  }, [selectedAttachStudent]);
 
   const handleCreateSubject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1836,58 +2084,6 @@ const DirectorDashboard = () => {
     }
   };
 
-  const handleCreateSchoolAdmin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) {
-      toast({
-        title: t("errorTitle"),
-        description: schoolManagerLoginMessage,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const res = await apiFetch(`${API_BASE_URL}/api/director/school-admin`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: schoolAdminName,
-          email: schoolAdminEmail,
-          phone: schoolAdminPhone,
-          password: schoolAdminPassword,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || t("errors.schoolAdminCreate"));
-      }
-
-      toast({
-        title: t("successTitle"),
-        description: t("messages.schoolAdminCreated"),
-      });
-
-      setSchoolAdminDialogOpen(false);
-      setSchoolAdminName("");
-      setSchoolAdminEmail("");
-      setSchoolAdminPhone("");
-      setSchoolAdminPassword("");
-
-      await fetchDirectorUsers({ role: directorUsersRoleFilter, search: directorUsersSearch });
-      await fetchOverview();
-    } catch (err: unknown) {
-      toast({
-        title: t("errorTitle"),
-        description: err instanceof Error ? err.message : t("errors.schoolAdminCreateDesc"),
-        variant: "destructive",
-      });
-    }
-  };
-
   const openDirectorUserDialog = async (userId: string) => {
     if (!token) return;
 
@@ -1906,6 +2102,7 @@ const DirectorDashboard = () => {
         phone: data.phone ?? data.user?.phone ?? null,
         debtAmount: typeof data.debtAmount === "number" ? data.debtAmount : null,
         relatedLabel: data.relatedLabel,
+        relatedId: data.relatedId || null,
         createdAt: data.createdAt,
       };
 
@@ -1913,6 +2110,7 @@ const DirectorDashboard = () => {
       setEditName(loaded.name);
       setEditEmail(loaded.email);
       setEditPhone(loaded.phone || "");
+      setEditRelatedId(loaded.relatedId || "");
       setEditPassword("");
       setDirectorUserDialogOpen(true);
     } catch (err: unknown) {
@@ -1940,6 +2138,9 @@ const DirectorDashboard = () => {
           email: editEmail,
           phone: editPhone,
           password: editPassword || undefined,
+          classId: selectedDirectorUser.role === "student" ? (editRelatedId || undefined) : undefined,
+          subjectId: selectedDirectorUser.role === "teacher" ? (editRelatedId || undefined) : undefined,
+          studentId: selectedDirectorUser.role === "parent" ? (editRelatedId || undefined) : undefined,
         }),
       });
       const data = await res.json();
@@ -2133,7 +2334,7 @@ const DirectorDashboard = () => {
       id: u.id,
       title: u.name,
       subtitle: `${u.role} • ${u.email}`,
-      section: u.role === "teacher" || u.role === "school_admin" ? ("teachers" as const) : ("students" as const),
+      section: u.role === "teacher" ? ("teachers" as const) : ("students" as const),
     })),
     ...timetableEntries.map((e) => ({
       id: e.id,
@@ -2143,16 +2344,38 @@ const DirectorDashboard = () => {
     })),
   ];
 
+  const subscriptionPlanName = resolveSubscriptionPlanName(
+    overview?.subscription?.startAt,
+    overview?.subscription?.endAt,
+  );
+
+  const studentsHeaderTitle =
+    studentsView === "attach"
+      ? t("students.attachTitle")
+      : studentsView === "base"
+        ? t("students.baseTitle")
+        : t("students.title");
+
+  const studentsHeaderDescription =
+    studentsView === "attach"
+      ? t("students.attachDescription")
+      : studentsView === "base"
+        ? t("students.baseDescription")
+        : t("students.description");
+
   return (
     <DirectorLayout
       currentSection={section}
-      onSectionChange={setSection}
+      onSectionChange={(nextSection) => {
+        if (nextSection === "school_admins") return;
+        setSection(nextSection as DirectorSection);
+      }}
       currentStudentsView={studentsView}
       onStudentsViewChange={setStudentsView}
       headerNotifications={headerNotifications}
       searchItems={searchItems}
       subscriptionInfo={{
-        planName: "TEST",
+        planName: subscriptionPlanName,
         startDate: overview?.subscription?.startAt || null,
         endDate: overview?.subscription?.endAt || null,
         contractNumber: localStorage.getItem("subscription_contract_number") || "MYS-133891/26",
@@ -2415,7 +2638,7 @@ const DirectorDashboard = () => {
         )}
 
         {(section === "classes" || section === "schedule" || section === "exams") && (
-          <Card className={section === "schedule" ? "border-0 bg-transparent shadow-none" : undefined}>
+          <Card className={section === "schedule" ? "border-none bg-transparent shadow-none" : undefined}>
             {section !== "schedule" && (
               <CardHeader>
                 <CardTitle>
@@ -3450,91 +3673,8 @@ const DirectorDashboard = () => {
           </Card>
         )}
 
-        {(section === "teachers" || section === "students" || section === "school_admins") && (
-          <Card className={isSchoolAdmin ? undefined : "border-0 bg-transparent shadow-none"}>
-            {section === "school_admins" && !isSchoolAdmin && (
-              <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                <div>
-                  <CardTitle>Maktab adminlari</CardTitle>
-                  <CardDescription>Maktabni boshqarishda yordam beruvchi adminlar ro&apos;yxati.</CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Dialog open={schoolAdminDialogOpen} onOpenChange={setSchoolAdminDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="outline">Yangi admin qo&apos;shish</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Yangi maktab admini yaratish</DialogTitle>
-                      </DialogHeader>
-                      <form onSubmit={handleCreateSchoolAdmin} className="space-y-4">
-                        <div className="space-y-2 lg:col-span-3">
-                          <Label htmlFor="admin-name">Ism</Label>
-                          <Input
-                            id="admin-name"
-                            value={schoolAdminName}
-                            onChange={(e) => setSchoolAdminName(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2 lg:col-span-3">
-                          <Label htmlFor="admin-email">Email</Label>
-                          <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              id="admin-email"
-                              type="email"
-                              value={schoolAdminEmail}
-                              onChange={(e) => setSchoolAdminEmail(e.target.value)}
-                              className="pl-10"
-                              required
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2 lg:col-span-3">
-                          <Label htmlFor="admin-phone">Telefon</Label>
-                          <div className="relative">
-                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              id="admin-phone"
-                              value={schoolAdminPhone}
-                              onChange={(e) => setSchoolAdminPhone(e.target.value)}
-                              placeholder="+998901234567"
-                              className="pl-10"
-                              required
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2 lg:col-span-3">
-                          <Label htmlFor="admin-password">Parol</Label>
-                          <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              id="admin-password"
-                              type={showSchoolAdminPassword ? "text" : "password"}
-                              value={schoolAdminPassword}
-                              onChange={(e) => setSchoolAdminPassword(e.target.value)}
-                              className="pl-10 pr-10"
-                              required
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowSchoolAdminPassword((prev) => !prev)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            >
-                              {showSchoolAdminPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <Button type="submit">Saqlash</Button>
-                        </DialogFooter>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardHeader>
-            )}
+        {(section === "teachers" || section === "students") && (
+          <Card>
 
             {section === "teachers" && (
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -3623,19 +3763,102 @@ const DirectorDashboard = () => {
                 </div>
               </CardHeader>
             )}
-            <CardContent className={isSchoolAdmin ? "space-y-8" : "space-y-8 p-0"}>
+            <CardContent className="space-y-8">
               {section === "students" && (
-                <CardHeader className="space-y-4">
+                <CardHeader className="space-y-4 ">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <CardTitle>{t("students.title")}</CardTitle>
-                      <CardDescription>{t("students.description")}</CardDescription>
+                    <div className="student">
+                      <CardTitle className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{studentsHeaderTitle}</CardTitle>
+                      <CardDescription className="flex items-center justify-start gap-1 text-[#FE9F43] font-medium md:text-[12px] md:text-sm">{studentsHeaderDescription}</CardDescription>
                     </div>
-                    {isSchoolAdmin && studentsView === "list" && (
-                      <Dialog open={studentDialogOpen} onOpenChange={setStudentDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button size="sm" className="self-start">{t("students.add")}</Button>
-                        </DialogTrigger>
+                    {isSchoolAdmin && (studentsView === "base" || studentsView === "list") && (
+                      <>
+                        <input
+                          ref={studentImportInputRef}
+                          type="file"
+                          accept=".csv"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            toast({
+                              title: t("savedTitle"),
+                              description: `${file.name} tanlandi. Import logikasi keyingi bosqichda ulanadi.`,
+                            });
+                            e.currentTarget.value = "";
+                          }}
+                        />
+
+                        <Dialog open={studentDialogOpen} onOpenChange={setStudentDialogOpen}>
+                          {studentsView === "base" ? (
+                            <div className="flex w-full flex-nowrap items-center justify-end gap-2 overflow-x-auto pb-1 lg:w-auto">
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="outline"
+                                className="h-9 w-10 shrink-0"
+                                onClick={async () => {
+                                  await Promise.all([
+                                    fetchDirectorUsers({ role: directorUsersRoleFilter, search: directorUsersSearch }),
+                                    fetchStudentsForParents(),
+                                  ]);
+                                }}
+                                title="Yangilash"
+                              >
+                                <RotateCcw className="h-5 w-5" />
+                              </Button>
+
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="outline"
+                                className="h-9 w-10 shrink-0"
+                                onClick={() => setStudentsBaseFiltersOpen((prev) => !prev)}
+                                title="Filtrlarni yig'ish/ochish"
+                              >
+                                <ChevronUp className={`h-4 w-4 transition-transform ${studentsBaseFiltersOpen ? "" : "rotate-180"}`} />
+                              </Button>
+
+                              <Button
+                                type="button"
+                                className="h-9 shrink-0 bg-blue-600 px-4 text-sm text-white hover:bg-blue-700"
+                                onClick={() => studentImportInputRef.current?.click()}
+                              >
+                                <Upload className="mr-2 h-4 w-4" />
+                                Import
+                              </Button>
+
+                              <Button
+                                type="button"
+                                className="h-9 w-10 shrink-0 bg-emerald-600 px-0 text-white hover:bg-emerald-700"
+                                onClick={handleExportStudentsBase}
+                                title="Eksport"
+                              >
+                                <FileSpreadsheet className="h-4 w-4" />
+                              </Button>
+
+                              <Button
+                                type="button"
+                                className="h-9 shrink-0 bg-orange-500 px-4 text-sm text-white hover:bg-orange-600"
+                                onClick={handleDownloadStudentTemplate}
+                              >
+                                <FileText className="mr-2 h-4 w-4" />
+                                Import shabloni
+                              </Button>
+
+                              <DialogTrigger asChild>
+                                <Button className="h-9 shrink-0 bg-emerald-700 px-4 text-sm text-white hover:bg-emerald-800">
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Qo&apos;shish
+                                </Button>
+                              </DialogTrigger>
+                            </div>
+                          ) : (
+                            <DialogTrigger asChild>
+                              <Button size="sm" className="self-start">{t("students.add")}</Button>
+                            </DialogTrigger>
+                          )}
+
                         <DialogContent>
                           <DialogHeader>
                             <DialogTitle>{t("dialogs.createStudentTitle")}</DialogTitle>
@@ -3698,6 +3921,15 @@ const DirectorDashboard = () => {
                               />
                             </div>
                             <div className="space-y-2">
+                              <Label htmlFor="student-parent-name">{t("parents.parentName")}</Label>
+                              <Input
+                                id="student-parent-name"
+                                value={studentParentName}
+                                onChange={(e) => setStudentParentName(e.target.value)}
+                                placeholder={t("parents.parentNameExample")}
+                              />
+                            </div>
+                            <div className="space-y-2">
                               <Label htmlFor="student-class">{tTable("class")}</Label>
                               <select
                                 id="student-class"
@@ -3719,13 +3951,14 @@ const DirectorDashboard = () => {
                             </DialogFooter>
                           </form>
                         </DialogContent>
-                      </Dialog>
+                        </Dialog>
+                      </>
                     )}
                   </div>
                 </CardHeader>
               )}
 
-              {section === "students" && studentsView === "list" && (
+              {section === "students" && (studentsView === "base" || studentsView === "list") && (
                 <CardContent className="p-0">
                   <div className="space-y-3">
 
@@ -3737,10 +3970,14 @@ const DirectorDashboard = () => {
                       onReset={(e) => {
                         e.preventDefault();
                         setDirectorUsersSearch("");
+                        setStudentsClassFilter("all");
+                        setDirectorUsersRoleFilter("student");
+                        setDirectorUsersPage(1);
                       }}
                       className="rounded-xl border bg-background"
                     >
-                      <div className="grid gap-3 border-b p-3 md:grid-cols-2 lg:grid-cols-4">
+                      {studentsBaseFiltersOpen && (
+                        <div className="grid gap-3 border-b p-3 md:grid-cols-2 lg:grid-cols-4">
                         <div className="space-y-2">
                           <Label htmlFor="student-search">Qidirish</Label>
                           <div className="relative">
@@ -3749,7 +3986,10 @@ const DirectorDashboard = () => {
                               id="student-search"
                               name="q"
                               value={directorUsersSearch}
-                              onChange={(e) => setDirectorUsersSearch(e.target.value)}
+                              onChange={(e) => {
+                                setDirectorUsersSearch(e.target.value);
+                                setDirectorUsersPage(1);
+                              }}
                               placeholder="O&apos;quvchi to&apos;liq ismi va IDsi,"
                               className="h-11 pl-10"
                             />
@@ -3757,48 +3997,20 @@ const DirectorDashboard = () => {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="student-class-code">Sinf kodi bo&apos;yicha izlash</Label>
-                          <Input
-                            id="student-class-code"
-                            name="classCode"
-                            placeholder="Kiriting"
-                            className="h-11"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
                           <Label htmlFor="student-class">Sinf</Label>
                           <select
                             id="student-class"
-                            name="classId"
-                            defaultValue=""
+                            value={studentsClassFilter}
+                            onChange={(e) => {
+                              setStudentsClassFilter(e.target.value);
+                              setDirectorUsersPage(1);
+                            }}
                             className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                           >
-                            <option value="" disabled>Tanlang</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="student-class-type">Sinf turi</Label>
-                          <select
-                            id="student-class-type"
-                            name="classType"
-                            defaultValue=""
-                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          >
-                            <option value="" disabled>Tanlang</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="student-language">Ta&apos;lim tili</Label>
-                          <select
-                            id="student-language"
-                            name="language"
-                            defaultValue=""
-                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          >
-                            <option value="" disabled>Tanlang</option>
+                            <option value="all">Barcha sinflar</option>
+                            {classes.map((c) => (
+                              <option key={c._id} value={c._id}>{c.name}</option>
+                            ))}
                           </select>
                         </div>
 
@@ -3806,48 +4018,27 @@ const DirectorDashboard = () => {
                           <Label htmlFor="student-status">Holati</Label>
                           <select
                             id="student-status"
-                            name="status"
-                            defaultValue=""
+                            value={directorUsersRoleFilter}
+                            onChange={(e) => {
+                              const value = e.target.value as "student" | "parent";
+                              setDirectorUsersRoleFilter(value);
+                              setDirectorUsersPage(1);
+                            }}
                             className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                           >
-                            <option value="" disabled>Tanlang</option>
+                            <option value="student">O&apos;quvchilar</option>
+                            <option value="parent">Ota-ona / Vasiylar</option>
                           </select>
                         </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="student-year">O&apos;quv yili</Label>
-                          <select
-                            id="student-year"
-                            name="year"
-                            defaultValue=""
-                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          >
-                            <option value="" disabled>Tanlang</option>
-                          </select>
-                        </div>
-
-                        <div className="flex items-end gap-3">
-                          <div className="flex-1 space-y-2">
-                            <Label htmlFor="student-shift">Smena</Label>
-                            <select
-                              id="student-shift"
-                              name="shift"
-                              defaultValue=""
-                              className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            >
-                              <option value="" disabled>Tanlang</option>
-                            </select>
-                          </div>
+                        <div className="flex items-end gap-3 lg:justify-end">
                           <Button type="reset" variant="secondary" className="h-11 px-4">
                             <Eraser className="mr-2 h-4 w-4" />
                             Tozalash
                           </Button>
-                          <Button type="submit" className="h-11 px-4">
-                            <Search className="mr-2 h-4 w-4" />
-                            Qidirish
-                          </Button>
                         </div>
-                      </div>
+                        </div>
+                      )}
 
                       <div className="overflow-x-auto">
                         <Table>
@@ -3855,138 +4046,117 @@ const DirectorDashboard = () => {
                             <TableRow>
                               <TableHead className="w-[56px]">#</TableHead>
                               <TableHead>FISH</TableHead>
-                              <TableHead>PASSPORT / GUVOHNOMA</TableHead>
-                              <TableHead>TUG&apos;ILGAN SANA</TableHead>
-                              <TableHead>OTA-ONA / VASIY</TableHead>
+                              <TableHead>Rol</TableHead>
+                              <TableHead>Aloqa</TableHead>
+                              <TableHead>Ota-ona ismi</TableHead>
                               <TableHead>SINF</TableHead>
-                              <TableHead>SINF TURI</TableHead>
-                              <TableHead>SMENA</TableHead>
-                              <TableHead>QABUL</TableHead>
+                              <TableHead>Qo&apos;shimcha</TableHead>
+                              <TableHead>Yaratilgan</TableHead>
+                              {isSchoolAdmin && <TableHead className="text-right">Amallar</TableHead>}
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            <TableRow>
-                              <TableCell colSpan={9} className="h-40 text-center text-sm text-muted-foreground">
-                                Qidiruv natijalari shu yerda chiqadi.
-                              </TableCell>
-                            </TableRow>
+                            {directorUsersLoading ? (
+                              <TableRow>
+                                <TableCell colSpan={isSchoolAdmin ? 8 : 7} className="h-24 text-center text-sm text-muted-foreground">
+                                  {t("users.loading")}
+                                </TableCell>
+                              </TableRow>
+                            ) : paginatedFilteredStudentUsers.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={isSchoolAdmin ? 8 : 7} className="h-24 text-center text-sm text-muted-foreground">
+                                  {t("users.notFound")}
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              paginatedFilteredStudentUsers.map((user, index) => (
+                                <TableRow key={user.id}>
+                                  <TableCell>{filteredStudentUsersPageStart + index + 1}</TableCell>
+                                  <TableCell>
+                                    <div className="font-medium text-foreground">{decodeHtmlEntities(user.name)}</div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline">
+                                      {user.role === "student" ? "O'quvchi" : "Ota-ona"}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="text-sm text-muted-foreground">{user.phone || "—"}</div>
+                                  </TableCell>
+                                  <TableCell>
+                                    {decodeHtmlEntities(user.parentName) || (user.role === "student" ? "Bog'lanmagan" : "—")}
+                                  </TableCell>
+                                  <TableCell>{decodeHtmlEntities(user.relatedLabel) || "—"}</TableCell>
+                                  <TableCell>{typeof user.debtAmount === "number" ? `${Math.round(user.debtAmount)} so'm` : "—"}</TableCell>
+                                  <TableCell>
+                                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString(locale) : "—"}
+                                  </TableCell>
+                                  {isSchoolAdmin && (
+                                    <TableCell className="text-right">
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => openDirectorUserDialog(user.id)}
+                                        title={tr("edit")}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    </TableCell>
+                                  )}
+                                </TableRow>
+                              ))
+                            )}
                           </TableBody>
                         </Table>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 border-t px-3 py-3 text-sm">
+                        <p className="text-muted-foreground">
+                          {filteredStudentUsersTotal === 0
+                            ? "0-0"
+                            : `${filteredStudentUsersPageStart + 1}-${filteredStudentUsersPageEnd}`} / Jami: {filteredStudentUsersTotal}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 rounded-full"
+                            disabled={safeFilteredStudentUsersPage <= 1}
+                            onClick={() => setDirectorUsersPage((prev) => Math.max(1, prev - 1))}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+
+                          {studentPaginationPages.map((page) => (
+                            <Button
+                              key={page}
+                              type="button"
+                              variant={safeFilteredStudentUsersPage === page ? "default" : "outline"}
+                              size="icon"
+                              className="h-9 w-9 rounded-full"
+                              onClick={() => setDirectorUsersPage(page)}
+                            >
+                              {page}
+                            </Button>
+                          ))}
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 rounded-full"
+                            disabled={safeFilteredStudentUsersPage >= filteredStudentUsersTotalPages}
+                            onClick={() => setDirectorUsersPage((prev) => Math.min(filteredStudentUsersTotalPages, prev + 1))}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </form>
                   </div>
                 </CardContent>
-              )}
-
-              {section === "school_admins" && (
-                <>
-                  <div className="w-full px-6 py-4 border-b">
-                    <div className="flex w-full items-center gap-2 overflow-x-auto pb-1">
-                      <Input
-                        value={directorUsersSearch}
-                        onChange={(e) => setDirectorUsersSearch(e.target.value)}
-                        placeholder={t("search.usersPlaceholder")}
-                        className="w-full min-w-[260px] max-w-[280px] shrink-0"
-                      />
-
-                      <div className="flex gap-2 shrink-0">
-                        {visibleDirectorRoleFilters.map((filter) => (
-                          <Button
-                            key={filter.value}
-                            type="button"
-                            size="sm"
-                            className="shrink-0"
-                            variant={directorUsersRoleFilter === filter.value ? "default" : "outline"}
-                            onClick={() => setDirectorUsersRoleFilter(filter.value)}
-                          >
-                            {filter.label}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <CardContent className="px-6 pt-4">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t("table.user")}</TableHead>
-                          <TableHead>{t("table.role")}</TableHead>
-                          <TableHead>{t("table.related")}</TableHead>
-                          <TableHead>{t("phone")}</TableHead>
-                          <TableHead>{t("table.createdAt")}</TableHead>
-                          {isSchoolAdmin && <TableHead className="w-[50px]" />}
-                          <TableHead className="w-[88px] text-center">{t("table.photo")}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {directorUsersLoading ? (
-                          <TableRow>
-                            <TableCell colSpan={isSchoolAdmin ? 7 : 6} className="h-24 text-center text-sm text-muted-foreground">
-                              {t("users.loading")}
-                            </TableCell>
-                          </TableRow>
-                        ) : directorUsers.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={isSchoolAdmin ? 7 : 6} className="h-28 text-center">
-                              <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                                <Users className="h-10 w-10 opacity-40" />
-                                <p className="text-sm font-medium">{t("users.notFound")}</p>
-                                <p className="text-xs">{t("users.noAdminsYet")}</p>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          paginatedDirectorUsers.map((user) => (
-                            <TableRow key={user.id}>
-                              <TableCell>
-                                <div className="space-y-1">
-                                  <div className="font-medium text-foreground">{decodeHtmlEntities(user.name)}</div>
-                                  <div className="text-sm text-muted-foreground">{decodeHtmlEntities(user.email)}</div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{directorRoleLabels[user.role]}</Badge>
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {decodeHtmlEntities(user.relatedLabel) || "—"}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {user.phone || "—"}
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {user.createdAt ? new Date(user.createdAt).toLocaleDateString(locale) : "—"}
-                              </TableCell>
-                              {isSchoolAdmin && (
-                                <TableCell>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => openDirectorUserDialog(user.id)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                </TableCell>
-                              )}
-                              <TableCell>
-                                <div className="flex justify-center">
-                                  <Avatar className="h-9 w-9">
-                                    {user.photoUrl ? (
-                                      <AvatarImage src={user.photoUrl} alt={decodeHtmlEntities(user.name)} className="object-cover" />
-                                    ) : null}
-                                    <AvatarFallback className="text-xs">
-                                      <UserCircle className="h-4 w-4" />
-                                    </AvatarFallback>
-                                  </Avatar>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </>
               )}
 
               {section === "teachers" && (
@@ -4065,192 +4235,306 @@ const DirectorDashboard = () => {
 
               {isSchoolAdmin && section === "students" && studentsView === "attach" && (
                 <div className="mt-6 border-t pt-4">
-                  <div className="mb-6 rounded-2xl border bg-card p-6">
-                    <h3 className="text-base font-semibold text-foreground">O&apos;quvchini biriktirish</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      O&apos;quvchini sinfga biriktirish uchun ma&apos;lumotlarni kiriting.
-                    </p>
+                  <div className="mb-6 rounded-2xl bg-card p-6">
+                    <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
+                      <div className="rounded-[5px] border bg-muted/10 p-4">
+                        <h3 className="text-sm font-semibold text-foreground">Biriktirilgan o&apos;quvchilar ro&apos;yxati</h3>
+                        <p className="mt-1 text-xs text-muted-foreground">Tartib raqami bilan biriktirilgan o&apos;quvchilar.</p>
+                        {loadingStudentsForParents ? (
+                          <p className="mt-4 text-xs text-muted-foreground">{t("loading")}</p>
+                        ) : attachedStudents.length === 0 ? (
+                          <p className="mt-4 text-xs text-muted-foreground">Hozircha biriktirilgan o&apos;quvchilar yo&apos;q.</p>
+                        ) : (
+                          <div className="mt-4 max-h-[560px] overflow-y-auto pr-1">
+                            <ul className="space-y-2">
+                              {attachedStudents.map((s, index) => {
+                                if (!s.userId) return null;
+                                return (
+                                  <li key={s.id}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setAttachStudentUserId(s.userId || "");
+                                        setShowParentLoginAfterAttach(false);
+                                        setParentStudentId("");
+                                      }}
+                                      className={`w-full rounded-[5px] border bg-background p-3 text-left transition ${attachStudentUserId === s.userId ? "border-primary/60 ring-1 ring-primary/30" : "border-border hover:border-primary/30"}`}
+                                    >
+                                      <div className="flex items-start gap-3">
+                                        <span className="mt-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-[5px] bg-primary/10 px-1 text-[11px] font-semibold text-primary">
+                                          {index + 1}
+                                        </span>
+                                        <div className="min-w-0">
+                                          <p className="truncate text-sm font-medium text-foreground">{decodeHtmlEntities(s.name) || "—"}</p>
+                                          <p className="text-xs text-muted-foreground">
+                                            {decodeHtmlEntities(s.className) || "Sinf biriktirilmagan"}
+                                            {s.academicYear ? ` • ${s.academicYear}` : ""}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
 
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                      }}
-                      onReset={(e) => {
-                        e.preventDefault();
-                      }}
-                      className="mt-5 space-y-5"
-                    >
-                      <div className="grid gap-4 md:grid-cols-2">
+                      <form
+                        onSubmit={handleAttachStudentToClass}
+                        onReset={(e) => {
+                          e.preventDefault();
+                          setAttachStudentUserId("");
+                          setAttachTargetClassId("");
+                          setAttachAcademicYear("");
+                          setAttachEducationLanguage("");
+                          setAttachAdmissionOrderDate("");
+                          setAttachClassAcceptedDate("");
+                          setShowParentLoginAfterAttach(false);
+                          setParentStudentId("");
+                        }}
+                        className="space-y-4"
+                      >
+                        <div className="space-y-2">
+                          <Label htmlFor="attach-student">O&apos;quvchi</Label>
+                          <select
+                            id="attach-student"
+                            value={attachStudentUserId}
+                            onChange={(e) => {
+                              setAttachStudentUserId(e.target.value);
+                              setShowParentLoginAfterAttach(false);
+                              setParentStudentId("");
+                            }}
+                            className="flex h-11 w-full rounded-[5px] border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            required
+                          >
+                            <option value="">Tanlang</option>
+                            {loadingStudentsForParents ? (
+                              <option value="" disabled>{t("loading")}</option>
+                            ) : (
+                              studentsForParents.filter((s) => Boolean(s.userId)).map((s) => (
+                                <option key={s.id} value={s.userId}>
+                                  {decodeHtmlEntities(s.name) || "—"}
+                                  {s.className ? ` (${decodeHtmlEntities(s.className)})` : ""}
+                                </option>
+                              ))
+                            )}
+                          </select>
+                        </div>
+
                         <div className="space-y-2">
                           <Label htmlFor="attach-academic-year">O&apos;quv yili</Label>
-                          <select
+                          <Input
                             id="attach-academic-year"
-                            name="academicYear"
-                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            defaultValue=""
-                          >
-                            <option value="" disabled>Tanlang</option>
-                          </select>
+                            value={attachAcademicYear}
+                            onChange={(e) => setAttachAcademicYear(e.target.value)}
+                            placeholder="2025-2026"
+                            className="rounded-[5px]"
+                            required
+                          />
                         </div>
 
                         <div className="space-y-2">
                           <Label htmlFor="attach-education-language">Ta&apos;lim tili</Label>
                           <select
                             id="attach-education-language"
-                            name="educationLanguage"
-                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            defaultValue=""
+                            value={attachEducationLanguage}
+                            onChange={(e) => setAttachEducationLanguage(e.target.value)}
+                            className="flex h-11 w-full rounded-[5px] border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            required
                           >
-                            <option value="" disabled>Tanlang</option>
+                            <option value="">Tanlang</option>
+                            <option value="uzbek">O&apos;zbek</option>
+                            <option value="russian">Rus</option>
+                            <option value="english">Ingliz</option>
                           </select>
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="attach-class">Sinf</Label>
-                          <select
-                            id="attach-class"
-                            name="classId"
-                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            defaultValue=""
-                          >
-                            <option value="" disabled>Tanlang</option>
-                          </select>
+                          <Label htmlFor="attach-current-class">Sinf</Label>
+                          <Input
+                            id="attach-current-class"
+                            value={selectedAttachStudent?.className || "—"}
+                            className="rounded-[5px]"
+                            readOnly
+                            disabled
+                          />
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="attach-class-type">Sinf turi</Label>
-                          <select
-                            id="attach-class-type"
-                            name="classType"
-                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            defaultValue=""
-                          >
-                            <option value="" disabled>Tanlang</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="attach-target-class">Biriktiriladigan sinf</Label>
+                          <Label htmlFor="attach-target-class">Biriktirilgan sinf</Label>
                           <select
                             id="attach-target-class"
-                            name="targetClassId"
-                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            defaultValue=""
+                            value={attachTargetClassId}
+                            onChange={(e) => setAttachTargetClassId(e.target.value)}
+                            className="flex h-11 w-full rounded-[5px] border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            required
                           >
-                            <option value="" disabled>Tanlang</option>
+                            <option value="">Tanlang</option>
+                            {classes.map((c) => (
+                              <option key={c._id} value={c._id}>{c.name}</option>
+                            ))}
                           </select>
                         </div>
-                      </div>
 
-                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="attach-target-class-count">O&apos;quvchilar soni</Label>
+                          <Input
+                            id="attach-target-class-count"
+                            value={selectedAttachTargetClass?.studentCount ?? 0}
+                            className="rounded-[5px]"
+                            readOnly
+                            disabled
+                          />
+                        </div>
+
                         <div className="space-y-2">
                           <Label htmlFor="attach-order-date">Qabul buyrug&apos;i sanasi</Label>
-                          <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                              id="attach-order-date"
-                              name="orderDate"
-                              type="date"
-                              className="h-11 pl-10"
-                              placeholder="Sana kiriting"
-                            />
-                          </div>
+                          <Input
+                            id="attach-order-date"
+                            type="date"
+                            value={attachAdmissionOrderDate}
+                            onChange={(e) => setAttachAdmissionOrderDate(e.target.value)}
+                            className="rounded-[5px]"
+                            required
+                          />
                         </div>
 
                         <div className="space-y-2">
                           <Label htmlFor="attach-accepted-date">O&apos;quvchini sinfga qabul qilish sanasi</Label>
-                          <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                              id="attach-accepted-date"
-                              name="acceptedDate"
-                              type="date"
-                              className="h-11 pl-10"
-                              placeholder="Sana kiriting"
-                            />
-                          </div>
+                          <Input
+                            id="attach-accepted-date"
+                            type="date"
+                            value={attachClassAcceptedDate}
+                            onChange={(e) => setAttachClassAcceptedDate(e.target.value)}
+                            className="rounded-[5px]"
+                            required
+                          />
                         </div>
-                      </div>
 
-                      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
-                        <Button type="reset" variant="secondary" className="h-11 px-6">
-                          Tozalash
-                        </Button>
-                        <Button type="submit" className="h-11 px-6">
-                          Biriktirish
-                        </Button>
-                      </div>
-                    </form>
+                        {selectedAttachStudent && (
+                          <div className="rounded-[5px] border bg-muted/20 p-4">
+                          <h4 className="text-sm font-semibold text-foreground">Joriy biriktirilgan ma&apos;lumot</h4>
+                          <div className="mt-3 grid gap-3 text-xs md:grid-cols-2 lg:grid-cols-4">
+                            <div>
+                              <p className="text-muted-foreground">O&apos;quvchi</p>
+                              <p className="font-medium text-foreground">{decodeHtmlEntities(selectedAttachStudent.name) || "—"}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Biriktirilgan sinf</p>
+                              <p className="font-medium text-foreground">{decodeHtmlEntities(selectedAttachStudent.className) || "—"}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">O&apos;quv yili</p>
+                              <p className="font-medium text-foreground">{selectedAttachStudent.academicYear || "—"}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Ta&apos;lim tili</p>
+                              <p className="font-medium text-foreground">{selectedAttachStudent.educationLanguage || "—"}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Qabul buyrug&apos;i sanasi</p>
+                              <p className="font-medium text-foreground">
+                                {selectedAttachStudent.admissionOrderDate
+                                  ? new Date(selectedAttachStudent.admissionOrderDate).toLocaleDateString(locale)
+                                  : "—"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Sinfga qabul sanasi</p>
+                              <p className="font-medium text-foreground">
+                                {selectedAttachStudent.classAcceptedDate
+                                  ? new Date(selectedAttachStudent.classAcceptedDate).toLocaleDateString(locale)
+                                  : "—"}
+                              </p>
+                            </div>
+                          </div>
+                          </div>
+                        )}
+
+                        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
+                          <Button type="reset" variant="secondary" className="h-11 px-6 rounded-[5px]">
+                            Tozalash
+                          </Button>
+                          <Button type="submit" className="h-11 px-6 rounded-[5px]">
+                            Biriktirish
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
                   </div>
 
-                  <div className="mb-3">
-                    <h3 className="text-sm font-medium text-foreground">{t("parents.createLoginTitle")}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {t("parents.createLoginDescription")}
-                    </p>
-                  </div>
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      if (!token) {
-                        toast({
-                          title: t("errorTitle"),
-                          description: schoolManagerLoginMessage,
-                          variant: "destructive",
-                        });
-                        return;
-                      }
-                      if (!parentStudentId || !parentName || !parentEmail || !parentPhone || !parentPassword) {
-                        toast({
-                          title: t("insufficientDataTitle"),
-                          description: t("validation.parentRequired"),
-                          variant: "destructive",
-                        });
-                        return;
-                      }
-                      try {
-                        const res = await apiFetch(`${API_BASE_URL}/api/director/parents`, {
-                          method: "POST",
-                          headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
-                          },
-                          body: JSON.stringify({
-                            name: parentName,
-                            email: parentEmail,
-                            phone: parentPhone,
-                            password: parentPassword,
-                            studentId: parentStudentId,
-                          }),
-                        });
-                        const data = await res.json();
-                        if (!res.ok) {
-                          throw new Error(data.message || t("errors.parentCreate"));
-                        }
-                        toast({
-                          title: t("successTitle"),
-                          description: t("messages.parentCreated"),
-                        });
-                        setParentStudentId("");
-                        setParentName("");
-                        setParentEmail("");
-                        setParentPhone("");
-                        setParentPassword("");
-                        setDirectorUsersSearch("");
-                        setDirectorUsersRoleFilter("parent");
-                        await fetchDirectorUsers({ role: "parent", search: "" });
-                        await fetchOverview();
-                      } catch (err: unknown) {
-                        toast({
-                          title: t("errorTitle"),
-                          description:
-                            err instanceof Error ? err.message : t("errors.parentCreateDesc"),
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                    className="grid gap-3 text-xs md:grid-cols-2 lg:grid-cols-3"
-                  >
+                  {showParentLoginAfterAttach && (
+                    <>
+                      <div className="mb-3 mt-2">
+                        <h3 className="text-sm font-medium text-foreground">{t("parents.createLoginTitle")}</h3>
+                        <p className="text-xs text-muted-foreground">
+                          {t("parents.createLoginDescription")}
+                        </p>
+                      </div>
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          if (!token) {
+                            toast({
+                              title: t("errorTitle"),
+                              description: schoolManagerLoginMessage,
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          if (!parentStudentId || !parentName || !parentEmail || !parentPhone || !parentPassword) {
+                            toast({
+                              title: t("insufficientDataTitle"),
+                              description: t("validation.parentRequired"),
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          try {
+                            const res = await apiFetch(`${API_BASE_URL}/api/director/parents`, {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${token}`,
+                              },
+                              body: JSON.stringify({
+                                name: parentName,
+                                email: parentEmail,
+                                phone: parentPhone,
+                                password: parentPassword,
+                                studentId: parentStudentId,
+                              }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok) {
+                              throw new Error(data.message || t("errors.parentCreate"));
+                            }
+                            toast({
+                              title: t("successTitle"),
+                              description: t("messages.parentCreated"),
+                            });
+                            setParentStudentId("");
+                            setParentName("");
+                            setParentEmail("");
+                            setParentPhone("");
+                            setParentPassword("");
+                            setDirectorUsersSearch("");
+                            setDirectorUsersRoleFilter("parent");
+                            await fetchDirectorUsers({ role: "parent", search: "" });
+                            await fetchOverview();
+                          } catch (err: unknown) {
+                            toast({
+                              title: t("errorTitle"),
+                              description:
+                                err instanceof Error ? err.message : t("errors.parentCreateDesc"),
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        className="grid gap-3 text-xs md:grid-cols-2 lg:grid-cols-3"
+                      >
                     <div className="space-y-1">
                       <Label className="text-[11px]" htmlFor="parent-student">
                         {t("analysis.student")}
@@ -4341,7 +4625,9 @@ const DirectorDashboard = () => {
                         {t("parents.createLogin")}
                       </Button>
                     </div>
-                  </form>
+                      </form>
+                    </>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -4678,7 +4964,7 @@ const DirectorDashboard = () => {
         {section === "support" && (
           <TicketSystem
             token={token}
-            userRole={currentUser?.role as "director" | "school_admin"}
+            userRole={isSchoolAdmin ? "school_admin" : "director"}
             API_BASE_URL={API_BASE_URL}
           />
         )}
@@ -4820,7 +5106,43 @@ const DirectorDashboard = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>{t("table.related")}</Label>
-                  <Input value={selectedDirectorUser.relatedLabel || "—"} disabled />
+                  {selectedDirectorUser.role === "student" ? (
+                    <select
+                      value={editRelatedId}
+                      onChange={(e) => setEditRelatedId(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">Sinfni tanlang</option>
+                      {classes.map((c) => (
+                        <option key={c._id} value={c._id}>{c.name}</option>
+                      ))}
+                    </select>
+                  ) : selectedDirectorUser.role === "teacher" ? (
+                    <select
+                      value={editRelatedId}
+                      onChange={(e) => setEditRelatedId(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">Fan tanlang</option>
+                      {subjects.map((s) => (
+                        <option key={s._id} value={s._id}>{s.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      value={editRelatedId}
+                      onChange={(e) => setEditRelatedId(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">O&apos;quvchini tanlang</option>
+                      {studentsForParents.map((student) => (
+                        <option key={student.id} value={student.id}>
+                          {decodeHtmlEntities(student.name) || "—"}
+                          {student.className ? ` (${student.className})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="director-user-phone">{t("phone")}</Label>
@@ -4831,7 +5153,7 @@ const DirectorDashboard = () => {
                     placeholder="+998901234567"
                   />
                 </div>
-                {selectedDirectorUser.role !== "school_admin" && (
+                {(selectedDirectorUser.role === "student" || selectedDirectorUser.role === "parent") && (
                   <div className="space-y-2">
                     <Label>{t("table.debt")}</Label>
                     <Input

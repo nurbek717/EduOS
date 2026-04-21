@@ -19,6 +19,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import HeaderActions from "@/components/dashboard/HeaderActions";
 import { useTranslation } from "react-i18next";
+import { normalizeUserRole } from "@/lib/auth";
 
 type DirectorSection = "dashboard" | "students" | "teachers" | "school_admins" | "classes" | "schedule" | "payments" | "exams" | "settings" | "support";
 
@@ -28,8 +29,8 @@ interface DirectorLayoutProps {
   subtitle?: string;
   currentSection?: DirectorSection;
   onSectionChange?: (section: DirectorSection) => void;
-  currentStudentsView?: "list" | "attach";
-  onStudentsViewChange?: (view: "list" | "attach") => void;
+  currentStudentsView?: "base" | "list" | "attach";
+  onStudentsViewChange?: (view: "base" | "list" | "attach") => void;
   searchItems?: Array<{ id: string; title: string; subtitle?: string; section: DirectorSection }>;
   headerNotifications?: Array<{ id: string; text: string; at: string; section: DirectorSection }>;
   subscriptionInfo?: {
@@ -48,7 +49,7 @@ const DirectorLayout = ({
   subtitle,
   currentSection = "dashboard",
   onSectionChange,
-  currentStudentsView = "list",
+  currentStudentsView = "base",
   onStudentsViewChange,
   searchItems,
   headerNotifications,
@@ -58,7 +59,8 @@ const DirectorLayout = ({
   const { t } = useTranslation("layout");
   const rawUser = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
   const currentUser = rawUser ? JSON.parse(rawUser) : null;
-  const isSchoolAdmin = currentUser?.role === "school_admin";
+  const normalizedRole = normalizeUserRole(currentUser?.role);
+  const isSchoolAdmin = normalizedRole === "school_admin";
   const dashboardHomePath = isSchoolAdmin ? "/school-admin/dashboard" : "/director/dashboard";
   const dashboardLabel = isSchoolAdmin ? t("schoolAdmin.fallbackName") : t("director.fallbackName");
   const dashboardLabelUpper = isSchoolAdmin ? t("schoolAdmin.badge") : t("director.badge");
@@ -159,6 +161,30 @@ const DirectorLayout = ({
 
                           {studentsDropdownOpen && (
                             <div className="mt-1 space-y-1 pl-3">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  onSectionChange?.("students");
+                                  onStudentsViewChange?.("base");
+                                }}
+                                className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs text-white/80 hover:bg-white/10 ${
+                                  currentStudentsView === "base" ? "bg-white/10 text-amber-200" : ""
+                                }`}
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className={`inline-flex h-2 w-2 items-center justify-center rounded-full border ${
+                                    currentStudentsView === "base" ? "border-amber-500" : "border-white/40"
+                                  }`}
+                                >
+                                  <span
+                                    className={`h-1 w-1 rounded-full ${
+                                      currentStudentsView === "base" ? "bg-amber-500" : "bg-transparent"
+                                    }`}
+                                  />
+                                </span>
+                                O&apos;quvchilar bazasi
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => {

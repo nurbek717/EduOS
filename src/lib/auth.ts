@@ -6,8 +6,15 @@ export type UserRole =
   | "school_admin"
   | "super_admin";
 
+export type MaybeLegacyUserRole =
+  | UserRole
+  | "admin"
+  | "superadmin"
+  | "school-admin"
+  | "schoolAdmin";
+
 export type AuthUser = {
-  role?: UserRole;
+  role?: MaybeLegacyUserRole;
   [key: string]: unknown;
 };
 
@@ -53,18 +60,46 @@ export const getStoredAuth = () => {
   if (!token || !rawUser) return { token: null, user: null as AuthUser | null };
 
   try {
-    return { token, user: JSON.parse(rawUser) as AuthUser };
+    const parsedUser = JSON.parse(rawUser) as AuthUser;
+    const normalizedRole = normalizeUserRole(parsedUser?.role);
+    return {
+      token,
+      user: {
+        ...parsedUser,
+        role: normalizedRole,
+      },
+    };
   } catch {
     return { token, user: null as AuthUser | null };
   }
 };
 
-export const dashboardPathByRole = (role?: UserRole) => {
-  if (role === "student") return "/student/dashboard";
-  if (role === "parent") return "/parent/dashboard";
-  if (role === "teacher") return "/teacher/dashboard";
-  if (role === "director") return "/director/dashboard";
-  if (role === "school_admin") return "/school-admin/dashboard";
-  if (role === "super_admin") return "/admin/dashboard";
+export const normalizeUserRole = (role?: MaybeLegacyUserRole | string | null): UserRole | undefined => {
+  if (!role) return undefined;
+  if (role === "admin" || role === "superadmin") return "super_admin";
+  if (role === "school-admin" || role === "schoolAdmin") return "school_admin";
+  if (
+    role === "student" ||
+    role === "parent" ||
+    role === "teacher" ||
+    role === "director" ||
+    role === "school_admin" ||
+    role === "super_admin"
+  ) {
+    return role;
+  }
+
+  return undefined;
+};
+
+export const dashboardPathByRole = (role?: MaybeLegacyUserRole | string | null) => {
+  const normalizedRole = normalizeUserRole(role);
+
+  if (normalizedRole === "student") return "/student/dashboard";
+  if (normalizedRole === "parent") return "/parent/dashboard";
+  if (normalizedRole === "teacher") return "/teacher/dashboard";
+  if (normalizedRole === "director") return "/director/dashboard";
+  if (normalizedRole === "school_admin") return "/school-admin/dashboard";
+  if (normalizedRole === "super_admin") return "/admin/dashboard";
   return "/login";
 };

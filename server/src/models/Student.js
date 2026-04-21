@@ -10,6 +10,10 @@ const studentSchema = new mongoose.Schema(
     parentName: { type: String },
     parentPhone: { type: String },
     address: { type: String },
+    academicYear: { type: String },
+    educationLanguage: { type: String },
+    admissionOrderDate: { type: Date },
+    classAdmissionDate: { type: Date },
   },
   { timestamps: true },
 );

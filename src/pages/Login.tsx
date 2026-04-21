@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { dashboardPathByRole, normalizeUserRole } from "@/lib/auth";
 import schoolLogo from "@/assets/school-logo-optimized.png";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -45,25 +46,24 @@ const Login = () => {
         return;
       }
 
+      const normalizedRole = normalizeUserRole(data?.user?.role);
+      const normalizedUser = {
+        ...data.user,
+        role: normalizedRole,
+      };
+
       localStorage.setItem("auth_token", data.token || data.accessToken);
       if (data.refreshToken) {
         localStorage.setItem("refresh_token", data.refreshToken);
       }
-      localStorage.setItem("auth_user", JSON.stringify(data.user));
+      localStorage.setItem("auth_user", JSON.stringify(normalizedUser));
 
       toast({
         title: "Xush kelibsiz!",
-        description: `${data.user.role} sifatida tizimga kirdingiz.`,
+        description: `${normalizedRole || data.user.role} sifatida tizimga kirdingiz.`,
       });
 
-      const role = data.user.role;
-      if (role === "student") navigate("/student/dashboard");
-      else if (role === "parent") navigate("/parent/dashboard");
-      else if (role === "teacher") navigate("/teacher/dashboard");
-      else if (role === "director") navigate("/director/dashboard");
-      else if (role === "school_admin") navigate("/school-admin/dashboard");
-      else if (role === "super_admin") navigate("/admin/dashboard");
-      else navigate("/");
+      navigate(dashboardPathByRole(normalizedRole), { replace: true });
     } catch (err) {
       toast({
         title: "Xatolik!",

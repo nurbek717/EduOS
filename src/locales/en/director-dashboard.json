@@ -24,6 +24,10 @@
   "students": {
     "title": "Students",
     "description": "Manage student and parent accounts in your school.",
+    "baseTitle": "Student Base",
+    "baseDescription": "View and manage the school student base.",
+    "attachTitle": "Assign Student",
+    "attachDescription": "Enter information to assign a student to a class.",
     "add": "Add student",
     "create": "Create student profile"
   },

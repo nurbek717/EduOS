@@ -294,6 +294,25 @@ const listUsersForDirector = async (req, res) => {
       ]),
     );
 
+    const studentParentDocs = studentIds.length
+      ? await ParentModel.find({ student: { $in: studentIds }, school: school._id })
+        .populate("user", "name")
+        .select("student user")
+        .lean()
+        .exec()
+      : [];
+
+    const studentParentNameMap = new Map();
+    studentParentDocs.forEach((doc) => {
+      const studentId = doc?.student ? String(doc.student) : null;
+      if (!studentId || studentParentNameMap.has(studentId)) {
+        return;
+      }
+
+      const linkedParentName = doc?.user?.name || null;
+      studentParentNameMap.set(studentId, linkedParentName);
+    });
+
     const studentPaymentMap = new Map();
     if (studentIds.length > 0) {
       const payments = await FinanceTransaction.find({
@@ -325,11 +344,14 @@ const listUsersForDirector = async (req, res) => {
 
         let relatedLabel = null;
         let phone = user.phone || null;
+        let parentName = null;
         let debtAmount = null;
         if (user.role === "teacher") {
           relatedLabel = teacherDoc?.subject?.name || null;
         } else if (user.role === "student") {
           relatedLabel = studentDoc?.class?.name || null;
+          const linkedParentName = studentDoc?._id ? studentParentNameMap.get(String(studentDoc._id)) || null : null;
+          parentName = linkedParentName || studentDoc?.parentName || null;
           const monthlyFee = Number(studentDoc?.monthlyFee) || 0;
           const dueStart = studentDoc?.createdAt ? new Date(studentDoc.createdAt) : null;
           const dueMonthCount = monthlyFee > 0 && dueStart ? countMonthsInclusive(dueStart, now) : 0;
@@ -339,6 +361,7 @@ const listUsersForDirector = async (req, res) => {
         } else if (user.role === "parent") {
           relatedLabel = parentDoc?.student?.user?.name || null;
           phone = user.phone || parentDoc?.student?.parentPhone || null;
+          parentName = user.name || null;
           const monthlyFee = Number(parentDoc?.student?.monthlyFee) || 0;
           const dueStart = parentDoc?.student?.createdAt ? new Date(parentDoc.student.createdAt) : null;
           const dueMonthCount = monthlyFee > 0 && dueStart ? countMonthsInclusive(dueStart, now) : 0;
@@ -356,6 +379,7 @@ const listUsersForDirector = async (req, res) => {
           role: user.role,
           photoUrl: user.photoUrl || null,
           phone,
+          parentName,
           debtAmount,
           relatedLabel,
           createdAt: user.createdAt,
@@ -386,15 +410,18 @@ const getUserForDirector = async (req, res) => {
     }
 
     let relatedLabel = null;
+    let relatedId = null;
     let parentPhoneFallback = null;
     let debtAmount = null;
 
     if (user.role === "teacher") {
       const teacherDoc = await Teacher.findOne({ user: user._id, school: school._id }).populate("subject", "name").lean().exec();
       relatedLabel = teacherDoc?.subject?.name || null;
+      relatedId = teacherDoc?.subject?._id ? String(teacherDoc.subject._id) : null;
     } else if (user.role === "student") {
       const studentDoc = await Student.findOne({ user: user._id, school: school._id }).populate("class", "name").lean().exec();
       relatedLabel = studentDoc?.class?.name || null;
+      relatedId = studentDoc?.class?._id ? String(studentDoc.class._id) : null;
       if (studentDoc) {
         const monthlyFee = Number(studentDoc.monthlyFee) || 0;
         const dueStart = studentDoc.createdAt ? new Date(studentDoc.createdAt) : null;
@@ -425,6 +452,7 @@ const getUserForDirector = async (req, res) => {
         .lean()
         .exec();
       relatedLabel = parentDoc?.student?.user?.name || null;
+      relatedId = parentDoc?.student?._id ? String(parentDoc.student._id) : null;
       parentPhoneFallback = parentDoc?.student?.parentPhone || null;
       if (parentDoc?.student?._id) {
         const studentDoc = await Student.findById(parentDoc.student._id).select("monthlyFee createdAt").lean().exec();
@@ -461,6 +489,7 @@ const getUserForDirector = async (req, res) => {
       phone: resolvedPhone,
       debtAmount,
       relatedLabel,
+      relatedId,
       createdAt: user.createdAt,
     });
   } catch (err) {
@@ -472,7 +501,19 @@ const updateUserForDirector = async (req, res) => {
   try {
     const school = await ensureSchoolManagementUser(req.user);
     const { id } = req.params;
-    const { name, email, phone, password } = req.body;
+    const {
+      name,
+      email,
+      phone,
+      password,
+      classId,
+      subjectId,
+      studentId,
+      academicYear,
+      educationLanguage,
+      admissionOrderDate,
+      classAcceptedDate,
+    } = req.body;
     const manageableRoles = getManageableSchoolUserRoles(req.user.role);
 
     const user = await User.findOne({
@@ -503,6 +544,88 @@ const updateUserForDirector = async (req, res) => {
 
     if (password) {
       user.password = password;
+    }
+
+    if (
+      user.role === "student" && (
+        classId ||
+        typeof academicYear !== "undefined" ||
+        typeof educationLanguage !== "undefined" ||
+        typeof admissionOrderDate !== "undefined" ||
+        typeof classAcceptedDate !== "undefined"
+      )
+    ) {
+      if (classId) {
+        const cls = await ClassModel.findOne({ _id: classId, school: school._id }).lean().exec();
+        if (!cls) {
+          return res.status(400).json({ message: "Class not found in this school" });
+        }
+      }
+
+      const studentPatch = {};
+      if (classId) {
+        studentPatch.class = classId;
+      }
+      if (typeof academicYear !== "undefined") {
+        studentPatch.academicYear = academicYear;
+      }
+      if (typeof educationLanguage !== "undefined") {
+        studentPatch.educationLanguage = educationLanguage;
+      }
+      if (typeof admissionOrderDate !== "undefined") {
+        if (!admissionOrderDate) {
+          studentPatch.admissionOrderDate = null;
+        } else {
+          const parsedAdmissionOrderDate = new Date(admissionOrderDate);
+          if (Number.isNaN(parsedAdmissionOrderDate.getTime())) {
+            return res.status(400).json({ message: "Invalid admissionOrderDate" });
+          }
+          studentPatch.admissionOrderDate = parsedAdmissionOrderDate;
+        }
+      }
+      if (typeof classAcceptedDate !== "undefined") {
+        if (!classAcceptedDate) {
+          studentPatch.classAdmissionDate = null;
+        } else {
+          const parsedClassAcceptedDate = new Date(classAcceptedDate);
+          if (Number.isNaN(parsedClassAcceptedDate.getTime())) {
+            return res.status(400).json({ message: "Invalid classAcceptedDate" });
+          }
+          studentPatch.classAdmissionDate = parsedClassAcceptedDate;
+        }
+      }
+
+      await Student.findOneAndUpdate(
+        { user: user._id, school: school._id },
+        studentPatch,
+        { new: true },
+      ).exec();
+    }
+
+    if (user.role === "teacher" && subjectId) {
+      const subject = await Subject.findOne({ _id: subjectId, school: school._id }).lean().exec();
+      if (!subject) {
+        return res.status(400).json({ message: "Subject not found in this school" });
+      }
+
+      await Teacher.findOneAndUpdate(
+        { user: user._id, school: school._id },
+        { subject: subjectId },
+        { new: true },
+      ).exec();
+    }
+
+    if (user.role === "parent" && studentId) {
+      const student = await Student.findOne({ _id: studentId, school: school._id }).lean().exec();
+      if (!student) {
+        return res.status(400).json({ message: "Student not found in this school" });
+      }
+
+      await ParentModel.findOneAndUpdate(
+        { user: user._id, school: school._id },
+        { student: studentId },
+        { new: true },
+      ).exec();
     }
 
     await user.save();
@@ -1282,7 +1405,7 @@ const deleteTeacher = async (req, res) => {
 
 const createStudent = async (req, res) => {
   try {
-    const { name, email, phone, password, classId } = req.body;
+    const { name, email, phone, parentName, password, classId } = req.body;
     if (!name || !email || !password || !classId) {
       return res.status(400).json({ message: "name, email, password and classId are required" });
     }
@@ -1314,6 +1437,7 @@ const createStudent = async (req, res) => {
       user: createdUser._id,
       class: cls._id,
       school: school._id,
+      parentName: parentName || undefined,
     });
 
     return res.status(201).json({
@@ -1348,6 +1472,10 @@ const listStudentsForDirector = async (req, res) => {
       photoUrl: s.user?.photoUrl || null,
       classId: s.class?._id,
       className: s.class?.name,
+      academicYear: s.academicYear || "",
+      educationLanguage: s.educationLanguage || "",
+      admissionOrderDate: s.admissionOrderDate || null,
+      classAcceptedDate: s.classAdmissionDate || null,
     }));
 
     return res.json(result);

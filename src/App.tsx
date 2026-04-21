@@ -10,6 +10,7 @@ import {
   dashboardPathByRole,
   getStoredAuth,
   isTokenExpired,
+  normalizeUserRole,
   type UserRole,
 } from "@/lib/auth";
 
@@ -44,8 +45,9 @@ const RequireRole = ({ allowed, children }: RequireRoleProps) => {
   if (typeof window === "undefined") return <>{children}</>;
 
   const { token, user } = getStoredAuth();
+  const normalizedRole = normalizeUserRole(user?.role);
 
-  if (!token || !user?.role) {
+  if (!token || !normalizedRole) {
     clearAuthStorage();
     return <Navigate to="/login" replace />;
   }
@@ -55,8 +57,8 @@ const RequireRole = ({ allowed, children }: RequireRoleProps) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (!allowed.includes(user.role)) {
-    return <Navigate to={dashboardPathByRole(user.role)} replace />;
+  if (!allowed.includes(normalizedRole)) {
+    return <Navigate to={dashboardPathByRole(normalizedRole)} replace />;
   }
 
   return <>{children}</>;

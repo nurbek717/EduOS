@@ -7,7 +7,10 @@
     "dev": "node --watch src/server.js",
     "start": "NODE_ENV=production node src/server.js",
     "seed:demo": "node src/config/seed-demo.js",
-    "backfill:school-days": "node src/scripts/backfill-school-created-day.js"
+    "backfill:school-days": "node src/scripts/backfill-school-created-day.js",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch",
+    "test:all": "npm --prefix .. run test && npm test"
   },
   "keywords": [],
   "author": "",
@@ -22,5 +25,10 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.4",
     "multer": "^2.1.1"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0",
+    "mongodb-memory-server": "^11.0.1",
+    "supertest": "^7.2.2"
   }
 }
