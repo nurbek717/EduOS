@@ -1,0 +1,17 @@
+{
+  "classesAndParallels": "Classes and parallels",
+  "classesAndParallelsDesc": "Total classes and parallels in your school.",
+  "teachers": "Teachers",
+  "teachersDesc": "Teachers added in selected period.",
+  "students": "Students",
+  "studentsDesc": "Students registered in selected period.",
+  "parents": "Parents",
+  "parentsDesc": "Parents linked to students.",
+  "monthIncome": "This month income",
+  "monthIncomeDesc": "Total income for current month.",
+  "monthExpense": "This month expense",
+  "monthExpenseDesc": "Total expense for current month.",
+  "typeTeacher": "Teacher",
+  "typeStudent": "Student",
+  "typeParent": "Parent"
+}

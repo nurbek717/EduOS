@@ -1,0 +1,276 @@
+{
+  "common": {
+    "actions": "Amallar",
+    "cancel": "Bekor qilish",
+    "close": "Yopish",
+    "delete": "O'chirish",
+    "email": "Email",
+    "loading": "Yuklanmoqda...",
+    "moreCount": "... yana {{count}}",
+    "name": "Ism",
+    "password": "Parol",
+    "refresh": "Yangilash",
+    "save": "Saqlash",
+    "saving": "Saqlanmoqda...",
+    "view": "Ko'rish"
+  },
+  "toasts": {
+    "error": "Xatolik!",
+    "success": "Muvaffaqiyatli!",
+    "saved": "Saqlandi",
+    "deleted": "O'chirildi",
+    "insufficient": "Ma'lumot yetarli emas"
+  },
+  "errors": {
+    "fetchSchools": "Maktablar ro'yxatini yuklashda xatolik.",
+    "fetchStats": "Statistikani yuklab bo'lmadi.",
+    "fetchUsers": "Foydalanuvchilar ro'yxatini yuklashda xatolik.",
+    "fetchSubscriptions": "Obunalarni yuklashda xatolik.",
+    "fetchExams": "Imtihonlar ro'yxatini yuklashda xatolik.",
+    "fetchExamResults": "Imtihon natijalarini yuklashda xatolik.",
+    "superAdminLoginRequired": "Avval tizimga super admin sifatida kiring.",
+    "createSubscription": "Obunani qo'shishda xatolik yuz berdi.",
+    "createSchool": "Maktab yaratishda xatolik yuz berdi.",
+    "fetchUserDetails": "Foydalanuvchi ma'lumotlarini yuklashda xatolik.",
+    "updateUser": "Foydalanuvchini yangilashda xatolik yuz berdi.",
+    "deleteUser": "Foydalanuvchini o'chirishda xatolik yuz berdi.",
+    "assignDirector": "Direktor biriktirishda xatolik yuz berdi.",
+    "deleteSchool": "Maktabni o'chirishda xatolik yuz berdi."
+  },
+  "roles": {
+    "director": "Direktor",
+    "schoolAdmin": "Maktab admini",
+    "teacher": "O'qituvchi",
+    "student": "O'quvchi",
+    "parent": "Ota-ona"
+  },
+  "table": {
+    "class": "Sinf",
+    "subject": "Fan",
+    "status": "Holat",
+    "score": "Ball",
+    "percent": "Foiz"
+  },
+  "notifications": {
+    "subscriptionExpired": "{{schoolName}} obunasi tugagan.",
+    "subscriptionEnding": "{{schoolName}} obunasi tugashiga {{daysLeft}} kun qoldi.",
+    "withoutSchoolAdmin": "{{count}} ta maktabda school admin yo'q.",
+    "withoutDirector": "{{count}} ta maktabda direktor biriktirilmagan."
+  },
+  "overview": {
+    "title": "Umumiy ko'rinish",
+    "description": "Platforma bo'yicha boshqaruv holati va nazorat talab qiladigan nuqtalar.",
+    "summaryDescription": "Platformadagi maktablar va foydalanuvchilar bo'yicha joriy holat.",
+    "intro": "Bu yerda siz platformaning o'sishi, boshqaruvdagi bo'sh joylar va qaysi maktablarga e'tibor kerakligini ko'rasiz.",
+    "active": "Faol",
+    "inactive": "Nofaol",
+    "activeSchools": "Faol maktablar",
+    "inactiveSchools": "Nofaol maktablar",
+    "goToSubscriptions": "Obunalar bo'limiga o'tish",
+    "subscriptionCount": "Obuna qolgan",
+    "withoutAdminSchools": "Adminsiz maktablar",
+    "newSchoolsLast7Days": "So'nggi 7 kunda qo'shilgan maktablar",
+    "totalSchools": "Jami maktablar",
+    "totalUsers": "Jami foydalanuvchilar",
+    "totalDirectors": "Jami direktorlar",
+    "totalSchoolAdmins": "Jami maktab adminlari",
+    "chartLoading": "Grafik yuklanmoqda...",
+    "attention": {
+      "title": "Diqqat talab qiladigan holatlar",
+      "description": "Qaysi maktablarda boshqaruv yoki faollik bo'yicha e'tibor kerakligini ko'rsatadi.",
+      "empty": "Hozircha platforma bo'yicha muhim ogohlantirishlar yo'q.",
+      "items": {
+        "withoutDirector": "{{count}} ta maktabda direktor biriktirilmagan.",
+        "withoutSchoolAdmin": "{{count}} ta maktabda maktab admini yo'q.",
+        "lowActivity": "{{count}} ta maktabda faollik past yoki boshqaruv to'liq emas."
+      }
+    },
+    "chart": {
+      "title": "So'nggi 7 kunda qo'shilgan maktablar",
+      "description": "Kunlar bo'yicha yangi yaratilgan maktablar soni.",
+      "range": "Oraliq",
+      "tooltipSchools": "Yangi maktablar",
+      "tooltipCount": "{{count}} ta maktab",
+      "tooltipDate": "Sana: {{date}}",
+      "empty": "Hozircha so'nggi 7 kunda yaratilgan maktablar statistikasi mavjud emas."
+    },
+    "cards": {
+      "totalSchools": {
+        "title": "Jami maktablar",
+        "description": "Platformadagi umumiy maktablar soni"
+      },
+      "activeSchools": {
+        "title": "Faol maktablar",
+        "description": "Direktor yoki admin biriktirilgan maktablar"
+      },
+      "subscriptionEnding": {
+        "title": "Obuna tugashi",
+        "description": "Obuna tugashiga yaqin maktablar"
+      },
+      "withoutSchoolAdmin": {
+        "title": "Adminsiz maktablar",
+        "description": "Operatsion boshqaruvchisiz maktablar"
+      },
+      "totalUsers": {
+        "title": "Jami foydalanuvchilar",
+        "description": "Tizimdagi barcha foydalanuvchilar"
+      },
+      "newSchoolsLast7Days": {
+        "title": "So'nggi 7 kunda maktablar",
+        "description": "Yaqinda qo'shilgan maktablar soni"
+      }
+    }
+  },
+  "schools": {
+    "description": "Tizimdagi barcha maktablar va yangi maktab qo'shish",
+    "addNew": "Yangi maktab qo'shish",
+    "createTitle": "Yangi maktab yaratish",
+    "created": "Yangi maktab yaratildi.",
+    "deleted": "{{schoolName}} maktabi databazadan o'chirildi.",
+    "fallback": "Maktab",
+    "confirmDelete": "{{schoolName}} maktabini va unga bog'liq barcha ma'lumotlarni o'chirmoqchimisiz?",
+    "noDirector": "Direktor yo'q",
+    "empty": {
+      "title": "Hozircha tizimda maktab yo'q",
+      "hint": "Yangi maktab qo'shish uchun yuqoridagi tugmani bosing"
+    },
+    "actions": {
+      "editDirector": "Direktorni tahrirlash",
+      "assignDirector": "Direktor biriktirish",
+      "delete": "Maktabni o'chirish"
+    },
+    "table": {
+      "name": "Nom",
+      "address": "Manzil",
+      "phone": "Telefon",
+      "director": "Direktor",
+      "createdAt": "Yaratilgan sana"
+    },
+    "form": {
+      "name": "Maktab nomi *",
+      "namePlaceholder": "Maktab nomini kiriting",
+      "address": "Manzil",
+      "addressPlaceholder": "Manzil",
+      "phone": "Telefon",
+      "directorInfo": "Direktor ma'lumotlari (ixtiyoriy)",
+      "directorInfoHint": "To'ldirsangiz, maktab uchun direktor avtomatik yaratiladi.",
+      "directorName": "Ism",
+      "directorNamePlaceholder": "Direktor ismi"
+    },
+    "assignDirector": {
+      "title": "Direktor biriktirish",
+      "titleWithSchool": "{{schoolName}} uchun direktor biriktirish",
+      "name": "Direktor ismi *",
+      "namePlaceholder": "Ism Familiya",
+      "email": "Direktor email *",
+      "password": "Direktor parol *",
+      "passwordPlaceholder": "Kamida 6 ta belgi",
+      "submit": "Biriktirish",
+      "success": "Maktabga direktor biriktirildi.",
+      "validation": {
+        "required": "Direktor ism, email va parolini kiriting."
+      }
+    }
+  },
+  "subscriptions": {
+    "description": "Maktab uchun obuna muddatini belgilang",
+    "created": "Obuna saqlandi.",
+    "expired": "Muddati tugagan",
+    "daysLeft": "{{count}} kun qoldi",
+    "daysShort": "{{count}} kun",
+    "empty": "Hozircha obuna yo'q",
+    "loading": "Obunalar yuklanmoqda...",
+    "listTitle": "Obunalar ro'yxati",
+    "table": {
+      "school": "Maktab",
+      "endDate": "Tugash sanasi",
+      "daysLeft": "Qolgan kun"
+    },
+    "form": {
+      "school": "Maktab *",
+      "schoolPlaceholder": "Maktab tanlang",
+      "days": "Necha kun *",
+      "submit": "Obunani qo'shish"
+    },
+    "validation": {
+      "selectSchool": "Maktabni tanlang.",
+      "days": "Necha kun kiritishingiz kerak (1 dan katta)."
+    }
+  },
+  "exams": {
+    "title": "Imtihonlar va natijalar",
+    "description": "Super admin uchun barcha imtihonlar va natijalar monitoringi.",
+    "loading": "Imtihonlar yuklanmoqda...",
+    "empty": "Hozircha imtihon topilmadi.",
+    "durationMin": "{{value}} min",
+    "status": {
+      "published": "Published",
+      "draft": "Draft"
+    },
+    "table": {
+      "exam": "Imtihon",
+      "duration": "Davomiylik",
+      "status": "Holat",
+      "results": "Natijalar"
+    },
+    "results": {
+      "defaultTitle": "Imtihon natijalari",
+      "title": "Natijalar: {{exam}}",
+      "student": "O'quvchi",
+      "manualPending": "Manual kutilmoqda",
+      "loading": "Natijalar yuklanmoqda...",
+      "empty": "Natijalar topilmadi."
+    }
+  },
+  "users": {
+    "title": "Direktorlar",
+    "description": "Platformadagi direktorlarni boshqaring.",
+    "searchPlaceholder": "Direktor ismi yoki email bo'yicha qidiring",
+    "loading": "Foydalanuvchilar yuklanmoqda...",
+    "unassigned": "Biriktirilmagan",
+    "updated": "Foydalanuvchi ma'lumotlari yangilandi.",
+    "deleted": "Foydalanuvchi o'chirildi.",
+    "confirmDelete": "Rostdan ham bu foydalanuvchini o'chirmoqchimisiz?",
+    "table": {
+      "user": "Foydalanuvchi",
+      "role": "Rol",
+      "school": "Maktab",
+      "createdAt": "Yaratilgan sana"
+    },
+    "empty": {
+      "title": "Mos foydalanuvchilar topilmadi",
+      "hint": "Qidiruvni o'zgartirib ko'ring"
+    },
+    "edit": {
+      "title": "Foydalanuvchini tahrirlash",
+      "titleWithRole": "{{role}} ma'lumotlarini tahrirlash",
+      "newPasswordOptional": "Yangi parol (ixtiyoriy)",
+      "newPasswordPlaceholder": "O'zgartirmasangiz bo'sh qoldiring",
+      "newPasswordRequired": "Yangi parolni kiriting.",
+      "passwordMismatch": "Parol tasdiqlash bilan mos emas.",
+      "newPasswordLabel": "Yangi parol",
+      "confirmPasswordLabel": "Parolni tasdiqlash"
+    }
+  },
+  "schoolsList": "Maktablar ro'yxati",
+  "common": {
+    "actions": "Amallar",
+    "cancel": "Bekor qilish",
+    "close": "Yopish",
+    "delete": "O'chirish",
+    "email": "Email",
+    "loading": "Yuklanmoqda...",
+    "moreCount": "... yana {{count}}",
+    "name": "Ism",
+    "password": "Parol",
+    "refresh": "Yangilash",
+    "save": "Saqlash",
+    "saving": "Saqlanmoqda...",
+    "view": "Ko'rish",
+    "total": "Jami",
+    "statistics": "Umumiy statistika",
+    "fullName": "FISH",
+    "username": "Foydalanuvchi nomi",
+    "changePassword": "Parolni o'zgartirish"
+  }
+}

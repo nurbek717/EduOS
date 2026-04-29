@@ -1,0 +1,418 @@
+{
+  "days": {
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday"
+  },
+  "common": {
+    "loading": "Loading...",
+    "loadingClasses": "Loading classes...",
+    "refresh": "Refresh",
+    "send": "Send",
+    "sending": "Sending...",
+    "saving": "Saving...",
+    "close": "Close",
+    "today": "Today",
+    "room": "Room {{room}}",
+    "roomMissing": "Room not specified",
+    "roomUnset": "Room not set",
+    "classTeacher": "Class teacher",
+    "subjectTeacher": "Subject teacher",
+    "noChange": "Do not change",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "toasts": {
+    "error": "Error!",
+    "success": "Success!",
+    "saved": "Saved",
+    "insufficient": "Insufficient data",
+    "info": "Info",
+    "invalidScore": "Invalid score",
+    "deleted": "Deleted"
+  },
+  "errors": {
+    "generic": "An error occurred",
+    "fetchClasses": "Failed to load class list.",
+    "fetchStudents": "Failed to load student list.",
+    "fetchGrades": "Failed to load grades.",
+    "fetchSchedule": "Failed to load timetable.",
+    "fetchHomework": "Failed to load homework.",
+    "fetchExams": "Failed to load exams.",
+    "fetchQuestions": "Failed to load questions.",
+    "fetchExamResults": "Failed to load exam results.",
+    "fetchAnswers": "Failed to load answers.",
+    "fetchSupportThreads": "Failed to load support threads.",
+    "fetchSupportMessages": "Failed to load messages.",
+    "sendSupportMessage": "Message was not sent.",
+    "teacherLoginRequired": "Please sign in as a teacher first.",
+    "saveQuestion": "Failed to save question.",
+    "gradeAnswer": "Failed to grade answers.",
+    "createGrade": "Failed to create grade.",
+    "updateGrade": "Failed to update grade.",
+    "deleteGrade": "Failed to delete grade.",
+    "createHomework": "Failed to create homework.",
+    "updateHomework": "Failed to update homework.",
+    "deleteHomework": "Failed to delete homework.",
+    "gradeHomework": "Failed to grade homework submission.",
+    "createStudent": "Failed to create student.",
+    "updateStudent": "Failed to update student."
+  },
+  "fallback": {
+    "student": "Student",
+    "subject": "Subject",
+    "noClass": "No class",
+    "exam": "Exam"
+  },
+  "search": {
+    "class": "Class"
+  },
+  "notifications": {
+    "noClasses": "No class has been assigned to you yet.",
+    "noStudents": "There are no students in assigned classes yet.",
+    "noLessonsToday": "You have no lessons in today's timetable.",
+    "firstLesson": "First lesson today: {{className}} • {{time}}",
+    "lastGrade": "Latest grading: {{student}} ({{subject}}) - {{grade}}",
+    "homeroomCount": "You are homeroom teacher for {{count}} classes.",
+    "newChatMessage": "{{parent}} ({{student}}) sent a new message."
+  },
+  "overview": {
+    "title": "Teacher dashboard overview",
+    "desc": "Today's lessons, assigned classes, and latest grading in one place.",
+    "stats": {
+      "assignedClasses": "Assigned classes",
+      "assignedClassesHint": "Classes you teach",
+      "totalStudents": "Total students",
+      "totalStudentsHint": "Total across classes",
+      "todayLessons": "Today's lessons",
+      "todayLessonsHint": "Only today's schedule",
+      "homeroom": "Homeroom",
+      "homeroomHint": "Classes you lead"
+    },
+    "todayScheduleTitle": "Today's schedule",
+    "todayScheduleDesc": "Only lessons scheduled for today are shown.",
+    "noTodaySchedule": "No schedule found for today.",
+    "myClassesTitle": "My classes",
+    "myClassesDesc": "Sorted by homeroom status and today's workload.",
+    "classMeta": "{{students}} students, {{lessons}} lessons today",
+    "nextLessonAt": "Lesson at {{time}}",
+    "noLessonToday": "No lesson today",
+    "nextLessonInfo": "{{subject}}{{room, select, '' {} other {, room {{room}}}}}",
+    "nextLessonMissing": "Next lesson is not in timetable",
+    "noClasses": "No class has been assigned to you yet.",
+    "latestGradesTitle": "Latest grades",
+    "latestGradesDesc": "Recently assigned grades in extended table view."
+  },
+  "table": {
+    "student": "Student",
+    "class": "Class",
+    "subject": "Subject",
+    "grade": "Grade",
+    "date": "Date"
+  },
+  "students": {
+    "title": "Add students",
+    "form": {
+      "selectClass": "Select class",
+      "classPlaceholder": "Choose class",
+      "noHomeroomWarning": "You are not assigned as homeroom teacher to any class yet. Director needs to assign a class first.",
+      "studentName": "Student name",
+      "studentNamePlaceholder": "Name Surname",
+      "parentName": "Parent name",
+      "parentNamePlaceholder": "Example: John Smith",
+      "parentPhone": "Parent phone number",
+      "parentPhonePlaceholder": "+998 90 123 45 67",
+      "address": "Home address",
+      "addressPlaceholder": "Tashkent city, Chilanzar...",
+      "password": "Password",
+      "passwordPlaceholder": "At least 6 characters",
+      "addStudent": "Add new student",
+      "validation": {
+        "required": "Name, email, password, and class are required."
+      },
+      "created": "New student created."
+    },
+    "table": {
+      "email": "Email",
+      "parent": "Parent",
+      "phone": "Phone",
+      "address": "Address",
+      "loading": "Loading students...",
+      "empty": "No students found yet."
+    },
+    "actions": {
+      "edit": "Edit"
+    },
+    "edit": {
+      "title": "Edit student",
+      "newPasswordOptional": "New password (optional)",
+      "newPasswordPlaceholder": "Enter if you want to change",
+      "profilePhoto": "Profile photo (Face ID attendance)",
+      "upload": "Upload",
+      "remove": "Remove",
+      "updated": "Student profile was updated."
+    }
+  },
+  "classes": {
+    "title": "My classes",
+    "empty": "No assigned classes found yet.",
+    "studentCount": "{{count}} students",
+    "homeroom": "You are the homeroom teacher for this class",
+    "dialogTitle": "Students of class {{className}}",
+    "dialogEmpty": "No students have been added to this class yet."
+  },
+  "grades": {
+    "title": "Grades",
+    "empty": "No grades available yet.",
+    "loading": "Loading grades...",
+    "created": "Grade has been assigned.",
+    "deleted": "Grade has been deleted.",
+    "confirmDelete": "Do you want to delete this grade?",
+    "filters": {
+      "class": "Filter by class",
+      "allClasses": "All classes"
+    },
+    "form": {
+      "studentPlaceholder": "Select student",
+      "gradePlaceholder": "Select",
+      "dateOptional": "Date (optional)",
+      "submit": "Assign grade"
+    },
+    "validation": {
+      "required": "Student and grade are required."
+    },
+    "actions": {
+      "edit": "Edit grade",
+      "delete": "Delete grade"
+    },
+    "edit": {
+      "title": "Edit grade",
+      "saved": "Grade updated.",
+      "error": "Failed to update grade."
+    }
+  },
+  "homework": {
+    "title": "Homework",
+    "loading": "Loading homework...",
+    "empty": "No homework found yet.",
+    "created": "Homework has been added.",
+    "updated": "Homework has been updated.",
+    "deleted": "Homework has been deleted.",
+    "confirmDelete": "Do you confirm deleting this homework?",
+    "filters": {
+      "class": "Filter by class",
+      "allClasses": "All classes"
+    },
+    "form": {
+      "classPlaceholder": "Select class",
+      "description": "Description",
+      "descriptionPlaceholder": "Homework description",
+      "deadline": "Deadline",
+      "fileOptional": "File (optional)",
+      "add": "Add"
+    },
+    "validation": {
+      "required": "Class, description, and deadline are required."
+    },
+    "table": {
+      "description": "Description",
+      "deadline": "Deadline",
+      "submissions": "Submissions",
+      "file": "File",
+      "pending": "Pending: {{count}}",
+      "last": "Last: {{date}}",
+      "notSubmitted": "Not submitted yet",
+      "openFile": "Open file"
+    },
+    "actions": {
+      "viewSubmissions": "View submissions",
+      "edit": "Edit",
+      "delete": "Delete",
+      "readOnly": "View only"
+    },
+    "monitor": {
+      "title": "Submission monitor",
+      "summary": "Total: {{total}} | Submitted: {{submitted}} | Pending: {{pending}}",
+      "empty": "No submissions yet.",
+      "ungraded": "Not graded",
+      "teacherComment": "Teacher comment",
+      "table": {
+        "submittedDate": "Submitted at",
+        "answerText": "Answer text",
+        "file": "File"
+      },
+      "actions": {
+        "grade": "Grade",
+        "regrade": "Regrade"
+      }
+    },
+    "grading": {
+      "title": "Grade submission",
+      "scoreLabel": "Score (1 - 100)",
+      "commentPlaceholder": "Write a comment for this submission...",
+      "scoreRange": "Score must be between 1 and 100.",
+      "saved": "Submission graded and added to overall rating.",
+      "save": "Save score"
+    },
+    "edit": {
+      "title": "Edit homework",
+      "description": "Description",
+      "descriptionPlaceholder": "Homework description",
+      "newFileOptional": "New file (optional)"
+    }
+  },
+  "exams": {
+    "title": "Exams",
+    "desc": "Student answers are not auto-graded. Each answer must be graded manually by teacher.",
+    "loading": "Loading exams...",
+    "empty": "No exams found yet.",
+    "durationMin": "{{value}} min",
+    "table": {
+      "title": "Title",
+      "duration": "Duration",
+      "timeRange": "Time range",
+      "status": "Status",
+      "action": "Action"
+    },
+    "status": {
+      "active": "Active",
+      "draft": "Draft"
+    },
+    "actions": {
+      "questions": "Questions",
+      "uploadQuestion": "Upload question",
+      "results": "Results"
+    },
+    "results": {
+      "title": "Results: {{exam}}",
+      "score": "Score",
+      "manualPending": "Manual pending",
+      "review": "Review",
+      "loading": "Loading results...",
+      "empty": "No attempts yet.",
+      "actions": {
+        "review": "Review",
+        "view": "View"
+      }
+    }
+  },
+  "schedule": {
+    "title": "Schedule",
+    "weeklyTitle": "Weekly schedule",
+    "weeklyDesc": "Only classes and subjects you teach are shown here.",
+    "todayLessonAt": "You have a lesson at {{time}} today.",
+    "noLessonToday": "You have no lesson today.",
+    "lessonsCount": "{{count}} lessons",
+    "noLessonShort": "No lesson",
+    "noLessonThisDay": "No lessons planned for this day."
+  },
+  "support": {
+    "title": "Requests",
+    "desc": "List of chats from parents.",
+    "noRequests": "No requests yet.",
+    "chatTitle": "Chat window",
+    "chatDesc": "Real-time conversation with selected parent.",
+    "selectThread": "Select a request from the left.",
+    "messagesLoading": "Loading messages...",
+    "noMessages": "No messages yet.",
+    "messagePlaceholder": "Type a message..."
+  },
+  "face": {
+    "title": "Face ID attendance",
+    "desc": "Select class, look at camera and press \"Mark attendance\". The system recognizes your face and marks attendance.",
+    "classRequired": "Class (required)",
+    "selectClass": "Select class",
+    "cameraOpenFailed": "Camera failed to open. Please allow permission.",
+    "cameraOn": "Turn on camera",
+    "modelsLoadFailed": "Face ID models failed to load.",
+    "notDetected": "Face not detected. Look directly at camera.",
+    "markFailed": "Attendance was not marked",
+    "marked": "{{student}} was marked present",
+    "processing": "Processing...",
+    "markAttendance": "Mark attendance",
+    "cameraOff": "Turn off camera"
+  },
+  "profile": {
+    "title": "Profile photo (Face ID attendance)",
+    "desc": "Upload or remove your profile photo. Used in Face ID attendance.",
+    "saveFailed": "Save failed",
+    "requiredFields": "Name and email are required.",
+    "deleteFailed": "Delete failed",
+    "photoSaved": "Profile photo saved.",
+    "photoDeleted": "Profile photo deleted.",
+    "information": "Profile Information",
+    "edit": "Edit",
+    "personalDetails": "Personal Details",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "emailAddress": "Email address",
+    "phone": "Phone",
+    "bio": "Bio",
+    "gender": "Gender",
+    "dateOfBirth": "Date of Birth",
+    "nationalId": "National ID",
+    "address": "Address",
+    "country": "Country",
+    "cityState": "City/State",
+    "postalCode": "Postal Code",
+    "taxId": "TAX ID",
+    "locationDisplay": "Uzbekistan/Tashkent",
+    "changePhoto": "Change photo",
+    "uploadPhoto": "Upload photo",
+    "removePhoto": "Remove photo"
+  },
+  "questionDialog": {
+    "title": "Upload question: {{exam}}",
+    "questionText": "Question text",
+    "questionPlaceholder": "Write question text...",
+    "type": "Type",
+    "typeTest": "Test",
+    "typeText": "Text",
+    "points": "Points",
+    "correct": "Correct answer",
+    "optionA": "Option A",
+    "optionB": "Option B",
+    "optionC": "Option C",
+    "optionD": "Option D",
+    "save": "Save question",
+    "saved": "Question added.",
+    "correctLabel": "Correct answer",
+    "viewTitle": "Questions: {{exam}}",
+    "viewLoading": "Loading questions...",
+    "viewEmpty": "No questions added yet.",
+    "validation": {
+      "questionRequired": "Please enter question text.",
+      "pointsRange": "Points must be between 1 and 100.",
+      "minOptions": "At least 2 options are required for a test question.",
+      "correctOptionRequired": "Correct answer must be one of the non-empty options."
+    }
+  },
+  "review": {
+    "title": "Exam review {{student}}",
+    "loading": "Loading answers...",
+    "empty": "No answers found.",
+    "type": "Type",
+    "maxScore": "Max score: {{score}}",
+    "evaluated": "Evaluated",
+    "pending": "Pending",
+    "studentAnswer": "Student answer:",
+    "noAnswer": "(No answer entered)",
+    "correctMarked": "Correct answer marked",
+    "wrongMarked": "Wrong answer marked",
+    "score": "Score",
+    "commentOptional": "Comment (optional)",
+    "commentPlaceholder": "Comment",
+    "submitted": "Submitted",
+    "saveAll": "Save all",
+    "noNewGrades": "No new grades to save.",
+    "questionFallback": "Question",
+    "scoreRequired": "Enter score for question {{order}}.",
+    "scoreRange": "Score for question {{order}} must be between 0 and {{max}}.",
+    "savedCount": "{{count}} questions graded.",
+    "timeout": "No response from server (timeout). Please try again."
+  }
+}

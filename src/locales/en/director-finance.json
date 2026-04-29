@@ -1,0 +1,139 @@
+{
+  "title": "Finance Section",
+  "subtitleManage": "Manage income/expense, student payments, debts, and staff salaries in one place.",
+  "subtitleView": "Monitor income/expense, student payments, debts, and staff salaries.",
+  "moneyFormat": "{{value}} UZS",
+  "income": "Income",
+  "expense": "Expense",
+  "save": "Save",
+  "saving": "Saving...",
+  "update": "Update",
+  "errorTitle": "Error",
+  "savedTitle": "Saved",
+  "updatedTitle": "Updated",
+  "deletedTitle": "Deleted",
+  "cards": {
+    "monthIncome": "This month income",
+    "monthExpense": "This month expense",
+    "yearIncome": "This year income",
+    "yearExpense": "This year expense",
+    "studentDebt": "Student debt",
+    "studentDebtDesc": "Total unpaid amount for current year.",
+    "salaryPending": "Salary pending",
+    "salaryPendingDesc": "Unpaid staff salary remainder for this month."
+  },
+  "charts": {
+    "monthlyTitle": "Monthly income and expense",
+    "monthlyDesc": "Month-by-month financial movement for {{year}}.",
+    "yearlyTitle": "Yearly income and expense",
+    "yearlyDesc": "Overall financial results for the last 5 years."
+  },
+  "forms": {
+    "type": "Type",
+    "category": "Category",
+    "amount": "Amount",
+    "date": "Date",
+    "note": "Note",
+    "student": "Student",
+    "staff": "Staff",
+    "transactionNoteExample": "For example, sponsor payment",
+    "studentPaymentNoteExample": "For example, March tuition",
+    "salaryPaymentNoteExample": "For example, March salary",
+    "transaction": {
+      "title": "Add income or expense",
+      "desc": "Record any financial movement via manual transaction entry."
+    },
+    "studentPayment": {
+      "title": "Add student payment",
+      "desc": "Add student payment directly to financial reports.",
+      "submit": "Add payment"
+    },
+    "salaryPayment": {
+      "title": "Staff salary payment",
+      "desc": "Enter paid salary amount and monitor monthly remainder.",
+      "submit": "Add salary payment"
+    }
+  },
+  "studentTable": {
+    "title": "Student payments and debt",
+    "descManage": "Manage monthly fee, payments, and current year debt for each student.",
+    "descView": "Monitor monthly fee, payments, and current year debt for each student.",
+    "student": "Student",
+    "class": "Class",
+    "monthlyFee": "Monthly fee",
+    "paidMonth": "Paid this month",
+    "paidYear": "Paid this year",
+    "debt": "Debt",
+    "empty": "No students found for financial monitoring yet."
+  },
+  "staffTable": {
+    "title": "Staff salary monitoring",
+    "descManage": "Monitor monthly salary, paid amount, and remaining amount for staff.",
+    "descView": "Review monthly salary, paid amount, and remaining amount for staff.",
+    "staff": "Staff",
+    "role": "Role",
+    "monthlySalary": "Monthly salary",
+    "paidMonth": "Paid this month",
+    "paidYear": "Paid this year",
+    "remaining": "Remaining",
+    "empty": "No staff found for financial monitoring yet."
+  },
+  "transactions": {
+    "title": "Recent financial records",
+    "descManage": "All entered income and expense records are stored here.",
+    "descView": "All entered income and expense records are shown here.",
+    "date": "Date",
+    "type": "Type",
+    "category": "Category",
+    "note": "Note",
+    "subject": "Subject",
+    "amount": "Amount",
+    "general": "General",
+    "empty": "No financial transactions yet."
+  },
+  "roles": {
+    "director": "Director",
+    "schoolAdmin": "School admin",
+    "teacher": "Teacher"
+  },
+  "categories": {
+    "student_fee": "Student fee",
+    "salary": "Staff salary",
+    "donation": "Donation",
+    "grant": "Grant",
+    "other_income": "Other income",
+    "utilities": "Utilities",
+    "maintenance": "Maintenance",
+    "supplies": "Supplies",
+    "tax": "Tax",
+    "bonus": "Bonus",
+    "other_expense": "Other expense",
+    "other": "Other"
+  },
+  "loadingFinanceData": "Loading financial data...",
+  "loadingStaffData": "Loading staff salary data...",
+  "messages": {
+    "transactionAdded": "Financial transaction added.",
+    "studentPaymentAdded": "Student payment added.",
+    "salaryPaymentAdded": "Staff salary payment added.",
+    "studentFeeUpdated": "Student monthly fee saved.",
+    "staffSalaryUpdated": "Staff monthly salary saved.",
+    "transactionDeleted": "Transaction removed from records."
+  },
+  "errors": {
+    "financeLoad": "Could not load financial data",
+    "financeLoadDesc": "An error occurred while loading finance section.",
+    "transactionSave": "Transaction was not saved",
+    "transactionSaveDesc": "An error occurred while adding transaction.",
+    "studentPaymentSave": "Student payment was not saved",
+    "studentPaymentSaveDesc": "An error occurred while saving student payment.",
+    "salaryPaymentSave": "Salary payment was not saved",
+    "salaryPaymentSaveDesc": "An error occurred while saving salary payment.",
+    "studentFeeUpdate": "Monthly fee was not updated",
+    "studentFeeUpdateDesc": "An error occurred while saving student monthly fee.",
+    "staffSalaryUpdate": "Monthly salary was not updated",
+    "staffSalaryUpdateDesc": "An error occurred while saving staff monthly salary.",
+    "transactionDelete": "Transaction was not deleted",
+    "transactionDeleteDesc": "An error occurred while deleting transaction."
+  }
+}

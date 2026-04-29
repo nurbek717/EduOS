@@ -1,0 +1,137 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "sending": "Sending...",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "errors": {
+    "chatTargetsLoad": "Failed to load chat targets",
+    "serverRetry": "Server error. Please try again.",
+    "chatThreadsLoad": "Failed to load chats",
+    "chatThreadsLoadDesc": "Error while loading chats",
+    "messagesLoad": "Failed to load messages",
+    "chatOpen": "Failed to open chat",
+    "messageSend": "Failed to send message",
+    "gradesLoad": "Failed to load grades",
+    "childLoad": "Failed to load child information",
+    "attendanceLoad": "Failed to load attendance",
+    "homeworkLoad": "Failed to load homework",
+    "examResultsLoad": "Failed to load exam results",
+    "examResultsLoadDesc": "Error while loading exam results"
+  },
+  "fallback": {
+    "subject": "Subject",
+    "homework": "Homework"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "newGrade": "New grade: {{subject}} - {{grade}}",
+    "attendancePresent": "Attendance: child was present today.",
+    "attendanceLate": "Attendance: child was late today.",
+    "attendanceAbsent": "Attendance: child is marked absent today.",
+    "progressGood": "Progress is stable.",
+    "progressWarn": "Progress dropped. Please check grades.",
+    "examResult": "Exam result: {{title}} - {{score}}/{{max}}",
+    "examChecking": "Exam is being checked: {{title}}",
+    "newMessage": "{{teacher}} sent you a new message.",
+    "empty": "No notifications yet."
+  },
+  "search": {
+    "grade": "Grade: {{grade}}",
+    "childAttendance": "{{child}} attendance",
+    "attendanceTitle": "Attendance",
+    "examResult": "Result: {{score}}/{{max}}",
+    "checking": "Under review"
+  },
+  "overview": {
+    "statsTitle": "General statistics",
+    "statsDesc": "Main indicators and current date/time for your child.",
+    "avgGrade": "Average grade",
+    "attendance": "Attendance",
+    "subjects": "Subjects",
+    "notifications": "Notifications"
+  },
+  "attendance": {
+    "title": "Attendance",
+    "todayTitle": "Today's attendance",
+    "todayEmpty": "No attendance data for today yet.",
+    "empty": "No attendance data yet.",
+    "date": "Date: {{date}}",
+    "last7days": "Attendance for the last 7 days",
+    "statusToday": {
+      "present": "Attended class today",
+      "absent": "Absent today",
+      "late": "Today's attendance: late / special case"
+    },
+    "statusShort": {
+      "present": "Present",
+      "absent": "Absent",
+      "late": "Late / special"
+    }
+  },
+  "grades": {
+    "todayTitle": "Today's grades",
+    "title": "Grades"
+  },
+  "homework": {
+    "title": "Homework",
+    "empty": "No homework yet.",
+    "teacher": "Teacher: {{name}}",
+    "openFile": "Open file",
+    "deadline": "Deadline: {{date}}"
+  },
+  "exams": {
+    "title": "Exam results",
+    "loading": "Loading exam results...",
+    "empty": "No exam results yet.",
+    "subject": "Subject: {{subject}}",
+    "resultPending": "Result pending",
+    "status": {
+      "evaluated": "Evaluated",
+      "awaiting": "Checking",
+      "expired": "Time expired",
+      "completed": "Completed"
+    }
+  },
+  "support": {
+    "targetsTitle": "Contact channels",
+    "classTeacher": "Class teacher",
+    "subjectTeacher": "Subject teacher",
+    "classTeacherMissing": "Class teacher is not assigned.",
+    "myChats": "My chats",
+    "noChats": "No chats yet.",
+    "chatTitle": "Chat",
+    "selectTeacher": "Choose a teacher on the left or open a chat.",
+    "messagesLoading": "Loading messages...",
+    "noMessages": "No messages yet.",
+    "messagePlaceholder": "Type a message...",
+    "send": "Send"
+  },
+  "profile": {
+    "information": "Profile Information",
+    "edit": "Edit",
+    "changePhoto": "Change photo",
+    "saved": "Profile saved.",
+    "saveFailed": "Save failed",
+    "photoSaved": "Profile photo saved.",
+    "requiredFields": "Name and email are required.",
+    "personalDetails": "Personal Details",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "emailAddress": "Email address",
+    "phone": "Phone",
+    "bio": "Bio",
+    "gender": "Gender",
+    "dateOfBirth": "Date of Birth",
+    "nationalId": "National ID",
+    "address": "Address",
+    "country": "Country",
+    "cityState": "City/State",
+    "postalCode": "Postal Code",
+    "taxId": "TAX ID",
+    "locationDisplay": "Uzbekistan/Tashkent",
+    "imageAlt": "Profile",
+    "namePlaceholder": "First Last"
+  }
+}

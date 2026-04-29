@@ -1,0 +1,137 @@
+{
+  "common": {
+    "loading": "Yuklanmoqda...",
+    "sending": "Yuborilmoqda...",
+    "save": "Saqlash",
+    "cancel": "Bekor qilish"
+  },
+  "errors": {
+    "chatTargetsLoad": "Murojaat yo'nalishlarini yuklab bo'lmadi",
+    "serverRetry": "Server xatosi. Qayta urinib ko'ring.",
+    "chatThreadsLoad": "Chatlar ro'yxatini yuklab bo'lmadi",
+    "chatThreadsLoadDesc": "Chatlar yuklanayotganda xatolik yuz berdi",
+    "messagesLoad": "Xabarlarni yuklab bo'lmadi",
+    "chatOpen": "Chatni ochib bo'lmadi",
+    "messageSend": "Xabarni yuborib bo'lmadi",
+    "gradesLoad": "Baholarni yuklab bo'lmadi",
+    "childLoad": "Farzand ma'lumotini yuklab bo'lmadi",
+    "attendanceLoad": "Davomatni yuklab bo'lmadi",
+    "homeworkLoad": "Uy vazifalarini yuklab bo'lmadi",
+    "examResultsLoad": "Imtihon natijalarini yuklab bo'lmadi",
+    "examResultsLoadDesc": "Imtihon natijalari yuklanayotganda xatolik yuz berdi"
+  },
+  "fallback": {
+    "subject": "Fan",
+    "homework": "Uy vazifasi"
+  },
+  "notifications": {
+    "title": "Bildirishnomalar",
+    "newGrade": "Yangi baho: {{subject}} - {{grade}}",
+    "attendancePresent": "Davomat: farzandingiz bugun darsda qatnashdi.",
+    "attendanceLate": "Davomat: farzandingiz bugun kechikdi.",
+    "attendanceAbsent": "Davomat: farzandingiz bugun yo'q deb belgilandi.",
+    "progressGood": "O'zlashtirish barqaror.",
+    "progressWarn": "O'zlashtirish pasaydi. Iltimos, baholarni tekshiring.",
+    "examResult": "Imtihon natijasi: {{title}} - {{score}}/{{max}}",
+    "examChecking": "Imtihon tekshirilmoqda: {{title}}",
+    "newMessage": "{{teacher}} sizga yangi xabar yubordi.",
+    "empty": "Hozircha bildirishnomalar yo'q."
+  },
+  "search": {
+    "grade": "Baho: {{grade}}",
+    "childAttendance": "{{child}} davomati",
+    "attendanceTitle": "Davomat",
+    "examResult": "Natija: {{score}}/{{max}}",
+    "checking": "Tekshirilmoqda"
+  },
+  "overview": {
+    "statsTitle": "Umumiy statistika",
+    "statsDesc": "Farzandingiz bo'yicha asosiy ko'rsatkichlar va joriy sana-soat.",
+    "avgGrade": "O'rtacha baho",
+    "attendance": "Davomat",
+    "subjects": "Fanlar",
+    "notifications": "Bildirishnomalar"
+  },
+  "attendance": {
+    "title": "Davomat",
+    "todayTitle": "Bugungi davomat",
+    "todayEmpty": "Bugungi davomat ma'lumotlari hali mavjud emas.",
+    "empty": "Hozircha davomat ma'lumotlari mavjud emas.",
+    "date": "Sana: {{date}}",
+    "last7days": "So'nggi 7 kun bo'yicha qatnashish holati",
+    "statusToday": {
+      "present": "Bugun darsga qatnashdi",
+      "absent": "Bugun darsga kelmadi",
+      "late": "Bugungi davomat holati: kechikish / maxsus holat"
+    },
+    "statusShort": {
+      "present": "Kelgan",
+      "absent": "Kelanmagan",
+      "late": "Kechikkan / maxsus"
+    }
+  },
+  "grades": {
+    "todayTitle": "Bugungi baholar",
+    "title": "Baholar"
+  },
+  "homework": {
+    "title": "Uy vazifalari",
+    "empty": "Hozircha uy vazifalari mavjud emas.",
+    "teacher": "O'qituvchi: {{name}}",
+    "openFile": "Faylni ochish",
+    "deadline": "Deadline: {{date}}"
+  },
+  "exams": {
+    "title": "Imtihon natijalari",
+    "loading": "Imtihon natijalari yuklanmoqda...",
+    "empty": "Hozircha imtihon natijalari mavjud emas.",
+    "subject": "Fan: {{subject}}",
+    "resultPending": "Natija kutilmoqda",
+    "status": {
+      "evaluated": "Baholangan",
+      "awaiting": "Tekshirilmoqda",
+      "expired": "Vaqt tugagan",
+      "completed": "Yakunlangan"
+    }
+  },
+  "support": {
+    "targetsTitle": "Murojaat yo'nalishlari",
+    "classTeacher": "Sinf rahbari",
+    "subjectTeacher": "Fan o'qituvchisi",
+    "classTeacherMissing": "Sinf rahbari biriktirilmagan.",
+    "myChats": "Mening chatlarim",
+    "noChats": "Hali chat ochilmagan.",
+    "chatTitle": "Chat",
+    "selectTeacher": "Chapdan o'qituvchini tanlang yoki chat oching.",
+    "messagesLoading": "Xabarlar yuklanmoqda...",
+    "noMessages": "Hali xabar yo'q.",
+    "messagePlaceholder": "Xabar yozing...",
+    "send": "Yuborish"
+  },
+  "profile": {
+    "information": "Profil ma'lumotlari",
+    "edit": "Tahrirlash",
+    "changePhoto": "Rasmni almashtirish",
+    "saved": "Profil saqlandi.",
+    "saveFailed": "Saqlashda xatolik",
+    "photoSaved": "Profil rasmi saqlandi.",
+    "requiredFields": "Ism va email majburiy.",
+    "personalDetails": "Shaxsiy ma'lumotlar",
+    "firstName": "Ism",
+    "lastName": "Familiya",
+    "emailAddress": "Email manzil",
+    "phone": "Telefon",
+    "bio": "Qisqacha ma'lumot",
+    "gender": "Jins",
+    "dateOfBirth": "Tug'ilgan sana",
+    "nationalId": "Milliy ID",
+    "address": "Manzil",
+    "country": "Mamlakat",
+    "cityState": "Shahar/Viloyat",
+    "postalCode": "Pochta indeksi",
+    "taxId": "STIR",
+    "locationDisplay": "O'zbekiston/Toshkent",
+    "imageAlt": "Profil",
+    "namePlaceholder": "Ism Familiya"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "all": "All",
+  "teacher": "Teacher",
+  "student": "Student",
+  "parent": "Parent",
+  "schoolAdmin": "School admin",
+  "filterByDate": "Filter by period",
+  "filterByRole": "Filter by role"
+}

@@ -1,0 +1,17 @@
+{
+  "classesAndParallels": "Sinf va paralellar",
+  "classesAndParallelsDesc": "Maktabingizdagi barcha sinflar va paralellar soni.",
+  "teachers": "O'qituvchilar",
+  "teachersDesc": "Tanlangan davrda qo'shilgan o'qituvchilar soni.",
+  "students": "O'quvchilar",
+  "studentsDesc": "Tanlangan davrda ro'yxatdan o'tgan o'quvchilar soni.",
+  "parents": "Ota-onalar",
+  "parentsDesc": "O'quvchilarga biriktirilgan ota-onalar soni.",
+  "monthIncome": "Shu oy kirim",
+  "monthIncomeDesc": "Moliyaviy bo'limdagi joriy oy jami kirim summasi.",
+  "monthExpense": "Shu oy chiqim",
+  "monthExpenseDesc": "Moliyaviy bo'limdagi joriy oy jami chiqim summasi.",
+  "typeTeacher": "O'qituvchi",
+  "typeStudent": "O'quvchi",
+  "typeParent": "Ota-ona"
+}

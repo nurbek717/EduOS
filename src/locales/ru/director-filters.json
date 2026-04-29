@@ -1,0 +1,9 @@
+{
+  "all": "Все",
+  "teacher": "Учитель",
+  "student": "Ученик",
+  "parent": "Родитель",
+  "schoolAdmin": "Админ школы",
+  "filterByDate": "Фильтр по периоду",
+  "filterByRole": "Фильтр по роли"
+}

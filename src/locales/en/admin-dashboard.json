@@ -1,0 +1,276 @@
+{
+  "common": {
+    "actions": "Actions",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "email": "Email",
+    "loading": "Loading...",
+    "moreCount": "... and {{count}} more",
+    "name": "Name",
+    "password": "Password",
+    "refresh": "Refresh",
+    "save": "Save",
+    "saving": "Saving...",
+    "view": "View"
+  },
+  "toasts": {
+    "error": "Error!",
+    "success": "Success!",
+    "saved": "Saved",
+    "deleted": "Deleted",
+    "insufficient": "Insufficient information"
+  },
+  "errors": {
+    "fetchSchools": "Failed to load schools.",
+    "fetchStats": "Failed to load statistics.",
+    "fetchUsers": "Failed to load users.",
+    "fetchSubscriptions": "Failed to load subscriptions.",
+    "fetchExams": "Failed to load exams.",
+    "fetchExamResults": "Failed to load exam results.",
+    "superAdminLoginRequired": "Please sign in as super admin first.",
+    "createSubscription": "Failed to create subscription.",
+    "createSchool": "Failed to create school.",
+    "fetchUserDetails": "Failed to load user details.",
+    "updateUser": "Failed to update user.",
+    "deleteUser": "Failed to delete user.",
+    "assignDirector": "Failed to assign director.",
+    "deleteSchool": "Failed to delete school."
+  },
+  "roles": {
+    "director": "Director",
+    "schoolAdmin": "School admin",
+    "teacher": "Teacher",
+    "student": "Student",
+    "parent": "Parent"
+  },
+  "table": {
+    "class": "Class",
+    "subject": "Subject",
+    "status": "Status",
+    "score": "Score",
+    "percent": "Percent"
+  },
+  "notifications": {
+    "subscriptionExpired": "Subscription expired for {{schoolName}}.",
+    "subscriptionEnding": "{{schoolName}} subscription ends in {{daysLeft}} days.",
+    "withoutSchoolAdmin": "{{count}} schools have no school admin.",
+    "withoutDirector": "{{count}} schools have no assigned director."
+  },
+  "overview": {
+    "title": "Overview",
+    "description": "Platform control state and key points requiring supervision.",
+    "summaryDescription": "Current platform state for schools and users.",
+    "intro": "Here you can see platform growth, management gaps, and which schools need attention.",
+    "active": "Active",
+    "inactive": "Inactive",
+    "activeSchools": "Active schools",
+    "inactiveSchools": "Inactive schools",
+    "goToSubscriptions": "Go to subscriptions",
+    "subscriptionCount": "Subscriptions remaining",
+    "withoutAdminSchools": "Schools without school admin",
+    "newSchoolsLast7Days": "New schools in last 7 days",
+    "totalSchools": "Total schools",
+    "totalUsers": "Total users",
+    "totalDirectors": "Total directors",
+    "totalSchoolAdmins": "Total school admins",
+    "chartLoading": "Loading chart...",
+    "attention": {
+      "title": "Attention required",
+      "description": "Highlights schools that require attention in governance or activity.",
+      "empty": "No critical platform alerts at the moment.",
+      "items": {
+        "withoutDirector": "{{count}} schools have no assigned director.",
+        "withoutSchoolAdmin": "{{count}} schools have no school admin.",
+        "lowActivity": "{{count}} schools have low activity or incomplete governance."
+      }
+    },
+    "chart": {
+      "title": "Schools added in the last 7 days",
+      "description": "Daily count of newly created schools.",
+      "range": "Range",
+      "tooltipSchools": "New schools",
+      "tooltipCount": "{{count}} schools",
+      "tooltipDate": "Date: {{date}}",
+      "empty": "No school creation statistics available for the last 7 days yet."
+    },
+    "cards": {
+      "totalSchools": {
+        "title": "Total schools",
+        "description": "Overall number of schools on the platform"
+      },
+      "activeSchools": {
+        "title": "Active schools",
+        "description": "Schools with assigned director or admin"
+      },
+      "subscriptionEnding": {
+        "title": "Subscription ending",
+        "description": "Schools with subscriptions close to expiry"
+      },
+      "withoutSchoolAdmin": {
+        "title": "No school admin",
+        "description": "Schools without operations admin"
+      },
+      "totalUsers": {
+        "title": "Total users",
+        "description": "All users in the system"
+      },
+      "newSchoolsLast7Days": {
+        "title": "Schools in last 7 days",
+        "description": "Recently added schools"
+      }
+    }
+  },
+  "schools": {
+    "description": "List of all schools and add a new school",
+    "addNew": "Add new school",
+    "createTitle": "Create new school",
+    "created": "New school created.",
+    "deleted": "School {{schoolName}} has been removed from database.",
+    "fallback": "School",
+    "confirmDelete": "Delete school {{schoolName}} and all related data?",
+    "noDirector": "No director",
+    "empty": {
+      "title": "No schools in the system yet",
+      "hint": "Use the button above to add a new school"
+    },
+    "actions": {
+      "editDirector": "Edit director",
+      "assignDirector": "Assign director",
+      "delete": "Delete school"
+    },
+    "table": {
+      "name": "Name",
+      "address": "Address",
+      "phone": "Phone",
+      "director": "Director",
+      "createdAt": "Created at"
+    },
+    "form": {
+      "name": "School name *",
+      "namePlaceholder": "Enter school name",
+      "address": "Address",
+      "addressPlaceholder": "Address",
+      "phone": "Phone",
+      "directorInfo": "Director details (optional)",
+      "directorInfoHint": "If filled, a director account will be created automatically.",
+      "directorName": "Name",
+      "directorNamePlaceholder": "Director name"
+    },
+    "assignDirector": {
+      "title": "Assign director",
+      "titleWithSchool": "Assign director for {{schoolName}}",
+      "name": "Director name *",
+      "namePlaceholder": "Full name",
+      "email": "Director email *",
+      "password": "Director password *",
+      "passwordPlaceholder": "At least 6 characters",
+      "submit": "Assign",
+      "success": "Director assigned to school.",
+      "validation": {
+        "required": "Enter director name, email and password."
+      }
+    }
+  },
+  "subscriptions": {
+    "description": "Set subscription period for a school",
+    "created": "Subscription saved.",
+    "expired": "Expired",
+    "daysLeft": "{{count}} days left",
+    "daysShort": "{{count}} d",
+    "empty": "No subscriptions yet",
+    "loading": "Loading subscriptions...",
+    "listTitle": "Subscriptions",
+    "table": {
+      "school": "School",
+      "endDate": "End date",
+      "daysLeft": "Days left"
+    },
+    "form": {
+      "school": "School *",
+      "schoolPlaceholder": "Select school",
+      "days": "Days *",
+      "submit": "Add subscription"
+    },
+    "validation": {
+      "selectSchool": "Select a school.",
+      "days": "Days must be greater than 0."
+    }
+  },
+  "exams": {
+    "title": "Exams and Results",
+    "description": "Monitor all exams and results for super admin.",
+    "loading": "Loading exams...",
+    "empty": "No exams found yet.",
+    "durationMin": "{{value}} min",
+    "status": {
+      "published": "Published",
+      "draft": "Draft"
+    },
+    "table": {
+      "exam": "Exam",
+      "duration": "Duration",
+      "status": "Status",
+      "results": "Results"
+    },
+    "results": {
+      "defaultTitle": "Exam results",
+      "title": "Results: {{exam}}",
+      "student": "Student",
+      "manualPending": "Manual pending",
+      "loading": "Loading results...",
+      "empty": "No results found."
+    }
+  },
+  "users": {
+    "title": "Directors",
+    "description": "Manage directors across the platform.",
+    "searchPlaceholder": "Search by director name or email",
+    "loading": "Loading users...",
+    "unassigned": "Unassigned",
+    "updated": "User updated.",
+    "deleted": "User deleted.",
+    "confirmDelete": "Are you sure you want to delete this user?",
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "school": "School",
+      "createdAt": "Created at"
+    },
+    "empty": {
+      "title": "No matching users found",
+      "hint": "Try changing your search"
+    },
+    "edit": {
+      "title": "Edit user",
+      "titleWithRole": "Edit {{role}} details",
+      "newPasswordOptional": "New password (optional)",
+      "newPasswordPlaceholder": "Leave empty to keep unchanged",
+      "newPasswordRequired": "Enter a new password.",
+      "passwordMismatch": "Password confirmation does not match.",
+      "newPasswordLabel": "New password",
+      "confirmPasswordLabel": "Confirm password"
+    }
+  },
+  "schoolsList": "Schools List",
+  "common": {
+    "actions": "Actions",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "email": "Email",
+    "loading": "Loading...",
+    "moreCount": "... and {{count}} more",
+    "name": "Name",
+    "password": "Password",
+    "refresh": "Refresh",
+    "save": "Save",
+    "saving": "Saving...",
+    "view": "View",
+    "total": "Total",
+    "statistics": "General Statistics",
+    "fullName": "Full Name",
+    "username": "Username",
+    "changePassword": "Change Password"
+  }
+}

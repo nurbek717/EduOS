@@ -1,0 +1,43 @@
+{
+  "classes": "Classes",
+  "subjects": "Subjects",
+  "classTeacher": "Class teacher",
+  "notAssigned": "Not assigned",
+  "studentsCount": "Students",
+  "rank": "Rank",
+  "addClass": "Add class",
+  "addSubject": "Add subject",
+  "newClassName": "New class name",
+  "newClassExample": "For example, 5A",
+  "newSubjectName": "New subject name",
+  "newSubjectExample": "For example, Mathematics",
+  "selectTeacher": "Select class teacher",
+  "selectTeacherGeneric": "Select teacher",
+  "class": "Class",
+  "selectClass": "Select class",
+  "subject": "Subject",
+  "selectSubject": "Select subject",
+  "teacher": "Teacher",
+  "loadingClasses": "Loading classes...",
+  "loadingSubjects": "Loading subjects...",
+  "emptyClasses": "No classes yet.",
+  "emptyClassesAdmin": "No classes yet. Enter a class name above to add one.",
+  "emptySubjects": "No subjects yet.",
+  "emptySubjectsAdmin": "No subjects yet. Enter a subject name above to add one.",
+  "rankPosition": "{{rank}}-place",
+  "trends": {
+    "up": "Improving",
+    "down": "Declining",
+    "stable": "Stable",
+    "noData": "No data",
+    "reason": {
+      "up": "Grades improved and attendance is stable.",
+      "upWithAttendance": "Grades are improving. Attendance has {{absent}} absent and {{late}} late records.",
+      "down": "Average grade is lower than previous month.",
+      "downWithAttendance": "Reason: {{absent}} absent and {{late}} late records with lower grades.",
+      "stable": "Attendance and grades are stable.",
+      "stableWithAttendance": "Overall stable. Attendance has {{absent}} absent and {{late}} late records.",
+      "noData": "Not enough attendance or grading data for this month."
+    }
+  }
+}
