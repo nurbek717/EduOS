@@ -17,6 +17,7 @@ const {
   updateTeacher,
   deleteTeacher,
   createStudent,
+  importStudents,
   listStudentsForDirector,
   updateStudentForDirector,
   createParent,
@@ -25,6 +26,7 @@ const {
   listTimetableForClass,
   updateTimetableEntry,
   deleteTimetableEntry,
+  getSubscriptionStatus,
 } = require("../controllers/director.controller");
 const {
   getFinanceOverview,
@@ -37,6 +39,7 @@ const {
 } = require("../controllers/directorFinance.controller");
 const { authRequired, requireRoles } = require("../middleware/auth.middleware");
 const checkSubscription = require("../middleware/subscription.middleware");
+const { uploadStudentImport } = require("../middleware/upload.middleware");
 const validators = require("../validation/request.validation");
 
 const router = express.Router();
@@ -44,6 +47,7 @@ const router = express.Router();
 router.use(authRequired, requireRoles("director", "school_admin"), checkSubscription);
 
 router.get("/overview", getOverview);
+router.get("/subscription/status", getSubscriptionStatus);
 router.post("/school-admin", requireRoles("director"), validators.directorCreateSchoolAdmin, createSchoolAdminForDirector);
 router.get("/users", validators.directorUsersQuery, listUsersForDirector);
 router.get("/users/:id", validators.idParam, getUserForDirector);
@@ -63,6 +67,7 @@ router.get("/teachers", listTeachers);
 router.patch("/teachers/:id", requireRoles("school_admin"), validators.directorUpdateTeacher, updateTeacher);
 router.delete("/teachers/:id", requireRoles("school_admin"), validators.idParam, deleteTeacher);
 router.post("/students", requireRoles("school_admin"), validators.directorCreateStudent, createStudent);
+router.post("/students/import", requireRoles("school_admin"), uploadStudentImport, importStudents);
 router.get("/students", listStudentsForDirector);
 router.patch("/students/:id", requireRoles("school_admin"), validators.directorUpdateStudent, updateStudentForDirector);
 router.post("/parents", requireRoles("school_admin"), validators.directorCreateParent, createParent);

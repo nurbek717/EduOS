@@ -64,6 +64,23 @@ const DirectorLayout = ({
   const dashboardHomePath = isSchoolAdmin ? "/school-admin/dashboard" : "/director/dashboard";
   const dashboardLabel = isSchoolAdmin ? t("schoolAdmin.fallbackName") : t("director.fallbackName");
   const dashboardLabelUpper = isSchoolAdmin ? t("schoolAdmin.badge") : t("director.badge");
+  const subscriptionStorageKey = `dashboard:${isSchoolAdmin ? "school_admin" : "director"}:subscriptionInfo`;
+
+  const cachedSubscriptionInfo = (() => {
+    if (typeof window === "undefined") return undefined;
+    const raw = localStorage.getItem(subscriptionStorageKey);
+    if (!raw) return undefined;
+    try {
+      const parsed = JSON.parse(raw) as DirectorLayoutProps["subscriptionInfo"];
+      if (!parsed || typeof parsed !== "object") return undefined;
+      if (typeof parsed.planName !== "string") return undefined;
+      return parsed;
+    } catch {
+      return undefined;
+    }
+  })();
+
+  const effectiveSubscriptionInfo = subscriptionInfo ?? cachedSubscriptionInfo;
   const [studentsDropdownOpen, setStudentsDropdownOpen] = useState(false);
   const navItems: { label: string; section: DirectorSection; icon: typeof LayoutDashboard }[] = [
     { label: t("director.nav.dashboard"), section: "dashboard", icon: LayoutDashboard },
@@ -114,6 +131,62 @@ const DirectorLayout = ({
     if (currentSection === "students") setStudentsDropdownOpen(true);
   }, [currentSection, isSchoolAdmin]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!effectiveSubscriptionInfo) return;
+    try {
+      localStorage.setItem(subscriptionStorageKey, JSON.stringify(effectiveSubscriptionInfo));
+    } catch {
+      // ignore storage failures (private mode, quota, etc.)
+    }
+  }, [effectiveSubscriptionInfo, subscriptionStorageKey]);
+
+  const resolvedSubscriptionInfo = (() => {
+    if (!effectiveSubscriptionInfo) return undefined;
+
+    const safeParse = (value?: string | null) => {
+      if (!value) return null;
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? null : date;
+    };
+
+    const endDate = safeParse(effectiveSubscriptionInfo.endDate);
+    const startDate = safeParse(effectiveSubscriptionInfo.startDate);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const computedDaysLeft = (() => {
+      if (typeof effectiveSubscriptionInfo.daysLeft === "number") return effectiveSubscriptionInfo.daysLeft;
+      if (!endDate) return null;
+      const end = new Date(endDate);
+      end.setHours(0, 0, 0, 0);
+      const diff = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return diff;
+    })();
+
+    const computedStatus: "active" | "expired" = (() => {
+      if (effectiveSubscriptionInfo.status === "expired") return "expired";
+      if (effectiveSubscriptionInfo.status === "active") return "active";
+      if (typeof computedDaysLeft === "number") return computedDaysLeft < 0 ? "expired" : "active";
+      if (endDate) return endDate.getTime() < today.getTime() ? "expired" : "active";
+      if (startDate && startDate.getTime() > today.getTime()) return "active";
+      return "active";
+    })();
+
+    return {
+      ...effectiveSubscriptionInfo,
+      status: computedStatus,
+      daysLeft: typeof computedDaysLeft === "number" ? computedDaysLeft : effectiveSubscriptionInfo.daysLeft ?? null,
+    };
+  })();
+
+  const subscriptionExpired = resolvedSubscriptionInfo?.status === "expired";
+  const notifyBlocked = () => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent("subscription:blocked"));
+  };
+
 
   return (
     <SidebarProvider>
@@ -150,6 +223,10 @@ const DirectorLayout = ({
                             isActive={isActive}
                             className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:justify-center text-white hover:bg-white/10 hover:text-white data-[active=true]:bg-white/15 data-[active=true]:text-accent"
                             onClick={() => {
+                              if (subscriptionExpired) {
+                                notifyBlocked();
+                                return;
+                              }
                               onSectionChange?.("students");
                               setStudentsDropdownOpen((prev) => !prev);
                             }}
@@ -164,6 +241,10 @@ const DirectorLayout = ({
                               <button
                                 type="button"
                                 onClick={() => {
+                                  if (subscriptionExpired) {
+                                    notifyBlocked();
+                                    return;
+                                  }
                                   onSectionChange?.("students");
                                   onStudentsViewChange?.("base");
                                 }}
@@ -188,6 +269,10 @@ const DirectorLayout = ({
                               <button
                                 type="button"
                                 onClick={() => {
+                                  if (subscriptionExpired) {
+                                    notifyBlocked();
+                                    return;
+                                  }
                                   onSectionChange?.("students");
                                   onStudentsViewChange?.("list");
                                 }}
@@ -212,6 +297,10 @@ const DirectorLayout = ({
                               <button
                                 type="button"
                                 onClick={() => {
+                                  if (subscriptionExpired) {
+                                    notifyBlocked();
+                                    return;
+                                  }
                                   onSectionChange?.("students");
                                   onStudentsViewChange?.("attach");
                                 }}
@@ -240,7 +329,13 @@ const DirectorLayout = ({
                         <SidebarMenuButton
                           isActive={isActive}
                           className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:justify-center text-white hover:bg-white/10 hover:text-white data-[active=true]:bg-white/15 data-[active=true]:text-accent"
-                          onClick={() => onSectionChange?.(item.section)}
+                          onClick={() => {
+                            if (subscriptionExpired) {
+                              notifyBlocked();
+                              return;
+                            }
+                            onSectionChange?.(item.section);
+                          }}
                         >
                           <item.icon className="h-4 w-4" />
                           <span>{item.label}</span>
@@ -303,11 +398,13 @@ const DirectorLayout = ({
               onLogout={handleLogout}
               compactHeader
               subscriptionLabel={
-                typeof subscriptionInfo?.daysLeft === "number"
-                  ? `${subscriptionInfo.daysLeft} kun qoldi`
-                  : "15 kun qoldi"
+                resolvedSubscriptionInfo?.status === "expired"
+                  ? "Muddat tugagan"
+                  : typeof resolvedSubscriptionInfo?.daysLeft === "number"
+                    ? `${Math.max(0, resolvedSubscriptionInfo.daysLeft)} kun qoldi`
+                    : "Faol"
               }
-              subscriptionInfo={subscriptionInfo}
+              subscriptionInfo={resolvedSubscriptionInfo}
             />
           </div>
           <div className="flex-1 overflow-auto p-6">

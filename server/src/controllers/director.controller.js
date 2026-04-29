@@ -930,6 +930,25 @@ const getOverview = async (req, res) => {
   }
 };
 
+const getSubscriptionStatus = async (req, res) => {
+  try {
+    const school = await ensureSchoolManagementUser(req.user);
+    const subscriptionDoc = await Subscription.findOne({ school: school._id }).lean().exec();
+    const now = new Date();
+
+    return res.json({
+      subscription: subscriptionDoc ? {
+        startAt: subscriptionDoc.created_at || null,
+        endAt: subscriptionDoc.endAt || null,
+        daysLeft: subscriptionDoc.endAt ? Math.ceil((new Date(subscriptionDoc.endAt) - now) / (1000 * 60 * 60 * 24)) : null,
+        isExpired: subscriptionDoc.endAt ? new Date(subscriptionDoc.endAt) < now : false,
+      } : null,
+    });
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Failed to load subscription status" });
+  }
+};
+
 const createClass = async (req, res) => {
   try {
     const { name } = req.body;
@@ -1405,7 +1424,31 @@ const deleteTeacher = async (req, res) => {
 
 const createStudent = async (req, res) => {
   try {
-    const { name, email, phone, parentName, password, classId } = req.body;
+    const {
+      name,
+      email,
+      phone,
+      parentName,
+      password,
+      classId,
+      studentCode,
+      birthDate,
+      gender,
+      nationality,
+      birthCertSeries,
+      birthCertNumber,
+      status,
+      admissionOrderNumber,
+      admissionOrderDate,
+      classAdmissionDate,
+      academicYear,
+      educationLanguage,
+      parentPassport,
+      parentPhone,
+      region,
+      district,
+      address,
+    } = req.body;
     if (!name || !email || !password || !classId) {
       return res.status(400).json({ message: "name, email, password and classId are required" });
     }
@@ -1438,6 +1481,23 @@ const createStudent = async (req, res) => {
       class: cls._id,
       school: school._id,
       parentName: parentName || undefined,
+      studentCode: studentCode || undefined,
+      birthDate: birthDate ? new Date(birthDate) : undefined,
+      gender: gender || undefined,
+      nationality: nationality || undefined,
+      birthCertSeries: birthCertSeries || undefined,
+      birthCertNumber: birthCertNumber || undefined,
+      status: status || "active",
+      admissionOrderNumber: admissionOrderNumber || undefined,
+      admissionOrderDate: admissionOrderDate ? new Date(admissionOrderDate) : undefined,
+      classAdmissionDate: classAdmissionDate ? new Date(classAdmissionDate) : undefined,
+      academicYear: academicYear || undefined,
+      educationLanguage: educationLanguage || undefined,
+      parentPassport: parentPassport || undefined,
+      parentPhone: parentPhone || undefined,
+      region: region || undefined,
+      district: district || undefined,
+      address: address || undefined,
     });
 
     return res.status(201).json({
@@ -1455,11 +1515,247 @@ const createStudent = async (req, res) => {
   }
 };
 
+const normalizeImportKey = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/^\uFEFF/, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+const normalizeImportValue = (value) => String(value || "").trim();
+
+const parseCsvRows = (content) => {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < content.length; i += 1) {
+    const char = content[i];
+    const next = content[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        cell += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === "," && !inQuotes) {
+      row.push(cell);
+      cell = "";
+      continue;
+    }
+
+    if ((char === "\n" || char === "\r") && !inQuotes) {
+      if (char === "\r" && next === "\n") {
+        i += 1;
+      }
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+      continue;
+    }
+
+    cell += char;
+  }
+
+  row.push(cell);
+  rows.push(row);
+
+  return rows.filter((r) => r.some((c) => normalizeImportValue(c)));
+};
+
+const parseOptionalImportDate = (value, fieldLabel, errors) => {
+  const normalized = normalizeImportValue(value);
+  if (!normalized) return undefined;
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) {
+    errors.push(`${fieldLabel} noto'g'ri sana`);
+    return undefined;
+  }
+  return parsed;
+};
+
+const normalizeImportedGender = (value) => {
+  const normalized = normalizeImportKey(value);
+  if (!normalized) return "";
+  if (normalized === "male" || normalized === "erkak") return "male";
+  if (normalized === "female" || normalized === "ayol") return "female";
+  return String(value || "").trim();
+};
+
+const normalizeImportedStatus = (value) => {
+  const normalized = normalizeImportKey(value);
+  if (!normalized) return "";
+  if (normalized === "active" || normalized === "oquvchi") return "active";
+  if (normalized === "inactive" || normalized === "vaqtinchatoxtagan") return "inactive";
+  if (normalized === "graduated" || normalized === "bitirgan") return "graduated";
+  return String(value || "").trim();
+};
+
+const importStudents = async (req, res) => {
+  try {
+    if (!req.file?.buffer) {
+      return res.status(400).json({ message: "CSV fayl yuklanmagan" });
+    }
+
+    const school = await ensureSchoolManagementUser(req.user);
+    const content = req.file.buffer.toString("utf8").replace(/^\uFEFF/, "");
+    const parsedRows = parseCsvRows(content);
+
+    if (parsedRows.length < 2) {
+      return res.status(400).json({ message: "CSV faylda import qilinadigan qator topilmadi" });
+    }
+
+    const headers = parsedRows[0].map(normalizeImportKey);
+    const dataRows = parsedRows.slice(1);
+    const headerIndex = new Map(headers.map((header, index) => [header, index]));
+    const valueOf = (row, ...keys) => {
+      for (const key of keys) {
+        const index = headerIndex.get(normalizeImportKey(key));
+        if (typeof index === "number") {
+          return normalizeImportValue(row[index]);
+        }
+      }
+      return "";
+    };
+
+    const classes = await ClassModel.find({ school: school._id }).select("_id name").lean().exec();
+    const classByName = new Map(classes.map((cls) => [String(cls.name || "").trim().toLowerCase(), cls]));
+    const errors = [];
+    const validRows = [];
+    const emailsInFile = new Set();
+    const allEmails = dataRows
+      .map((row) => valueOf(row, "email").toLowerCase())
+      .filter(Boolean);
+    const existingUsers = allEmails.length
+      ? await User.find({ email: { $in: allEmails } }).select("email").lean().exec()
+      : [];
+    const existingEmails = new Set(existingUsers.map((user) => String(user.email || "").toLowerCase()));
+
+    dataRows.forEach((row, index) => {
+      const rowNumber = index + 2;
+      const rowErrors = [];
+      const fullName = valueOf(row, "fullName", "name", "fish");
+      const email = valueOf(row, "email").toLowerCase();
+      const password = valueOf(row, "password", "parol");
+      const className = valueOf(row, "className", "class", "sinf", "sinf kodi");
+      const cls = classByName.get(className.trim().toLowerCase());
+      const gender = normalizeImportedGender(valueOf(row, "gender", "jinsi"));
+      const status = normalizeImportedStatus(valueOf(row, "status", "o'quvchi holati", "oquvchi holati"));
+      const birthCertificateCombined = valueOf(row, "guvohnoma seriya va raqami");
+
+      if (!fullName) rowErrors.push("fullName majburiy");
+      if (!email) {
+        rowErrors.push("email majburiy");
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        rowErrors.push("email formati noto'g'ri");
+      } else if (emailsInFile.has(email)) {
+        rowErrors.push("CSV ichida email takrorlangan");
+      } else if (existingEmails.has(email)) {
+        rowErrors.push("Email allaqachon mavjud");
+      }
+      if (!password) rowErrors.push("password majburiy");
+      if (!className) {
+        rowErrors.push("className majburiy");
+      } else if (!cls) {
+        rowErrors.push(`Sinf topilmadi: ${className}`);
+      }
+      if (gender && !["male", "female"].includes(gender)) {
+        rowErrors.push("gender faqat male yoki female bo'lishi kerak");
+      }
+      if (status && !["active", "inactive", "graduated"].includes(status)) {
+        rowErrors.push("status faqat active, inactive yoki graduated bo'lishi kerak");
+      }
+
+      const birthDate = parseOptionalImportDate(valueOf(row, "birthDate", "tug'ilgan sana", "tugilgan sana"), "Tug'ilgan sana", rowErrors);
+      const admissionOrderDate = parseOptionalImportDate(valueOf(row, "admissionOrderDate", "qabul buyruq sanasi"), "Qabul buyruq sanasi", rowErrors);
+      const classAdmissionDate = parseOptionalImportDate(valueOf(row, "classAcceptedDate", "classAdmissionDate", "sinfga qabul sanasi"), "Sinfga qabul sanasi", rowErrors);
+
+      if (rowErrors.length > 0) {
+        errors.push({ row: rowNumber, message: rowErrors.join("; ") });
+        return;
+      }
+
+      emailsInFile.add(email);
+      validRows.push({
+        row: rowNumber,
+        name: fullName,
+        email,
+        password,
+        phone: valueOf(row, "phone", "shaxsiy telefon raqami") || undefined,
+        classId: cls._id,
+        student: {
+          studentCode: valueOf(row, "studentCode", "id") || undefined,
+          birthDate,
+          gender: gender || undefined,
+          nationality: valueOf(row, "nationality", "millati") || undefined,
+          birthCertSeries: valueOf(row, "birthCertSeries", "guvohnoma seriyasi") || undefined,
+          birthCertNumber: valueOf(row, "birthCertNumber", "guvohnoma raqami") || birthCertificateCombined || undefined,
+          status: status || "active",
+          parentName: valueOf(row, "parentName", "ota-ona yoki vasiy fish", "ota ona yoki vasiy fish") || undefined,
+          parentPassport: valueOf(row, "parentPassport", "ota-ona yoki vasiy passporti", "ota ona yoki vasiy passporti") || undefined,
+          parentPhone: valueOf(row, "parentPhone", "ota-ona yoki vasiy telefon raqami", "ota ona yoki vasiy telefon raqami") || undefined,
+          region: valueOf(row, "region", "viloyat") || undefined,
+          district: valueOf(row, "district", "tuman") || undefined,
+          address: valueOf(row, "address", "to'liq manzil", "toliq manzil") || undefined,
+          academicYear: valueOf(row, "academicYear", "o'quv yili", "oquv yili") || undefined,
+          educationLanguage: valueOf(row, "educationLanguage", "ta'lim tili", "talim tili") || undefined,
+          admissionOrderNumber: valueOf(row, "admissionOrderNumber", "qabul buyruq raqami") || undefined,
+          admissionOrderDate,
+          classAdmissionDate,
+        },
+      });
+    });
+
+    let created = 0;
+    for (const row of validRows) {
+      let createdUser = null;
+      try {
+        createdUser = await User.create({
+          name: row.name,
+          email: row.email,
+          phone: row.phone || null,
+          password: row.password,
+          role: "student",
+          school: school._id,
+        });
+
+        await Student.create({
+          user: createdUser._id,
+          class: row.classId,
+          school: school._id,
+          ...row.student,
+        });
+        created += 1;
+      } catch (err) {
+        if (createdUser?._id) {
+          await User.deleteOne({ _id: createdUser._id });
+        }
+        errors.push({ row: row.row, message: err.message || "Qatorni saqlashda xatolik" });
+      }
+    }
+
+    return res.json({
+      created,
+      failed: errors.length,
+      errors,
+    });
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "O'quvchilarni import qilishda xatolik" });
+  }
+};
+
 const listStudentsForDirector = async (req, res) => {
   try {
     const school = await ensureSchoolManagementUser(req.user);
     const students = await Student.find({ school: school._id })
-      .populate("user", "name email photoUrl")
+      .populate("user", "name email phone photoUrl")
       .populate("class", "name")
       .sort({ createdAt: -1 })
       .exec();
@@ -1469,13 +1765,29 @@ const listStudentsForDirector = async (req, res) => {
       userId: s.user?._id,
       name: s.user?.name,
       email: s.user?.email,
+      phone: s.user?.phone || "",
       photoUrl: s.user?.photoUrl || null,
       classId: s.class?._id,
       className: s.class?.name,
+      studentCode: s.studentCode || "",
+      birthDate: s.birthDate || null,
+      gender: s.gender || "",
+      nationality: s.nationality || "",
+      birthCertSeries: s.birthCertSeries || "",
+      birthCertNumber: s.birthCertNumber || "",
+      status: s.status || "",
+      admissionOrderNumber: s.admissionOrderNumber || "",
       academicYear: s.academicYear || "",
       educationLanguage: s.educationLanguage || "",
       admissionOrderDate: s.admissionOrderDate || null,
       classAcceptedDate: s.classAdmissionDate || null,
+      parentName: s.parentName || "",
+      parentPassport: s.parentPassport || "",
+      parentPhone: s.parentPhone || "",
+      region: s.region || "",
+      district: s.district || "",
+      address: s.address || "",
+      createdAt: s.createdAt || null,
     }));
 
     return res.json(result);
@@ -1808,6 +2120,7 @@ module.exports = {
   updateUserForDirector,
   deleteUserForDirector,
   getOverview,
+  getSubscriptionStatus,
   createClass,
   listClasses,
   getClassInsights,
@@ -1819,6 +2132,7 @@ module.exports = {
   updateTeacher,
   deleteTeacher,
   createStudent,
+  importStudents,
   listStudentsForDirector,
   updateStudentForDirector,
   createParent,

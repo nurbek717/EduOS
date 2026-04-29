@@ -23,6 +23,9 @@ type JwtPayload = {
   [key: string]: unknown;
 };
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+let refreshPromise: Promise<{ token: string; user: AuthUser | null }> | null = null;
+
 const decodeBase64Url = (value: string) => {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
   const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
@@ -38,6 +41,11 @@ const parseJwtPayload = (token: string): JwtPayload | null => {
   } catch {
     return null;
   }
+};
+
+export const getTokenExpiresAt = (token: string) => {
+  const payload = parseJwtPayload(token);
+  return payload?.exp ? payload.exp * 1000 : null;
 };
 
 export const isTokenExpired = (token: string, skewSeconds = 5) => {
@@ -72,6 +80,58 @@ export const getStoredAuth = () => {
   } catch {
     return { token, user: null as AuthUser | null };
   }
+};
+
+export const refreshAccessToken = async () => {
+  if (typeof window === "undefined") {
+    throw new Error("Refresh token is not available");
+  }
+
+  const refreshToken = localStorage.getItem("refresh_token");
+  if (!refreshToken) {
+    throw new Error("Refresh token is not available");
+  }
+
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = fetch(`${API_BASE_URL}/api/auth/refresh`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ refreshToken }),
+  })
+    .then(async (res) => {
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.message || "Failed to refresh session");
+      }
+
+      const nextToken = data.token || data.accessToken;
+      if (!nextToken) {
+        throw new Error("Refresh response does not include access token");
+      }
+
+      const normalizedRole = normalizeUserRole(data?.user?.role);
+      const normalizedUser = data?.user
+        ? {
+            ...data.user,
+            role: normalizedRole,
+          }
+        : getStoredAuth().user;
+
+      localStorage.setItem("auth_token", nextToken);
+      if (normalizedUser) {
+        localStorage.setItem("auth_user", JSON.stringify(normalizedUser));
+      }
+
+      return { token: nextToken, user: normalizedUser };
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
 };
 
 export const normalizeUserRole = (role?: MaybeLegacyUserRole | string | null): UserRole | undefined => {

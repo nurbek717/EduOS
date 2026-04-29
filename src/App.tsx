@@ -1,5 +1,8 @@
-import { lazy, Suspense, type ReactNode } from "react";
+import AddStudent from "./pages/AddStudent";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import SubscriptionGuard from "@/components/SubscriptionGuard";
+import { FullScreenSkeleton } from "@/components/ui/skeletons";
 
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -8,9 +11,11 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import {
   clearAuthStorage,
   dashboardPathByRole,
+  getTokenExpiresAt,
   getStoredAuth,
   isTokenExpired,
   normalizeUserRole,
+  refreshAccessToken,
   type UserRole,
 } from "@/lib/auth";
 
@@ -30,11 +35,7 @@ const DirectorDashboard = lazy(() => import("./pages/DirectorDashboard"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const RouteFallback = () => (
-  <div className="flex min-h-screen items-center justify-center bg-background px-4 text-sm text-muted-foreground">
-    Yuklanmoqda...
-  </div>
-);
+const RouteFallback = () => <FullScreenSkeleton />;
 
 type RequireRoleProps = {
   allowed: UserRole[];
@@ -42,10 +43,47 @@ type RequireRoleProps = {
 };
 
 const RequireRole = ({ allowed, children }: RequireRoleProps) => {
+  const [refreshState, setRefreshState] = useState<"idle" | "checking" | "failed">("idle");
+  const [authVersion, setAuthVersion] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const { token } = getStoredAuth();
+    const refreshToken = localStorage.getItem("refresh_token");
+    const shouldRefresh = Boolean(refreshToken) && (!token || isTokenExpired(token));
+
+    if (!shouldRefresh) return;
+
+    let cancelled = false;
+    setRefreshState("checking");
+
+    refreshAccessToken()
+      .then(() => {
+        if (cancelled) return;
+        setRefreshState("idle");
+        setAuthVersion((version) => version + 1);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        clearAuthStorage();
+        setRefreshState("failed");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authVersion]);
+
   if (typeof window === "undefined") return <>{children}</>;
 
   const { token, user } = getStoredAuth();
   const normalizedRole = normalizeUserRole(user?.role);
+  const refreshToken = localStorage.getItem("refresh_token");
+
+  if (refreshToken && (!token || isTokenExpired(token)) && refreshState !== "failed") {
+    return <FullScreenSkeleton />;
+  }
 
   if (!token || !normalizedRole) {
     clearAuthStorage();
@@ -64,12 +102,70 @@ const RequireRole = ({ allowed, children }: RequireRoleProps) => {
   return <>{children}</>;
 };
 
+const AuthRefreshManager = () => {
+  const [scheduleVersion, setScheduleVersion] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let timeoutId: number | null = null;
+
+    const scheduleRefresh = () => {
+      const token = localStorage.getItem("auth_token");
+      const refreshToken = localStorage.getItem("refresh_token");
+      if (!token || !refreshToken) return;
+
+      const expiresAt = getTokenExpiresAt(token);
+      if (!expiresAt) return;
+
+      const delay = Math.max(expiresAt - Date.now() - 60_000, 10_000);
+      timeoutId = window.setTimeout(() => {
+        void refreshAccessToken()
+          .catch(() => {
+            if (isTokenExpired(token)) {
+              clearAuthStorage();
+            }
+          })
+          .finally(() => setScheduleVersion((version) => version + 1));
+      }, delay);
+    };
+
+    const refreshIfNeeded = () => {
+      const token = localStorage.getItem("auth_token");
+      const refreshToken = localStorage.getItem("refresh_token");
+      if (!token || !refreshToken) return;
+      if (!isTokenExpired(token, 60)) return;
+
+      void refreshAccessToken()
+        .catch(() => {
+          if (isTokenExpired(token)) {
+            clearAuthStorage();
+          }
+        })
+        .finally(() => setScheduleVersion((version) => version + 1));
+    };
+
+    scheduleRefresh();
+    window.addEventListener("focus", refreshIfNeeded);
+    document.addEventListener("visibilitychange", refreshIfNeeded);
+
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId);
+      window.removeEventListener("focus", refreshIfNeeded);
+      document.removeEventListener("visibilitychange", refreshIfNeeded);
+    };
+  }, [scheduleVersion]);
+
+  return null;
+};
+
 const App = () => (
   <LanguageProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AuthRefreshManager />
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             {/* Asosiy kirish sahifasi sifatida Login */}
@@ -88,7 +184,9 @@ const App = () => (
               path="/student/dashboard"
               element={
                 <RequireRole allowed={["student"]}>
-                  <StudentDashboard />
+                  <SubscriptionGuard>
+                    <StudentDashboard />
+                  </SubscriptionGuard>
                 </RequireRole>
               }
             />
@@ -96,7 +194,9 @@ const App = () => (
               path="/parent/dashboard"
               element={
                 <RequireRole allowed={["parent"]}>
-                  <ParentDashboard />
+                  <SubscriptionGuard>
+                    <ParentDashboard />
+                  </SubscriptionGuard>
                 </RequireRole>
               }
             />
@@ -104,7 +204,9 @@ const App = () => (
               path="/teacher/dashboard"
               element={
                 <RequireRole allowed={["teacher"]}>
-                  <TeacherDashboard />
+                  <SubscriptionGuard>
+                    <TeacherDashboard />
+                  </SubscriptionGuard>
                 </RequireRole>
               }
             />
@@ -112,7 +214,9 @@ const App = () => (
               path="/director/dashboard"
               element={
                 <RequireRole allowed={["director"]}>
-                  <DirectorDashboard />
+                  <SubscriptionGuard>
+                    <DirectorDashboard />
+                  </SubscriptionGuard>
                 </RequireRole>
               }
             />
@@ -120,7 +224,19 @@ const App = () => (
               path="/school-admin/dashboard"
               element={
                 <RequireRole allowed={["school_admin"]}>
-                  <DirectorDashboard />
+                  <SubscriptionGuard>
+                    <DirectorDashboard />
+                  </SubscriptionGuard>
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/school-admin/dashboard/add-student"
+              element={
+                <RequireRole allowed={["school_admin"]}>
+                  <SubscriptionGuard>
+                    <AddStudent />
+                  </SubscriptionGuard>
                 </RequireRole>
               }
             />

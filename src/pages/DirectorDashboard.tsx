@@ -1,11 +1,15 @@
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import * as XLSX from "xlsx";
 import { useCallback, useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import DirectorLayout from "@/components/DirectorLayout";
 import DirectorFinanceSection from "@/components/director/DirectorFinanceSection";
 import TicketSystem from "@/components/director/TicketSystem";
+import UnifiedProfileSection from "@/components/dashboard/UnifiedProfileSection";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ListSkeleton, StatsCardsSkeleton, TableSkeleton } from "@/components/ui/skeletons";
 import { useRef } from "react";
 import { BookOpen, Users, GraduationCap, UserCircle, Mail, Lock, Eye, EyeOff, Pencil, Trash2, Upload, Plus, Wallet, TrendingUp, TrendingDown, AlertTriangle, Info, ShieldAlert, Phone, MapPin, Camera, Calendar, Search, Eraser, ChevronLeft, ChevronRight, ChevronUp, RotateCcw, FileSpreadsheet, FileText } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAppLocale } from "@/context/LanguageContext";
 import { useTranslation } from "react-i18next";
-import { normalizeUserRole } from "@/lib/auth";
+import { normalizeUserRole, refreshAccessToken } from "@/lib/auth";
 
 type DirectorSection = "dashboard" | "students" | "teachers" | "classes" | "schedule" | "payments" | "exams" | "settings" | "support";
 
@@ -26,6 +30,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const ALL_CLASSES_VALUE = "__all__";
 const DIRECTOR_USERS_PAGE_SIZE = 5;
 const STUDENTS_LIST_PAGE_SIZE = 10;
+const RENDER_LEGACY_PROFILE = Boolean(import.meta.env.VITE_RENDER_LEGACY_PROFILE);
 
 const resolveSubscriptionPlanName = (
   startAt?: string | null,
@@ -218,13 +223,29 @@ type StudentRowForParent = {
   userId?: string;
   name?: string;
   email?: string;
+  phone?: string;
   photoUrl?: string | null;
   classId?: string;
   className?: string;
+  studentCode?: string;
+  birthDate?: string | null;
+  gender?: string;
+  nationality?: string;
+  birthCertSeries?: string;
+  birthCertNumber?: string;
+  status?: string;
+  admissionOrderNumber?: string;
   academicYear?: string;
   educationLanguage?: string;
   admissionOrderDate?: string | null;
   classAcceptedDate?: string | null;
+  parentName?: string;
+  parentPassport?: string;
+  parentPhone?: string;
+  region?: string;
+  district?: string;
+  address?: string;
+  createdAt?: string | null;
 };
 
 type DirectorManageableRole = "teacher" | "student" | "parent";
@@ -331,6 +352,7 @@ const DirectorDashboard = () => {
   const { t: tTable } = useTranslation("director-table");
   const { t: tFilters } = useTranslation("director-filters");
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const locale = useAppLocale();
   const moneyFormatter = useMemo(() => new Intl.NumberFormat(locale), [locale]);
@@ -434,6 +456,32 @@ const DirectorDashboard = () => {
   const [teacherSubjectId, setTeacherSubjectId] = useState("");
   const [showTeacherPassword, setShowTeacherPassword] = useState(false);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const sectionParam = params.get("section");
+    const viewParam = params.get("view");
+
+    const allowedSections: DirectorSection[] = [
+      "dashboard",
+      "students",
+      "teachers",
+      "classes",
+      "schedule",
+      "payments",
+      "exams",
+      "settings",
+      "support",
+    ];
+    const allowedViews: Array<"base" | "list" | "attach"> = ["base", "list", "attach"];
+
+    if (sectionParam && allowedSections.includes(sectionParam as DirectorSection)) {
+      setSection(sectionParam as DirectorSection);
+    }
+    if (viewParam && allowedViews.includes(viewParam as "base" | "list" | "attach")) {
+      setStudentsView(viewParam as "base" | "list" | "attach");
+    }
+  }, [location.search]);
+
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newClassName, setNewClassName] = useState("");
 
@@ -513,6 +561,23 @@ const DirectorDashboard = () => {
     if (res.status === 401) {
       const data = await res.clone().json().catch(() => null);
       const message = data?.message || "Invalid or expired token";
+
+      try {
+        const refreshed = await refreshAccessToken();
+        const [input, init] = args;
+        const nextHeaders = new Headers(init?.headers);
+        nextHeaders.set("Authorization", `Bearer ${refreshed.token}`);
+        const retryRes = await fetch(input, {
+          ...init,
+          headers: nextHeaders,
+        });
+        if (retryRes.status !== 401) {
+          return retryRes;
+        }
+      } catch {
+        // Fall through to the existing auth expiry handling.
+      }
+
       handleAuthExpiry(message);
       throw new Error(message);
     }
@@ -606,6 +671,7 @@ const DirectorDashboard = () => {
   const [studentPhotoDialogOpen, setStudentPhotoDialogOpen] = useState(false);
   const [studentForPhoto, setStudentForPhoto] = useState<StudentRowForParent | null>(null);
   const [studentPhotoUrl, setStudentPhotoUrl] = useState<string | null>(null);
+  const [studentImporting, setStudentImporting] = useState(false);
   const studentPhotoInputRef = useRef<HTMLInputElement>(null);
   const studentImportInputRef = useRef<HTMLInputElement>(null);
 
@@ -1707,80 +1773,215 @@ const DirectorDashboard = () => {
     [attachTargetClassId, classes],
   );
 
-  const openGoogleSheets = () => {
-    window.open("https://docs.google.com/spreadsheets/create", "_blank", "noopener,noreferrer");
-  };
-
-  const downloadCsv = (filename: string, headers: string[], rows: string[][]) => {
-    const csvContent = [headers, ...rows]
-      .map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-    const blob = new Blob(["\uFEFF", csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
   const handleDownloadStudentTemplate = () => {
     const headers = [
-      "fullName",
-      "email",
-      "phone",
-      "parentName",
-      "className",
-      "academicYear",
-      "educationLanguage",
-      "admissionOrderDate",
-      "classAcceptedDate",
+      "FISH",
+      "Email",
+      "Parol",
+      "ID",
+      "Tug'ilgan sana",
+      "Jinsi",
+      "Millati",
+      "Guvohnoma seriya va raqami",
+      "Sinf kodi",
+      "Ta'lim tili",
+      "O'quvchi holati",
+      "Qabul buyruq raqami",
+      "Qabul buyruq sanasi",
+      "Shaxsiy telefon raqami",
+      "Ota-ona yoki vasiy FISH",
+      "Ota-ona yoki vasiy passporti",
+      "Ota-ona yoki vasiy telefon raqami",
+      "Viloyat",
+      "Tuman",
+      "To'liq manzil",
+      "O'quv yili",
+      "Sinfga qabul sanasi",
     ];
-    const rows = [["Ali Valiyev", "student@example.com", "+998901234567", "Valiyeva Dilbar", "5-A", "2025-2026", "uzbek", "2025-09-01", "2025-09-02"]];
-    downloadCsv("students-import-template.csv", headers, rows);
-    openGoogleSheets();
+    const rows: string[][] = [];
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws["!cols"] = headers.map((header) => ({ wch: Math.max(16, header.length + 4) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Import shabloni");
+    XLSX.writeFile(wb, "students-import-template.xlsx");
     toast({
       title: t("successTitle"),
-      description: "Import shabloni yuklandi.",
+      description: "Import shabloni Excel fayl sifatida yuklandi.",
     });
+  };
+
+  const convertImportFileToCsvFile = async (file: File) => {
+    const fileName = file.name.toLowerCase();
+    if (fileName.endsWith(".csv")) return file;
+
+    if (!fileName.endsWith(".xlsx") && !fileName.endsWith(".xls")) {
+      throw new Error("Faqat Excel (.xlsx/.xls) yoki CSV fayl yuklash mumkin.");
+    }
+
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: "array" });
+    const firstSheetName = workbook.SheetNames[0];
+    if (!firstSheetName) {
+      throw new Error("Excel faylda varaq topilmadi.");
+    }
+    const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[firstSheetName]);
+    return new File([csv], "students-import-template.csv", { type: "text/csv" });
+  };
+
+  const handleImportStudentsCsv = async (file: File) => {
+    if (!token) {
+      toast({
+        title: t("errorTitle"),
+        description: schoolManagerLoginMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setStudentImporting(true);
+    try {
+      const importFile = await convertImportFileToCsvFile(file);
+      const formData = new FormData();
+      formData.append("file", importFile);
+
+      const res = await apiFetch(`${API_BASE_URL}/api/director/students/import`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "O'quvchilarni import qilishda xatolik");
+      }
+
+      await Promise.all([
+        fetchStudentsForParents(),
+        fetchDirectorUsers({ role: directorUsersRoleFilter, search: directorUsersSearch }),
+        fetchOverview(),
+      ]);
+
+      const firstErrors = Array.isArray(data.errors)
+        ? data.errors.slice(0, 3).map((err: { row: number; message: string }) => `${err.row}-qator: ${err.message}`).join("\n")
+        : "";
+      toast({
+        title: data.failed > 0 ? "Import qisman bajarildi" : t("successTitle"),
+        description: `Qo'shildi: ${data.created || 0}, xato: ${data.failed || 0}${firstErrors ? `\n${firstErrors}` : ""}`,
+        variant: data.failed > 0 ? "destructive" : "default",
+      });
+    } catch (err) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : "O'quvchilarni import qilishda xatolik",
+        variant: "destructive",
+      });
+    } finally {
+      setStudentImporting(false);
+    }
   };
 
   const handleExportStudentsBase = () => {
     const headers = [
-  "FISH",
-  "ID",
-  "Tug'ilgan sana",
-  "Jinsi",
-  "Millati",
-  "Guvohnoma seriya va raqami",
-  "Sinf kodi",
-  "Ta'lim tili",
-  "O'quvchi holati",
-  "Qabul buyruq raqami",
-  "Qabul buyruq sanasi",
-  "Shaxsiy telefon raqami",
-  "Ota-ona yoki vasiy FISH",
-  "Ota-ona yoki vasiy passporti",
-  "Ota-ona yoki vasiy telefon raqami",
-  "Viloyat",
-  "Tuman",
-  "To'liq manzil"
-];
-    const rows = filteredStudentUsers.map((user) => [
-      decodeHtmlEntities(user.name) || "",
-      user.role === "student" ? "student" : "parent",
-      user.phone || "",
-      decodeHtmlEntities(user.parentName) || "",
-      decodeHtmlEntities(user.relatedLabel) || "",
-      user.createdAt ? new Date(user.createdAt).toLocaleDateString(locale) : "",
+      "FISH",
+      "ID",
+      "Tug'ilgan sana",
+      "Jinsi",
+      "Millati",
+      "Guvohnoma seriya va raqami",
+      "Sinf kodi",
+      "Ta'lim tili",
+      "O'quvchi holati",
+      "Qabul buyruq raqami",
+      "Qabul buyruq sanasi",
+      "Shaxsiy telefon raqami",
+      "Ota-ona yoki vasiy FISH",
+      "Ota-ona yoki vasiy passporti",
+      "Ota-ona yoki vasiy telefon raqami",
+      "Viloyat",
+      "Tuman",
+      "To'liq manzil"
+    ];
+    const formatExportDate = (value?: string | null) => {
+      if (!value) return "";
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleDateString(locale);
+    };
+    const genderLabel = (value?: string) => {
+      if (value === "male") return "Erkak";
+      if (value === "female") return "Ayol";
+      return "";
+    };
+    const statusLabel = (value?: string) => {
+      if (value === "active") return "O'quvchi";
+      if (value === "inactive") return "Vaqtincha to'xtagan";
+      if (value === "graduated") return "Bitirgan";
+      return "";
+    };
+    const sortedStudents = [...studentsForParents].sort((a, b) =>
+      decodeHtmlEntities(a.name || "").localeCompare(decodeHtmlEntities(b.name || ""), locale, {
+        numeric: true,
+        sensitivity: "base",
+      }),
+    );
+    const rows = sortedStudents.map((student) => [
+      decodeHtmlEntities(student.name || ""),
+      student.studentCode || student.id || "",
+      formatExportDate(student.birthDate),
+      genderLabel(student.gender),
+      student.nationality || "",
+      [student.birthCertSeries, student.birthCertNumber].filter(Boolean).join(" "),
+      decodeHtmlEntities(student.className || ""),
+      student.educationLanguage || "",
+      statusLabel(student.status),
+      student.admissionOrderNumber || "",
+      formatExportDate(student.admissionOrderDate),
+      student.phone || "",
+      decodeHtmlEntities(student.parentName || ""),
+      student.parentPassport || "",
+      student.parentPhone || "",
+      student.region || "",
+      student.district || "",
+      student.address || "",
     ]);
-    downloadCsv("O'quvchilar-bazasi-ro'yxati'qu ba ro'yxati.csv", headers, rows);
-    openGoogleSheets();
+
+    // SheetJS orqali .xlsx fayl yaratish
+    const wsData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    // Ustun kengliklarini belgilash (masalan, har bir ustun uchun 20)
+    // Ustunlar: A=25, D=28, F=28, N=28, qolganlari 20
+    ws['!cols'] = headers.map((_, idx) => {
+      // A=0, D=3, F=5, N=13
+      if (idx === 0) return { wch: 27 }; // A
+      if (idx === 3) return { wch: 28 }; // D
+      if (idx === 5) return { wch: 28 }; // F
+      if (idx === 13) return { wch: 28 }; // N
+      return { wch: 20 };
+    });
+
+    // Header ustunlariga to'q ko'k rang (Excel default header) berish
+    const headerFill = {
+      patternType: "solid",
+      fgColor: { rgb: "305496" }, // Excel default header color
+    };
+    headers.forEach((_, idx) => {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: idx });
+      if (!ws[cellRef]) return;
+      ws[cellRef].s = {
+        fill: headerFill,
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        alignment: { horizontal: "center", vertical: "center" },
+      };
+    });
+
+    // Workbook va faylni yuklash
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Oquvchilar");
+    XLSX.writeFile(wb, "Oquvchilar-bazasi.xlsx");
+
     toast({
       title: t("successTitle"),
-      description: "O'quvchilar bazasi eksport qilindi.",
+      description: "O'quvchilar bazasi .xlsx faylga eksport qilindi.",
     });
   };
 
@@ -2443,197 +2644,208 @@ const DirectorDashboard = () => {
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card
-                className="cursor-pointer transition hover:ring-2 hover:ring-primary/30"
-                onClick={() => setSection("classes")}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("classesAndParallels")}</CardTitle>
-                  <div className="rounded-lg bg-blue-500/10 p-2">
-                    <BookOpen className="h-4 w-4 text-blue-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {overview ? overview.classes : "—"}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{tStats("classesAndParallelsDesc")}</p>
-                </CardContent>
-              </Card>
+            {!overview ? (
+              <>
+                <StatsCardsSkeleton count={6} className="md:grid-cols-2 lg:grid-cols-4" />
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <Skeleton className="h-5 w-40" />
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <ListSkeleton rows={4} />
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="space-y-2">
+                      <Skeleton className="h-5 w-48" />
+                      <Skeleton className="h-4 w-56" />
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <ListSkeleton rows={3} />
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <Card
+                    className="cursor-pointer transition hover:ring-2 hover:ring-primary/30"
+                    onClick={() => setSection("classes")}
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("classesAndParallels")}</CardTitle>
+                      <div className="rounded-lg bg-blue-500/10 p-2">
+                        <BookOpen className="h-4 w-4 text-blue-600" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{overview.classes}</div>
+                      <p className="mt-1 text-xs text-muted-foreground">{tStats("classesAndParallelsDesc")}</p>
+                    </CardContent>
+                  </Card>
 
-              <Card
-                className="cursor-pointer transition hover:ring-2 hover:ring-primary/30"
-                onClick={() => setSection("teachers")}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("teachers")}</CardTitle>
-                  <div className="rounded-lg bg-emerald-500/10 p-2">
-                    <GraduationCap className="h-4 w-4 text-emerald-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {overview && overview.teacherStats
-                      ? overview.teacherStats[statRange]
-                      : overview
-                        ? overview.teachers
-                        : "—"}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{tStats("teachersDesc")}</p>
-                </CardContent>
-              </Card>
+                  <Card
+                    className="cursor-pointer transition hover:ring-2 hover:ring-primary/30"
+                    onClick={() => setSection("teachers")}
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("teachers")}</CardTitle>
+                      <div className="rounded-lg bg-emerald-500/10 p-2">
+                        <GraduationCap className="h-4 w-4 text-emerald-600" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {overview.teacherStats ? overview.teacherStats[statRange] : overview.teachers}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{tStats("teachersDesc")}</p>
+                    </CardContent>
+                  </Card>
 
-              <Card className="cursor-pointer transition hover:ring-2 hover:ring-primary/30" onClick={() => setSection("students")}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("students")}</CardTitle>
-                  <div className="rounded-lg bg-violet-500/10 p-2">
-                    <UserCircle className="h-4 w-4 text-violet-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {overview && overview.studentStats
-                      ? overview.studentStats[statRange]
-                      : overview
-                        ? overview.students
-                        : "—"}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{tStats("studentsDesc")}</p>
-                </CardContent>
-              </Card>
+                  <Card className="cursor-pointer transition hover:ring-2 hover:ring-primary/30" onClick={() => setSection("students")}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("students")}</CardTitle>
+                      <div className="rounded-lg bg-violet-500/10 p-2">
+                        <UserCircle className="h-4 w-4 text-violet-600" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {overview.studentStats ? overview.studentStats[statRange] : overview.students}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{tStats("studentsDesc")}</p>
+                    </CardContent>
+                  </Card>
 
-              <Card className="cursor-default">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("parents")}</CardTitle>
-                  <div className="rounded-lg bg-amber-500/10 p-2">
-                    <Users className="h-4 w-4 text-amber-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {overview ? overview.parents : "—"}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{tStats("parentsDesc")}</p>
-                </CardContent>
-              </Card>
+                  <Card className="cursor-default">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("parents")}</CardTitle>
+                      <div className="rounded-lg bg-amber-500/10 p-2">
+                        <Users className="h-4 w-4 text-amber-600" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{overview.parents}</div>
+                      <p className="mt-1 text-xs text-muted-foreground">{tStats("parentsDesc")}</p>
+                    </CardContent>
+                  </Card>
 
-              <div className="md:col-span-2 lg:col-span-4">
-                <p className=" text-gray-500 text-sm font-semibold text-foreground"> MOLIYAVIY FAOLLIK</p>
-              </div>
-
-              <Card
-                className="cursor-pointer transition hover:ring-2 hover:ring-primary/30 lg:col-span-2"
-                onClick={() => setSection("payments")}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("monthIncome")}</CardTitle>
-                  <div className="rounded-lg bg-emerald-500/10 p-2">
-                    <TrendingUp className="h-4 w-4 text-emerald-600" />
+                  <div className="md:col-span-2 lg:col-span-4">
+                    <p className=" text-gray-500 text-sm font-semibold text-foreground"> MOLIYAVIY FAOLLIK</p>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatMoney(overview?.finance?.monthIncome || 0)}</div>
-                  <p className="mt-1 text-xs text-muted-foreground">{tStats("monthIncomeDesc")}</p>
-                </CardContent>
-              </Card>
 
-              <Card
-                className="cursor-pointer transition hover:ring-2 hover:ring-primary/30 lg:col-span-2"
-                onClick={() => setSection("payments")}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("monthExpense")}</CardTitle>
-                  <div className="rounded-lg bg-rose-500/10 p-2">
-                    <TrendingDown className="h-4 w-4 text-rose-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatMoney(overview?.finance?.monthExpense || 0)}</div>
-                  <p className="mt-1 text-xs text-muted-foreground">{tStats("monthExpenseDesc")}</p>
-                </CardContent>
-              </Card>
-            </div>
+                  <Card
+                    className="cursor-pointer transition hover:ring-2 hover:ring-primary/30 lg:col-span-2"
+                    onClick={() => setSection("payments")}
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("monthIncome")}</CardTitle>
+                      <div className="rounded-lg bg-emerald-500/10 p-2">
+                        <TrendingUp className="h-4 w-4 text-emerald-600" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{formatMoney(overview.finance?.monthIncome || 0)}</div>
+                      <p className="mt-1 text-xs text-muted-foreground">{tStats("monthIncomeDesc")}</p>
+                    </CardContent>
+                  </Card>
 
-            <div className="grid gap-4 lg:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("recentActivity")}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  {overview && overview.recentActivities.length > 0 ? (
-                    overview.recentActivities.map((item, idx) => (
-                      <div
-                        key={`${item.type}-${idx}-${item.title}`}
-                        className="border-b pb-2 last:border-b-0 last:pb-0"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-medium text-foreground">{item.title}</span>
-                          <Badge
-                            variant="outline"
-                            className={`text-[11px] capitalize border ${item.type === "teacher"
-                              ? "border-emerald-500 bg-emerald-50 text-foreground"
+                  <Card
+                    className="cursor-pointer transition hover:ring-2 hover:ring-primary/30 lg:col-span-2"
+                    onClick={() => setSection("payments")}
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("monthExpense")}</CardTitle>
+                      <div className="rounded-lg bg-rose-500/10 p-2">
+                        <TrendingDown className="h-4 w-4 text-rose-600" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{formatMoney(overview.finance?.monthExpense || 0)}</div>
+                      <p className="mt-1 text-xs text-muted-foreground">{tStats("monthExpenseDesc")}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{t("recentActivity")}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      {overview.recentActivities.length > 0 ? (
+                        overview.recentActivities.map((item, idx) => (
+                        <div
+                          key={`${item.type}-${idx}-${item.title}`}
+                          className="border-b pb-2 last:border-b-0 last:pb-0"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-medium text-foreground">{item.title}</span>
+                            <Badge
+                              variant="outline"
+                              className={`text-[11px] capitalize border ${item.type === "teacher"
+                                ? "border-emerald-500 bg-emerald-50 text-foreground"
+                                : item.type === "student"
+                                  ? "border-sky-500 bg-sky-50 text-foreground"
+                                  : "border-amber-500 bg-amber-50 text-foreground"
+                                }`}
+                            >
+                              {item.type === "teacher"
+                                ? tStats("typeTeacher")
+                                : item.type === "student"
+                                  ? tStats("typeStudent")
+                                  : tStats("typeParent")}
+                            </Badge>
+                          </div>
+                          <p
+                            className={`mt-0.5 text-[11px] font-medium ${item.type === "teacher"
+                              ? "text-emerald-600"
                               : item.type === "student"
-                                ? "border-sky-500 bg-sky-50 text-foreground"
-                                : "border-amber-500 bg-amber-50 text-foreground"
+                                ? "text-sky-600"
+                                : "text-amber-600"
                               }`}
                           >
-                            {item.type === "teacher"
-                              ? tStats("typeTeacher")
-                              : item.type === "student"
-                                ? tStats("typeStudent")
-                                : tStats("typeParent")}
-                          </Badge>
+                            {item.description}
+                          </p>
+                          <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                            {new Date(item.createdAt).toLocaleDateString()}
+                          </span>
                         </div>
-                        <p
-                          className={`mt-0.5 text-[11px] font-medium ${item.type === "teacher"
-                            ? "text-emerald-600"
-                            : item.type === "student"
-                              ? "text-sky-600"
-                              : "text-amber-600"
-                            }`}
-                        >
-                          {item.description}
-                        </p>
-                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                          {new Date(item.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      {t("recentActivityEmpty")}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+                      ))
+                      ) : (
+                        <p className="text-xs text-muted-foreground">{t("recentActivityEmpty")}</p>
+                      )}
+                    </CardContent>
+                  </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("alertsTitle")}</CardTitle>
-                  <CardDescription>{t("alertsDesc")}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  {overview && overview.alerts.length > 0 ? (
-                    overview.alerts.map((alert, idx) => (
-                      <div
-                        key={`${alert.level}-${idx}`}
-                        className={`rounded-md border px-3 py-2 text-xs ${alert.level === "warning"
-                          ? "border-amber-300 bg-amber-50 text-amber-900"
-                          : "border-sky-200 bg-sky-50 text-sky-900"
-                          }`}
-                      >
-                        {alert.message}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      {t("alertsEmpty")}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{t("alertsTitle")}</CardTitle>
+                      <CardDescription>{t("alertsDesc")}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      {overview.alerts.length > 0 ? (
+                        overview.alerts.map((alert, idx) => (
+                          <div
+                            key={`${alert.level}-${idx}`}
+                            className={`rounded-md border px-3 py-2 text-xs ${alert.level === "warning"
+                              ? "border-amber-300 bg-amber-50 text-amber-900"
+                              : "border-sky-200 bg-sky-50 text-sky-900"
+                              }`}
+                          >
+                            {alert.message}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-muted-foreground">{t("alertsEmpty")}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            )}
           </>
         )}
 
@@ -2672,7 +2884,7 @@ const DirectorDashboard = () => {
                     ) : null}
                     <div className="space-y-2">
                       {loadingClasses ? (
-                        <p className="text-xs text-muted-foreground">{tTable("loadingClasses")}</p>
+                        <ListSkeleton rows={4} />
                       ) : classes.length === 0 ? (
                         <p className="text-xs text-muted-foreground">
                           {isSchoolAdmin
@@ -2818,7 +3030,7 @@ const DirectorDashboard = () => {
                     ) : null}
                     <div className="space-y-1">
                       {loadingSubjects ? (
-                        <p className="text-xs text-muted-foreground">{tTable("loadingSubjects")}</p>
+                        <ListSkeleton rows={4} />
                       ) : subjects.length === 0 ? (
                         <p className="text-xs text-muted-foreground">
                           {isSchoolAdmin
@@ -2844,7 +3056,7 @@ const DirectorDashboard = () => {
                 <Card>
                   <CardHeader className="space-y-3">
                     <div>
-                      <CardTitle>{t("schedule.title")}</CardTitle>
+                      <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{t("schedule.title")}</h3>
                       <CardDescription>{t("schedule.description")}</CardDescription>
                     </div>
                     <div className="space-y-1">
@@ -2987,7 +3199,15 @@ const DirectorDashboard = () => {
                     {!selectedTimetableClassId ? (
                       <p className="text-sm text-muted-foreground">{t("schedule.selectClassToView")}</p>
                     ) : loadingTimetable ? (
-                      <p className="text-sm text-muted-foreground">{t("schedule.loading")}</p>
+                      <div className="grid gap-3 md:grid-cols-5">
+                        {Array.from({ length: 5 }).map((_, idx) => (
+                          <div key={idx} className="space-y-2 rounded-lg border bg-muted/40 p-2">
+                            <Skeleton className="h-3 w-16" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                          </div>
+                        ))}
+                      </div>
                     ) : timetableEntries.length === 0 ? (
                       <p className="text-sm text-muted-foreground">{t("schedule.empty")}</p>
                     ) : (
@@ -3084,10 +3304,10 @@ const DirectorDashboard = () => {
                   <Card>
                     <CardHeader className="space-y-3">
                       <div>
-                        <CardTitle>{t("exams.title")}</CardTitle>
-                        <CardDescription>
+                        <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{t("exams.title")}</h3>
+                        <p className="text-sm flex items-center justify-start gap-1 text-[#FE9F43] font-medium md:text-sm">
                             {t("exams.description")}
-                        </CardDescription>
+                        </p>
                       </div>
 
                       {isSchoolAdmin && (
@@ -3228,11 +3448,7 @@ const DirectorDashboard = () => {
                           </TableHeader>
                           <TableBody>
                             {loadingExams ? (
-                              <TableRow>
-                                <TableCell colSpan={7} className="h-16 text-center text-sm text-muted-foreground">
-                                  {t("exams.loading")}
-                                </TableCell>
-                              </TableRow>
+                              <TableSkeleton rows={5} columns={7} />
                             ) : exams.length === 0 ? (
                               <TableRow>
                                 <TableCell colSpan={7} className="h-16 text-center text-sm text-muted-foreground">
@@ -3338,11 +3554,7 @@ const DirectorDashboard = () => {
                               </TableHeader>
                               <TableBody>
                                 {examResultsLoading ? (
-                                  <TableRow>
-                                    <TableCell colSpan={6} className="h-16 text-center text-sm text-muted-foreground">
-                                      {t("exams.resultsLoading")}
-                                    </TableCell>
-                                  </TableRow>
+                                  <TableSkeleton rows={5} columns={6} />
                                 ) : examResults.length === 0 ? (
                                   <TableRow>
                                     <TableCell colSpan={6} className="h-16 text-center text-sm text-muted-foreground">
@@ -3423,7 +3635,17 @@ const DirectorDashboard = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {loadingClassInsights ? (
-                        <p className="text-sm text-muted-foreground">{t("analysis.loading")}</p>
+                        <div className="space-y-4">
+                          <div className="grid gap-4 md:grid-cols-3">
+                            {Array.from({ length: 3 }).map((_, idx) => (
+                              <div key={idx} className="rounded-lg border bg-card px-4 py-3">
+                                <Skeleton className="h-3 w-20" />
+                                <Skeleton className="mt-2 h-5 w-24" />
+                              </div>
+                            ))}
+                          </div>
+                          <ListSkeleton rows={4} />
+                        </div>
                       ) : !selectedTimetableClassId ? (
                         <p className="text-sm text-muted-foreground">{t("analysis.selectClass")}</p>
                       ) : selectedTimetableClassId === ALL_CLASSES_VALUE ? (
@@ -3776,15 +3998,12 @@ const DirectorDashboard = () => {
                         <input
                           ref={studentImportInputRef}
                           type="file"
-                          accept=".csv"
+                          accept=".xlsx,.xls,.csv"
                           className="hidden"
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
-                            toast({
-                              title: t("savedTitle"),
-                              description: `${file.name} tanlandi. Import logikasi keyingi bosqichda ulanadi.`,
-                            });
+                            void handleImportStudentsCsv(file);
                             e.currentTarget.value = "";
                           }}
                         />
@@ -3822,10 +4041,11 @@ const DirectorDashboard = () => {
                               <Button
                                 type="button"
                                 className="h-9 shrink-0 bg-blue-600 px-4 text-sm text-white hover:bg-blue-700"
+                                disabled={studentImporting}
                                 onClick={() => studentImportInputRef.current?.click()}
                               >
                                 <Upload className="mr-2 h-4 w-4" />
-                                Import
+                                {studentImporting ? "Import qilinmoqda..." : "Import"}
                               </Button>
 
                               <Button
@@ -3846,12 +4066,12 @@ const DirectorDashboard = () => {
                                 Import shabloni
                               </Button>
 
-                              <DialogTrigger asChild>
+                              <Link to="/school-admin/dashboard/add-student">
                                 <Button className="h-9 shrink-0 bg-emerald-700 px-4 text-sm text-white hover:bg-emerald-800">
                                   <Plus className="mr-2 h-4 w-4" />
                                   Qo&apos;shish
                                 </Button>
-                              </DialogTrigger>
+                              </Link>
                             </div>
                           ) : (
                             <DialogTrigger asChild>
@@ -4057,11 +4277,7 @@ const DirectorDashboard = () => {
                           </TableHeader>
                           <TableBody>
                             {directorUsersLoading ? (
-                              <TableRow>
-                                <TableCell colSpan={isSchoolAdmin ? 8 : 7} className="h-24 text-center text-sm text-muted-foreground">
-                                  {t("users.loading")}
-                                </TableCell>
-                              </TableRow>
+                              <TableSkeleton rows={5} columns={isSchoolAdmin ? 8 : 7} />
                             ) : paginatedFilteredStudentUsers.length === 0 ? (
                               <TableRow>
                                 <TableCell colSpan={isSchoolAdmin ? 8 : 7} className="h-24 text-center text-sm text-muted-foreground">
@@ -4172,11 +4388,7 @@ const DirectorDashboard = () => {
                   </TableHeader>
                   <TableBody>
                     {loadingTeachers ? (
-                      <TableRow>
-                        <TableCell colSpan={isSchoolAdmin ? 5 : 4} className="py-6 text-center text-sm text-muted-foreground">
-                          {t("loading")}
-                        </TableCell>
-                      </TableRow>
+                      <TableSkeleton rows={5} columns={isSchoolAdmin ? 5 : 4} />
                     ) : teachers.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={isSchoolAdmin ? 5 : 4} className="py-6 text-center text-sm text-muted-foreground">
@@ -4241,7 +4453,9 @@ const DirectorDashboard = () => {
                         <h3 className="text-sm font-semibold text-foreground">Biriktirilgan o&apos;quvchilar ro&apos;yxati</h3>
                         <p className="mt-1 text-xs text-muted-foreground">Tartib raqami bilan biriktirilgan o&apos;quvchilar.</p>
                         {loadingStudentsForParents ? (
-                          <p className="mt-4 text-xs text-muted-foreground">{t("loading")}</p>
+                          <div className="mt-4">
+                            <ListSkeleton rows={4} />
+                          </div>
                         ) : attachedStudents.length === 0 ? (
                           <p className="mt-4 text-xs text-muted-foreground">Hozircha biriktirilgan o&apos;quvchilar yo&apos;q.</p>
                         ) : (
@@ -4640,6 +4854,14 @@ const DirectorDashboard = () => {
         {
           section === "settings" && (
             <div className="space-y-6">
+              <UnifiedProfileSection
+                token={token}
+                user={currentUser}
+                storageKey="director_profile_meta"
+                roleLabel={profileRoleLabel}
+              />
+
+              {RENDER_LEGACY_PROFILE && (
               <Card className="border-slate-200 bg-slate-50/40">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-3">
@@ -4829,6 +5051,7 @@ const DirectorDashboard = () => {
                   </div>
                 </CardContent>
               </Card>
+              )}
 
               <Card>
                   <CardHeader>
@@ -5256,4 +5479,7 @@ const DirectorDashboard = () => {
 };
 
 export default DirectorDashboard;
+// Nested routes chiqishi uchun layout oxirida Outlet qo'shildi
+// ...existing code...
+  <Outlet />
 

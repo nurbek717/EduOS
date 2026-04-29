@@ -6,13 +6,16 @@ import LiveDateTimeBadge from "@/components/dashboard/LiveDateTimeBadge";
 import { useTranslation } from "react-i18next";
 import ParentLayout, { ParentSection } from "@/components/ParentLayout";
 import SectionTitle from "@/components/SectionTitle";
+import UnifiedProfileSection from "@/components/dashboard/UnifiedProfileSection";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ChatSkeleton, ListSkeleton } from "@/components/ui/skeletons";
 import { useToast } from "@/hooks/use-toast";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const RENDER_LEGACY_PROFILE = Boolean(import.meta.env.VITE_RENDER_LEGACY_PROFILE);
 
 type FaceApiModule = typeof import("@/lib/faceApi");
 
@@ -868,7 +871,7 @@ const ParentDashboard = () => {
 
         {(section === "overview" || section === "grades") && (
           <div>
-            <SectionTitle title={section === "overview" ? tp("grades.todayTitle") : tp("grades.title")} centered={false} />
+            <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{section === "overview" ? tp("grades.todayTitle") : tp("grades.title")}</h3>
             <div className="space-y-2">
             {(section === "overview" ? grades.slice(0, 3) : grades).map((g, i) => (
                 <motion.div
@@ -914,7 +917,7 @@ const ParentDashboard = () => {
 
         {section === "homework" && (
           <div className="space-y-3">
-            <SectionTitle title={tp("homework.title")} centered={false} />
+            <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{tp("homework.title")}</h3>
             {!homework.length ? (
               <p className="text-xs text-muted-foreground">
                 {tp("homework.empty")}
@@ -960,11 +963,11 @@ const ParentDashboard = () => {
 
         {section === "exams" && (
           <div className="space-y-3">
-            <SectionTitle title={tp("exams.title")} centered={false} />
+            <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{tp("exams.title")}</h3>
 
             {!examResults.length ? (
               examResultsLoading ? (
-                <p className="text-xs text-muted-foreground">{tp("exams.loading")}</p>
+                <ListSkeleton rows={4} />
               ) : examResultsError ? (
                 <p className="text-xs text-destructive">{examResultsError}</p>
               ) : (
@@ -1022,7 +1025,7 @@ const ParentDashboard = () => {
               <CardContent className="p-3 space-y-3">
                 <SectionTitle title={tp("support.targetsTitle")} centered={false} />
                 {chatLoadingTargets ? (
-                  <p className="text-xs text-muted-foreground">{tp("common.loading")}</p>
+                  <ChatSkeleton variant="targets" rows={3} />
                 ) : (
                   <>
                     <div className="space-y-2">
@@ -1054,7 +1057,7 @@ const ParentDashboard = () => {
                 <div className="space-y-2 border-t pt-3">
                   <p className="text-xs font-medium text-muted-foreground">{tp("support.myChats")}</p>
                   {chatLoadingThreads ? (
-                    <p className="text-xs text-muted-foreground">{tp("common.loading")}</p>
+                    <ChatSkeleton variant="threads" rows={3} />
                   ) : chatThreadsError ? (
                     <p className="text-xs text-destructive">{chatThreadsError}</p>
                   ) : chatThreads.length === 0 ? (
@@ -1083,14 +1086,14 @@ const ParentDashboard = () => {
 
             <Card>
               <CardContent className="p-3 space-y-3">
-                <SectionTitle title={tp("support.chatTitle")} centered={false} />
+                <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{tp("support.chatTitle")}</h3>
                 {!selectedThreadId ? (
                   <p className="text-xs text-muted-foreground">{tp("support.selectTeacher")}</p>
                 ) : (
                   <>
                     <div className="h-80 overflow-auto rounded-md border p-2 space-y-2 bg-muted/20">
                       {chatLoadingMessages ? (
-                        <p className="text-xs text-muted-foreground">{tp("support.messagesLoading")}</p>
+                        <ChatSkeleton variant="messages" rows={5} />
                       ) : chatMessages.length === 0 ? (
                         <p className="text-xs text-muted-foreground">{tp("support.noMessages")}</p>
                       ) : (
@@ -1251,6 +1254,16 @@ const ParentDashboard = () => {
         )}
 
         {section === "profile" && (
+          <UnifiedProfileSection
+            token={token}
+            user={user}
+            storageKey="parent_profile_meta"
+            roleLabel="Ota-ona"
+            onUserUpdated={(patch) => setUser((prev) => (prev ? { ...prev, ...patch } : prev))}
+          />
+        )}
+
+        {RENDER_LEGACY_PROFILE && section === "profile" && (
           <Card className="border-slate-200 bg-slate-50/40">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3">

@@ -6,6 +6,7 @@ const {
   updateUser,
   deleteUser,
   createOrExtendSubscription,
+  setSubscriptionEndAt,
   listSubscriptions,
 } = require("../controllers/admin.controller");
 const { authRequired, requireRoles } = require("../middleware/auth.middleware");
@@ -22,6 +23,7 @@ router.patch("/users/:id", validators.adminUpdateUser, updateUser);
 router.delete("/users/:id", validators.idParam, deleteUser);
 
 router.post("/subscriptions", validators.adminCreateSubscription, createOrExtendSubscription);
+router.patch("/subscriptions/:id", validators.adminSetSubscriptionEndAt, setSubscriptionEndAt);
 router.get("/subscriptions", listSubscriptions);
 
 module.exports = router;

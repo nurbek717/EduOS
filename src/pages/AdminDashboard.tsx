@@ -14,6 +14,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { ChartSkeleton, StatsCardsSkeleton, TableSkeleton } from "@/components/ui/skeletons";
+import UnifiedProfileSection from "@/components/dashboard/UnifiedProfileSection";
 import { useToast } from "@/hooks/use-toast";
 import { useAppLocale } from "@/context/LanguageContext";
 import { useTranslation } from "react-i18next";
@@ -206,7 +208,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [schools, setSchools] = useState<School[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [section, setSection] = useState<"overview" | "schools" | "users" | "subscriptions" | "exams">("schools");
+  const [section, setSection] = useState<"overview" | "schools" | "users" | "subscriptions" | "exams" | "profile">("schools");
   const [weekOffset, setWeekOffset] = useState(0);
   const [examsLoading, setExamsLoading] = useState(false);
   const [exams, setExams] = useState<AdminExam[]>([]);
@@ -255,6 +257,10 @@ const AdminDashboard = () => {
   const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
   const [subscriptionsLoading, setSubscriptionsLoading] = useState(false);
   const [subscriptionsSubmitting, setSubscriptionsSubmitting] = useState(false);
+  const [subscriptionEditOpen, setSubscriptionEditOpen] = useState(false);
+  const [subscriptionEditSubmitting, setSubscriptionEditSubmitting] = useState(false);
+  const [subscriptionEditTarget, setSubscriptionEditTarget] = useState<SubscriptionItem | null>(null);
+  const [subscriptionEditEndAt, setSubscriptionEditEndAt] = useState<string>("");
   const [subscriptionSchoolId, setSubscriptionSchoolId] = useState<string>("");
   const [subscriptionDays, setSubscriptionDays] = useState<number>(30);
   const [nowMs, setNowMs] = useState<number>(Date.now());
@@ -550,6 +556,70 @@ const AdminDashboard = () => {
       });
     } finally {
       setSubscriptionsSubmitting(false);
+    }
+  };
+
+  const handleOpenSubscriptionEdit = (sub: SubscriptionItem) => {
+    setSubscriptionEditTarget(sub);
+    const d = sub.endAt ? new Date(sub.endAt) : null;
+    const yyyy = d ? d.getFullYear() : new Date().getFullYear();
+    const mm = d ? String(d.getMonth() + 1).padStart(2, "0") : String(new Date().getMonth() + 1).padStart(2, "0");
+    const dd = d ? String(d.getDate()).padStart(2, "0") : String(new Date().getDate()).padStart(2, "0");
+    setSubscriptionEditEndAt(`${yyyy}-${mm}-${dd}`);
+    setSubscriptionEditOpen(true);
+  };
+
+  const handleSaveSubscriptionEndAt = async () => {
+    if (!token) {
+      toast({
+        title: ad("toasts.error"),
+        description: ad("errors.superAdminLoginRequired"),
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!subscriptionEditTarget) return;
+    if (!subscriptionEditEndAt) {
+      toast({
+        title: ad("toasts.insufficient"),
+        description: "Tugash sanasini tanlang",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSubscriptionEditSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/subscriptions/${subscriptionEditTarget.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          endAt: subscriptionEditEndAt,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Obunani yangilashda xatolik");
+
+      toast({
+        title: ad("toasts.success"),
+        description: "Obuna tugash sanasi yangilandi",
+      });
+
+      setSubscriptionEditOpen(false);
+      setSubscriptionEditTarget(null);
+      await fetchSubscriptions();
+      await fetchStats(weekOffset);
+    } catch (err: unknown) {
+      toast({
+        title: ad("toasts.error"),
+        description: err instanceof Error ? err.message : "Obunani yangilashda xatolik",
+        variant: "destructive",
+      });
+    } finally {
+      setSubscriptionEditSubmitting(false);
     }
   };
 
@@ -923,6 +993,22 @@ const AdminDashboard = () => {
     typeof topSubscriptionEnd === "number"
       ? Math.max(0, Math.ceil((topSubscriptionEnd - nowMs) / (24 * 60 * 60 * 1000)))
       : null;
+  const adminSubscriptionItems = subscriptionsForOverviewUI.map((sub) => {
+    const endTime = sub.endAt ? new Date(sub.endAt).getTime() : NaN;
+    const diffMs = Number.isNaN(endTime) ? null : endTime - nowMs;
+    const expired = typeof diffMs === "number" ? diffMs <= 0 : false;
+    const daysLeft = typeof diffMs === "number" ? (expired ? 0 : Math.max(0, Math.ceil(diffMs / (24 * 60 * 60 * 1000)))) : null;
+
+    return {
+      planName: sub.schoolName || "Maktab",
+      schoolId: sub.schoolId,
+      startDate: sub.createdAt || null,
+      endDate: sub.endAt || null,
+      contractNumber: `SUB-${sub.schoolId?.slice?.(-6) || "000000"}`,
+      status: expired ? "expired" as const : "active" as const,
+      daysLeft,
+    };
+  });
 
   return (
     <AdminLayout
@@ -940,9 +1026,22 @@ const AdminDashboard = () => {
         status: topSubscriptionDaysLeft === 0 ? "expired" : "active",
         daysLeft: topSubscriptionDaysLeft,
       }}
+      subscriptionItems={adminSubscriptionItems}
     >
       <div className="space-y-8">
+        {section === "profile" && (
+          <UnifiedProfileSection
+            token={token}
+            user={typeof window !== "undefined" ? JSON.parse(localStorage.getItem("auth_user") || "{}") : null}
+            storageKey="admin_profile_meta"
+            roleLabel="Super Admin"
+          />
+        )}
+
         {/* Stats cards */}
+        {!stats && section === "overview" && (
+          <StatsCardsSkeleton count={6} className="md:grid-cols-2 lg:grid-cols-3" />
+        )}
         {stats && section === "overview" && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {overviewStatCards.map((card) => (
@@ -1101,7 +1200,7 @@ const AdminDashboard = () => {
               </CardContent>
               </Card>
 
-              <Suspense fallback={<Card><CardContent className="h-64 flex items-center justify-center text-sm text-muted-foreground">{ad("overview.chartLoading")}</CardContent></Card>}>
+              <Suspense fallback={<ChartSkeleton height={256} />}>
                 <AdminSchoolsChart
                   data={stats?.schoolsLast7Days || []}
                   range={stats?.range}
@@ -1499,18 +1598,15 @@ const AdminDashboard = () => {
                       <TableHead>{ad("subscriptions.table.school")}</TableHead>
                       <TableHead>{ad("subscriptions.table.endDate")}</TableHead>
                       <TableHead className="text-right">{ad("subscriptions.table.daysLeft")}</TableHead>
+                      <TableHead className="text-right">Amallar</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {subscriptionsLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="h-24 text-center text-sm text-muted-foreground">
-                          {ad("subscriptions.loading")}
-                        </TableCell>
-                      </TableRow>
+                      <TableSkeleton rows={5} columns={4} />
                     ) : subscriptions.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={3} className="h-24 text-center">
+                        <TableCell colSpan={4} className="h-24 text-center">
                           <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                             <School className="h-10 w-10 opacity-40" />
                             <p className="text-sm font-medium">{ad("subscriptions.empty")}</p>
@@ -1536,6 +1632,12 @@ const AdminDashboard = () => {
                               ) : (
                                 ad("subscriptions.daysLeft", { count: daysLeft })
                               )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button type="button" variant="outline" size="sm" onClick={() => handleOpenSubscriptionEdit(sub)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                O'zgartirish
+                              </Button>
                             </TableCell>
                           </TableRow>
                         );
@@ -1577,6 +1679,37 @@ const AdminDashboard = () => {
                   </div>
                 )}
               </div>
+
+              <Dialog open={subscriptionEditOpen} onOpenChange={setSubscriptionEditOpen}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Obuna tugash sanasini o'zgartirish</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-2">
+                    <Label>Maktab</Label>
+                    <div className="rounded-md border bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                      {subscriptionEditTarget?.schoolName || "-"}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="subscription-edit-endAt">Tugash sanasi</Label>
+                    <Input
+                      id="subscription-edit-endAt"
+                      type="date"
+                      value={subscriptionEditEndAt}
+                      onChange={(e) => setSubscriptionEditEndAt(e.target.value)}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setSubscriptionEditOpen(false)} disabled={subscriptionEditSubmitting}>
+                      Bekor qilish
+                    </Button>
+                    <Button type="button" onClick={() => void handleSaveSubscriptionEndAt()} disabled={subscriptionEditSubmitting || !subscriptionEditEndAt}>
+                      {subscriptionEditSubmitting ? ad("common.saving") : "Saqlash"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         )}
@@ -1610,11 +1743,7 @@ const AdminDashboard = () => {
                 </TableHeader>
                 <TableBody>
                   {examsLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center text-sm text-muted-foreground">
-                        {ad("exams.loading")}
-                      </TableCell>
-                    </TableRow>
+                    <TableSkeleton rows={5} columns={6} />
                   ) : exams.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="h-24 text-center text-sm text-muted-foreground">
@@ -1718,11 +1847,7 @@ const AdminDashboard = () => {
                     </TableHeader>
                     <TableBody>
                       {examResultsLoading ? (
-                        <TableRow>
-                          <TableCell colSpan={5} className="h-20 text-center text-sm text-muted-foreground">
-                            {ad("exams.results.loading")}
-                          </TableCell>
-                        </TableRow>
+                        <TableSkeleton rows={5} columns={5} />
                       ) : examResults.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="h-20 text-center text-sm text-muted-foreground">
@@ -1821,11 +1946,7 @@ const AdminDashboard = () => {
                 </TableHeader>
                 <TableBody>
                   {usersLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center text-sm text-muted-foreground">
-                        {ad("users.loading")}
-                      </TableCell>
-                    </TableRow>
+                    <TableSkeleton rows={5} columns={5} />
                   ) : users.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="h-28 text-center">

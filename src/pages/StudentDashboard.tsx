@@ -3,11 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { BookOpen, Clock, FileText, Award, CalendarDays, MapPin, Pencil, Upload, UserCircle, Camera } from "lucide-react";
 import LiveDateTimeBadge from "@/components/dashboard/LiveDateTimeBadge";
+import UnifiedProfileSection from "@/components/dashboard/UnifiedProfileSection";
 import StudentLayout, { type StudentSection } from "@/components/StudentLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ListSkeleton, StatsCardsSkeleton, TableSkeleton } from "@/components/ui/skeletons";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const RENDER_LEGACY_PROFILE = Boolean(import.meta.env.VITE_RENDER_LEGACY_PROFILE);
 
 type ApiGrade = { _id: string; grade: number; date: string; subject?: { name?: string }; teacherName?: string };
 type ApiAttendance = { _id: string; date: string; status: "present" | "absent" | "late" };
@@ -1062,70 +1066,68 @@ const StudentDashboard = () => {
               <LiveDateTimeBadge />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {td("overview.avgGrade")}
-                  </CardTitle>
-                  <div className="rounded-lg bg-primary/10 p-2">
-                    <Award className="h-4 w-4 text-primary" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-foreground">
-                    {loadingGrades ? "—" : avgGrade ?? "—"}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{td("overview.avgGradeHint")}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {td("overview.subjectCount")}
-                  </CardTitle>
-                  <div className="rounded-lg bg-blue-500/10 p-2">
-                    <BookOpen className="h-4 w-4 text-blue-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-foreground">
-                    {loadingGrades ? "—" : subjectCount}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{td("overview.gradedSubjects")}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {td("overview.homework")}
-                  </CardTitle>
-                  <div className="rounded-lg bg-amber-500/10 p-2">
-                    <FileText className="h-4 w-4 text-amber-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-foreground">
-                    {loadingHomework ? "—" : homework.length}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{td("overview.classAssigned")}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{td("overview.attendance")}</CardTitle>
-                  <div className="rounded-lg bg-emerald-500/10 p-2">
-                    <CalendarDays className="h-4 w-4 text-emerald-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-foreground">
-                    {loadingAttendance ? "—" : attendancePercent != null ? `${attendancePercent}%` : "—"}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{td("overview.currentMonth")}</p>
-                </CardContent>
-              </Card>
-            </div>
+            {loadingGrades || loadingHomework || loadingAttendance ? (
+              <StatsCardsSkeleton count={4} className="md:grid-cols-2 lg:grid-cols-4" />
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {td("overview.avgGrade")}
+                    </CardTitle>
+                    <div className="rounded-lg bg-primary/10 p-2">
+                      <Award className="h-4 w-4 text-primary" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-foreground">{avgGrade ?? "—"}</div>
+                    <p className="mt-1 text-xs text-muted-foreground">{td("overview.avgGradeHint")}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {td("overview.subjectCount")}
+                    </CardTitle>
+                    <div className="rounded-lg bg-blue-500/10 p-2">
+                      <BookOpen className="h-4 w-4 text-blue-600" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-foreground">{subjectCount}</div>
+                    <p className="mt-1 text-xs text-muted-foreground">{td("overview.gradedSubjects")}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {td("overview.homework")}
+                    </CardTitle>
+                    <div className="rounded-lg bg-amber-500/10 p-2">
+                      <FileText className="h-4 w-4 text-amber-600" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-foreground">{homework.length}</div>
+                    <p className="mt-1 text-xs text-muted-foreground">{td("overview.classAssigned")}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">{td("overview.attendance")}</CardTitle>
+                    <div className="rounded-lg bg-emerald-500/10 p-2">
+                      <CalendarDays className="h-4 w-4 text-emerald-600" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-foreground">
+                      {attendancePercent != null ? `${attendancePercent}%` : "—"}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{td("overview.currentMonth")}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             <Card>
               <CardHeader>
@@ -1150,7 +1152,11 @@ const StudentDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   {loadingTimetable ? (
-                    <p className="text-sm text-muted-foreground">{td("common.loading")}</p>
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-3 w-40" />
+                      <Skeleton className="h-3 w-28" />
+                    </div>
                   ) : nextLesson ? (
                     <div className="space-y-1">
                       <p className="text-base font-semibold text-foreground">{nextLesson.subjectName}</p>
@@ -1173,7 +1179,9 @@ const StudentDashboard = () => {
                   <CardTitle className="text-sm text-muted-foreground">{td("schedule.todayLessons")}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-foreground">{loadingTimetable ? "—" : todaySchedule.length}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {loadingTimetable ? <Skeleton className="h-7 w-16" /> : todaySchedule.length}
+                  </p>
                   <p className="text-xs text-muted-foreground">{td("schedule.onDay", { day: dayLabel(new Date().getDay()) })}</p>
                 </CardContent>
               </Card>
@@ -1183,7 +1191,9 @@ const StudentDashboard = () => {
                   <CardTitle className="text-sm text-muted-foreground">{td("schedule.weeklyLessons")}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-foreground">{loadingTimetable ? "—" : timetable.length}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {loadingTimetable ? <Skeleton className="h-7 w-16" /> : timetable.length}
+                  </p>
                   <p className="text-xs text-muted-foreground">{td("schedule.weeklyCount")}</p>
                 </CardContent>
               </Card>
@@ -1201,7 +1211,15 @@ const StudentDashboard = () => {
               </CardHeader>
               <CardContent>
                 {loadingTimetable ? (
-                  <div className="py-6 text-center text-sm text-muted-foreground">{td("common.loading")}</div>
+                  <div className="grid gap-3 md:grid-cols-4 lg:grid-cols-7">
+                    {Array.from({ length: 7 }).map((_, idx) => (
+                      <div key={idx} className="space-y-2 rounded-lg border bg-muted/40 p-2">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                      </div>
+                    ))}
+                  </div>
                 ) : timetable.length === 0 ? (
                   <div className="py-6 text-center text-sm text-muted-foreground">
                     {user?.className
@@ -1258,7 +1276,7 @@ const StudentDashboard = () => {
         {section === "grades" && (
           <Card>
             <CardHeader>
-              <CardTitle>{td("grades.title")}</CardTitle>
+              <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{td("grades.title")}</h3>
               <CardDescription>
                 {td("grades.desc")}
               </CardDescription>
@@ -1298,7 +1316,19 @@ const StudentDashboard = () => {
 
               <div className="overflow-x-auto">
               {loadingGrades ? (
-                <div className="py-8 text-center text-sm text-muted-foreground">{td("common.loading")}</div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="font-semibold">{td("grades.table.subject")}</TableHead>
+                      <TableHead className="font-semibold">{td("grades.table.teacher")}</TableHead>
+                      <TableHead className="text-center font-semibold">{td("grades.table.grade")}</TableHead>
+                      <TableHead className="font-semibold">{td("grades.table.date")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableSkeleton rows={5} columns={4} />
+                  </TableBody>
+                </Table>
               ) : filteredGrades.length === 0 ? (
                 <div className="py-8 text-center text-sm text-muted-foreground">
                   {td("grades.empty")}
@@ -1365,10 +1395,10 @@ const StudentDashboard = () => {
         {section === "exams" && (
           <Card>
             <CardHeader>
-              <CardTitle>{td("exams.title")}</CardTitle>
-              <CardDescription>
+              <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{td("exams.title")}</h3>
+              <p className="text-sm flex items-center justify-start gap-1 text-[#FE9F43] font-medium md:text-sm">
                 {td("exams.desc")}
-              </CardDescription>
+              </p>
             </CardHeader>
             <CardContent className="space-y-3 p-0">
               <div className="flex justify-end px-4 pt-4">
@@ -1378,7 +1408,21 @@ const StudentDashboard = () => {
               </div>
 
               {loadingExams ? (
-                <div className="py-8 text-center text-sm text-muted-foreground">{td("common.loading")}</div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{td("exams.table.title")}</TableHead>
+                      <TableHead>{td("exams.table.timeRange")}</TableHead>
+                      <TableHead>{td("exams.table.duration")}</TableHead>
+                      <TableHead>{td("exams.table.status")}</TableHead>
+                      <TableHead>{td("exams.table.result")}</TableHead>
+                      <TableHead className="text-right">{td("exams.table.action")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableSkeleton rows={5} columns={6} />
+                  </TableBody>
+                </Table>
               ) : studentExams.length === 0 ? (
                 <div className="py-8 text-center text-sm text-muted-foreground">
                   {td("exams.empty")}
@@ -1497,14 +1541,16 @@ const StudentDashboard = () => {
         {section === "homework" && (
           <Card>
             <CardHeader>
-              <CardTitle>{td("homework.title")}</CardTitle>
+              <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{td("homework.title")}</h3>
               <CardDescription>
                 {td("homework.desc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               {loadingHomework ? (
-                <div className="py-8 text-center text-sm text-muted-foreground">{td("common.loading")}</div>
+                <div className="px-4 py-4">
+                  <ListSkeleton rows={5} />
+                </div>
               ) : homework.length === 0 ? (
                 <div className="py-8 text-center text-sm text-muted-foreground">
                   {td("homework.empty")}
@@ -1752,6 +1798,17 @@ const StudentDashboard = () => {
         )}
 
         {section === "profile" && (
+          <UnifiedProfileSection
+            token={token}
+            user={user}
+            storageKey="student_profile_meta"
+            roleLabel="O'quvchi"
+            allowPhotoUpload={false}
+            onUserUpdated={(patch) => setUser((prev) => (prev ? { ...prev, ...patch } : prev))}
+          />
+        )}
+
+        {RENDER_LEGACY_PROFILE && section === "profile" && (
           <Card className="border-slate-200 bg-slate-50/40">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3">

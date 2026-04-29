@@ -73,7 +73,28 @@ const uploadSubmissionAttachment = multer({
   },
 }).single("attachment");
 
+const studentImportFileFilter = (_req, file, cb) => {
+  const ext = path.extname(file.originalname || "").toLowerCase();
+  const allowedMimeTypes = ["text/csv", "application/csv", "application/vnd.ms-excel", "text/plain"];
+
+  if (ext === ".csv" || allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+    return;
+  }
+
+  cb(new Error("Faqat CSV fayl yuklash mumkin"));
+};
+
+const uploadStudentImport = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: studentImportFileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+}).single("file");
+
 module.exports = {
   uploadHomeworkAttachment,
   uploadSubmissionAttachment,
+  uploadStudentImport,
 };
