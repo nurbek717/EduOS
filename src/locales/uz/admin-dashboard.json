@@ -78,7 +78,21 @@
     "attention": {
       "title": "Diqqat talab qiladigan holatlar",
       "description": "Qaysi maktablarda boshqaruv yoki faollik bo'yicha e'tibor kerakligini ko'rsatadi.",
-      "empty": "Hozircha platforma bo'yicha muhim ogohlantirishlar yo'q."
+      "empty": "Hozircha platforma bo'yicha muhim ogohlantirishlar yo'q.",
+      "items": {
+        "withoutDirector": "{{count}} ta maktabda direktor biriktirilmagan.",
+        "withoutSchoolAdmin": "{{count}} ta maktabda maktab admini yo'q.",
+        "lowActivity": "{{count}} ta maktabda faollik past yoki boshqaruv to'liq emas."
+      }
+    },
+    "chart": {
+      "title": "So'nggi 7 kunda qo'shilgan maktablar",
+      "description": "Kunlar bo'yicha yangi yaratilgan maktablar soni.",
+      "range": "Oraliq",
+      "tooltipSchools": "Yangi maktablar",
+      "tooltipCount": "{{count}} ta maktab",
+      "tooltipDate": "Sana: {{date}}",
+      "empty": "Hozircha so'nggi 7 kunda yaratilgan maktablar statistikasi mavjud emas."
     },
     "cards": {
       "totalSchools": {
@@ -156,6 +170,12 @@
       "validation": {
         "required": "Direktor ism, email va parolini kiriting."
       }
+    },
+    "validation": {
+      "nameRequired": "Maktab nomini kiriting.",
+      "directorInfoIncomplete": "Direktor ma'lumotlarini to'liq kiriting (ism, email, parol).",
+      "directorEmailInvalid": "Direktor email manzili noto'g'ri.",
+      "directorPasswordMin": "Direktor paroli kamida 6 ta belgidan iborat bo'lishi kerak."
     }
   },
   "subscriptions": {
@@ -184,6 +204,7 @@
     }
   },
   "exams": {
+    "title": "Imtihonlar va natijalar",
     "description": "Super admin uchun barcha imtihonlar va natijalar monitoringi.",
     "loading": "Imtihonlar yuklanmoqda...",
     "empty": "Hozircha imtihon topilmadi.",
@@ -201,6 +222,7 @@
     "results": {
       "defaultTitle": "Imtihon natijalari",
       "title": "Natijalar: {{exam}}",
+      "student": "O'quvchi",
       "manualPending": "Manual kutilmoqda",
       "loading": "Natijalar yuklanmoqda...",
       "empty": "Natijalar topilmadi."
@@ -229,7 +251,32 @@
       "title": "Foydalanuvchini tahrirlash",
       "titleWithRole": "{{role}} ma'lumotlarini tahrirlash",
       "newPasswordOptional": "Yangi parol (ixtiyoriy)",
-      "newPasswordPlaceholder": "O'zgartirmasangiz bo'sh qoldiring"
+      "newPasswordPlaceholder": "O'zgartirmasangiz bo'sh qoldiring",
+      "newPasswordRequired": "Yangi parolni kiriting.",
+      "passwordMismatch": "Parol tasdiqlash bilan mos emas.",
+      "newPasswordLabel": "Yangi parol",
+      "confirmPasswordLabel": "Parolni tasdiqlash"
     }
+  },
+  "schoolsList": "Maktablar ro'yxati",
+  "common": {
+    "actions": "Amallar",
+    "cancel": "Bekor qilish",
+    "close": "Yopish",
+    "delete": "O'chirish",
+    "email": "Email",
+    "loading": "Yuklanmoqda...",
+    "moreCount": "... yana {{count}}",
+    "name": "Ism",
+    "password": "Parol",
+    "refresh": "Yangilash",
+    "save": "Saqlash",
+    "saving": "Saqlanmoqda...",
+    "view": "Ko'rish",
+    "total": "Jami",
+    "statistics": "Umumiy statistika",
+    "fullName": "FISH",
+    "username": "Foydalanuvchi nomi",
+    "changePassword": "Parolni o'zgartirish"
   }
 }

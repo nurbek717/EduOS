@@ -158,7 +158,7 @@
     }
   },
   "classes": {
-    "title": "Sinflar ro'yxati",
+    "title": "Mening sinflarim",
     "empty": "Hozircha sizga biriktirilgan sinflar topilmadi.",
     "studentCount": "{{count}} ta o'quvchi",
     "homeroom": "Siz ushbu sinf rahbarisiz",
@@ -337,7 +337,7 @@
     "cameraOff": "Kamerani o'chirish"
   },
   "profile": {
-    "title": "Profil rasmi",
+    "title": "Profil rasmi (Face ID davomat)",
     "desc": "O'z profil rasmingizni yuklang yoki o'chiring. Face ID davomat tizimida ishlatiladi.",
     "saveFailed": "Saqlashda xatolik",
     "requiredFields": "Ism va email majburiy.",

@@ -1780,6 +1780,7 @@ const TeacherDashboard = () => {
 
   return (
     <TeacherLayout
+      title={t("dashboard.teacher.title")}
       currentSection={section}
       onSectionChange={setSection}
       headerNotifications={headerNotifications}
@@ -2047,6 +2048,11 @@ const TeacherDashboard = () => {
                       </option>
                     ))}
                   </select>
+                  {!classes.some((c) => c.isHomeroom) && (
+                    <p className="mt-1 text-[11px] text-amber-600">
+                      {td("students.form.noHomeroomWarning")}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -2855,6 +2861,9 @@ const TeacherDashboard = () => {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-foreground">{td("schedule.weeklyTitle")}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {td("schedule.weeklyDesc")}
+                  </p>
                 </div>
               </div>
 

@@ -78,7 +78,21 @@
     "attention": {
       "title": "Attention required",
       "description": "Highlights schools that require attention in governance or activity.",
-      "empty": "No critical platform alerts at the moment."
+      "empty": "No critical platform alerts at the moment.",
+      "items": {
+        "withoutDirector": "{{count}} schools have no assigned director.",
+        "withoutSchoolAdmin": "{{count}} schools have no school admin.",
+        "lowActivity": "{{count}} schools have low activity or incomplete governance."
+      }
+    },
+    "chart": {
+      "title": "Schools added in the last 7 days",
+      "description": "Daily count of newly created schools.",
+      "range": "Range",
+      "tooltipSchools": "New schools",
+      "tooltipCount": "{{count}} schools",
+      "tooltipDate": "Date: {{date}}",
+      "empty": "No school creation statistics available for the last 7 days yet."
     },
     "cards": {
       "totalSchools": {
@@ -156,6 +170,12 @@
       "validation": {
         "required": "Enter director name, email and password."
       }
+    },
+    "validation": {
+      "nameRequired": "Enter school name.",
+      "directorInfoIncomplete": "Provide complete director details (name, email, password).",
+      "directorEmailInvalid": "Director email is invalid.",
+      "directorPasswordMin": "Director password must be at least 6 characters."
     }
   },
   "subscriptions": {
@@ -184,6 +204,7 @@
     }
   },
   "exams": {
+    "title": "Exams and Results",
     "description": "Monitor all exams and results for super admin.",
     "loading": "Loading exams...",
     "empty": "No exams found yet.",
@@ -201,6 +222,7 @@
     "results": {
       "defaultTitle": "Exam results",
       "title": "Results: {{exam}}",
+      "student": "Student",
       "manualPending": "Manual pending",
       "loading": "Loading results...",
       "empty": "No results found."
@@ -229,7 +251,32 @@
       "title": "Edit user",
       "titleWithRole": "Edit {{role}} details",
       "newPasswordOptional": "New password (optional)",
-      "newPasswordPlaceholder": "Leave empty to keep unchanged"
+      "newPasswordPlaceholder": "Leave empty to keep unchanged",
+      "newPasswordRequired": "Enter a new password.",
+      "passwordMismatch": "Password confirmation does not match.",
+      "newPasswordLabel": "New password",
+      "confirmPasswordLabel": "Confirm password"
     }
+  },
+  "schoolsList": "Schools List",
+  "common": {
+    "actions": "Actions",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "email": "Email",
+    "loading": "Loading...",
+    "moreCount": "... and {{count}} more",
+    "name": "Name",
+    "password": "Password",
+    "refresh": "Refresh",
+    "save": "Save",
+    "saving": "Saving...",
+    "view": "View",
+    "total": "Total",
+    "statistics": "General Statistics",
+    "fullName": "Full Name",
+    "username": "Username",
+    "changePassword": "Change Password"
   }
 }

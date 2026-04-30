@@ -5,7 +5,6 @@
 @tailwind utilities;
 
 @layer base {
-  
   :root {
     --background: 210 20% 98%;
     --foreground: 215 25% 15%;
@@ -35,7 +34,7 @@
     --input: 210 20% 88%;
     --ring: 210 70% 38%;
 
-    --radius: 5px;
+    --radius: 0.625rem;
 
     --hero-overlay: linear-gradient(135deg, hsla(210, 70%, 25%, 0.85), hsla(160, 45%, 30%, 0.75));
     --gradient-primary: linear-gradient(135deg, hsl(210, 70%, 38%), hsl(210, 70%, 28%));

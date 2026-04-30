@@ -362,6 +362,7 @@ const DirectorDashboard = () => {
     teacher: tFilters("teacher"),
     student: tFilters("student"),
     parent: tFilters("parent"),
+    school_admin: tFilters("schoolAdmin"),
   };
 
   const directorRoleFilterOptions = useMemo<Array<{ value: "all" | DirectorManageableRole; label: string }>>(
@@ -370,6 +371,7 @@ const DirectorDashboard = () => {
       { value: "teacher", label: tFilters("teacher") },
       { value: "student", label: tFilters("student") },
       { value: "parent", label: tFilters("parent") },
+      { value: "school_admin", label: tFilters("schoolAdmin") },
     ],
     [tFilters],
   );
@@ -430,8 +432,7 @@ const DirectorDashboard = () => {
   })();
   const profileLocationLabel = formattedSchoolAddress || t("profile.locationDisplay");
   const profileLocationHref = `https://www.google.com/maps/search/${encodeURIComponent(rawSchoolAddress || profileLocationLabel)}`;
-  const profileDisplayName = decodeHtmlEntities(currentUser?.name)
-    || (isSchoolAdmin ? tLayout("schoolAdmin.fallbackName") : tLayout("director.fallbackName"));
+  const profileDisplayName = decodeHtmlEntities(currentUser?.name) || (isSchoolAdmin ? tLayout("schoolAdmin.fallbackName") : tLayout("director.fallbackName"));
   const [section, setSection] = useState<DirectorSection>("dashboard");
   const [studentsView, setStudentsView] = useState<"base" | "list" | "attach">("base");
   const [overview, setOverview] = useState<DirectorOverview | null>(null);
@@ -443,6 +444,7 @@ const DirectorDashboard = () => {
   const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [teacherDialogOpen, setTeacherDialogOpen] = useState(false);
+  const [schoolAdminDialogOpen, setSchoolAdminDialogOpen] = useState(false);
   const [directorUsersLoading, setDirectorUsersLoading] = useState(false);
   const [directorUsers, setDirectorUsers] = useState<DirectorManagedUser[]>([]);
   const [directorUsersSearch, setDirectorUsersSearch] = useState("");
@@ -631,16 +633,16 @@ const DirectorDashboard = () => {
   const [studentName, setStudentName] = useState("");
   const [studentEmail, setStudentEmail] = useState("");
   const [studentPhone, setStudentPhone] = useState("");
-  const [studentParentName, setStudentParentName] = useState("");
   const [studentPassword, setStudentPassword] = useState("");
   const [studentClassId, setStudentClassId] = useState("");
+  const [showStudentPassword, setShowStudentPassword] = useState(false);
+  const [studentParentName, setStudentParentName] = useState("");
   const [attachStudentUserId, setAttachStudentUserId] = useState("");
   const [attachTargetClassId, setAttachTargetClassId] = useState("");
   const [attachAcademicYear, setAttachAcademicYear] = useState("");
   const [attachEducationLanguage, setAttachEducationLanguage] = useState("");
   const [attachAdmissionOrderDate, setAttachAdmissionOrderDate] = useState("");
   const [attachClassAcceptedDate, setAttachClassAcceptedDate] = useState("");
-  const [showStudentPassword, setShowStudentPassword] = useState(false);
   const [studentsBaseFiltersOpen, setStudentsBaseFiltersOpen] = useState(true);
 
   const [directorPhotoUrl, setDirectorPhotoUrl] = useState<string | null>(null);
@@ -671,14 +673,54 @@ const DirectorDashboard = () => {
   const [studentPhotoDialogOpen, setStudentPhotoDialogOpen] = useState(false);
   const [studentForPhoto, setStudentForPhoto] = useState<StudentRowForParent | null>(null);
   const [studentPhotoUrl, setStudentPhotoUrl] = useState<string | null>(null);
-  const [studentImporting, setStudentImporting] = useState(false);
   const studentPhotoInputRef = useRef<HTMLInputElement>(null);
+  const [studentImporting, setStudentImporting] = useState(false);
   const studentImportInputRef = useRef<HTMLInputElement>(null);
 
   const faceVideoRef = useRef<HTMLVideoElement>(null);
   const faceStreamRef = useRef<MediaStream | null>(null);
   const [faceClassId, setFaceClassId] = useState("");
   const [faceResult, setFaceResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const localizeOverviewAlert = (message: string) => {
+    if (message.startsWith("Hozircha birorta ham sinf yaratilmagan")) return t("alertsMessages.noClasses");
+    if (message.startsWith("Maktabda hali o'qituvchilar")) return t("alertsMessages.noTeachers");
+    if (message.startsWith("O'quvchilar uchun ota-onalar akkauntlari")) return t("alertsMessages.noParentAccounts");
+    if (message.startsWith("Maktab admini hali yaratilmagan")) return t("alertsMessages.noSchoolAdmin");
+
+    const attendanceMatch = message.match(/^(.+?) sinfida davomatga e'tibor kerak: (\d+) ta kelmaganlik, (\d+) ta kechikish qayd etilgan\.$/);
+    if (attendanceMatch) {
+      return t("alertsMessages.attendanceIssue", {
+        className: attendanceMatch[1],
+        absentCount: Number(attendanceMatch[2]),
+        lateCount: Number(attendanceMatch[3]),
+      });
+    }
+
+    const noDataMatch = message.match(/^(.+?) sinfi uchun hali yetarli baho yoki davomat ma'lumoti yo'q\.$/);
+    if (noDataMatch) {
+      return t("alertsMessages.noClassData", { className: noDataMatch[1] });
+    }
+
+    const debtMatch = message.match(/^(\d+) ta o'quvchida qarzdorlik bor\. Eng katta qarzdorlik: (.+)\.$/);
+    if (debtMatch) {
+      return t("alertsMessages.debtorStudents", { count: Number(debtMatch[1]), studentName: debtMatch[2] });
+    }
+
+    const trendDownMatch = message.match(/^(.+?) sinfida natija pasaygan\./);
+    if (trendDownMatch) {
+      return t("alertsMessages.classPerformanceDown", { className: trendDownMatch[1] });
+    }
+
+    return message;
+  };
+
+  const localizeRecentActivityDescription = (description: string) => {
+    if (description.startsWith("Yangi o'qituvchi qo'shildi")) return t("recentActivityMessages.teacherAdded");
+    if (description.startsWith("Yangi o'quvchi ro'yxatdan o'tdi")) return t("recentActivityMessages.studentRegistered");
+    if (description.startsWith("Yangi ota-ona akkaunti yaratildi")) return t("recentActivityMessages.parentAccountCreated");
+    return description;
+  };
+
   const [faceLoading, setFaceLoading] = useState(false);
   const [faceCameraOn, setFaceCameraOn] = useState(false);
   const loadedDirectorDataRef = useRef({
@@ -743,14 +785,28 @@ const DirectorDashboard = () => {
         throw new Error(errData?.message || t("errors.overviewLoad"));
       }
       const data = await res.json();
-      setOverview(data);
+      const localizedAlerts = (data?.alerts || []).map((alert: { level: "info" | "warning"; message: string }) => ({
+        ...alert,
+        message: localizeOverviewAlert(alert.message),
+      }));
+      const localizedRecentActivities = (data?.recentActivities || []).map(
+        (item: { type: "teacher" | "student" | "parent"; title: string; description: string; createdAt: string }) => ({
+          ...item,
+          description: localizeRecentActivityDescription(item.description),
+        }),
+      );
+      setOverview({
+        ...data,
+        recentActivities: localizedRecentActivities,
+        alerts: localizedAlerts,
+      });
       const timestamp = new Date().toLocaleString(locale, {
         hour: "2-digit",
         minute: "2-digit",
         day: "2-digit",
         month: "2-digit",
       });
-      const mappedAlerts: DirectorHeaderNotification[] = (data?.alerts || []).map(
+      const mappedAlerts: DirectorHeaderNotification[] = localizedAlerts.map(
         (alert: { level: "info" | "warning"; message: string }) => ({
           id: `overview:${alert.level}:${alert.message}`,
           text: alert.message,
@@ -1292,6 +1348,9 @@ const DirectorDashboard = () => {
   };
 
   const visibleDirectorRoleFilters = useMemo(() => {
+    if (section === "school_admins") {
+      return [];
+    }
     if (section === "teachers") {
       return directorRoleFilterOptions.filter((filter) =>
         filter.value === "all" || filter.value === "teacher",
@@ -1480,7 +1539,7 @@ const DirectorDashboard = () => {
       setFaceCameraOn(false);
     }
 
-    const isPeopleSection = section === "teachers" || section === "students";
+    const isPeopleSection = section === "teachers" || section === "students" || section === "school_admins";
     const isAcademicSection = section === "classes" || section === "schedule" || section === "exams";
 
     const loadSectionData = async () => {
@@ -2285,6 +2344,58 @@ const DirectorDashboard = () => {
     }
   };
 
+  const handleCreateSchoolAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) {
+      toast({
+        title: t("errorTitle"),
+        description: schoolManagerLoginMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const res = await apiFetch(`${API_BASE_URL}/api/director/school-admin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: schoolAdminName,
+          email: schoolAdminEmail,
+          phone: schoolAdminPhone,
+          password: schoolAdminPassword,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || t("errors.schoolAdminCreate"));
+      }
+
+      toast({
+        title: t("successTitle"),
+        description: t("messages.schoolAdminCreated"),
+      });
+
+      setSchoolAdminDialogOpen(false);
+      setSchoolAdminName("");
+      setSchoolAdminEmail("");
+      setSchoolAdminPhone("");
+      setSchoolAdminPassword("");
+
+      await fetchDirectorUsers({ role: directorUsersRoleFilter, search: directorUsersSearch });
+      await fetchOverview();
+    } catch (err: unknown) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : t("errors.schoolAdminCreateDesc"),
+        variant: "destructive",
+      });
+    }
+  };
+
   const openDirectorUserDialog = async (userId: string) => {
     if (!token) return;
 
@@ -2422,7 +2533,7 @@ const DirectorDashboard = () => {
       if (!newProfilePassword.trim()) {
         toast({
           title: t("errorTitle"),
-          description: "Yangi parolni kiriting.",
+          description: t("profile.newPasswordRequired"),
           variant: "destructive",
         });
         return;
@@ -2430,7 +2541,7 @@ const DirectorDashboard = () => {
       if (newProfilePassword !== confirmProfilePassword) {
         toast({
           title: t("errorTitle"),
-          description: "Parol tasdiqlash bilan mos emas.",
+          description: t("profile.passwordMismatch"),
           variant: "destructive",
         });
         return;
@@ -2884,7 +2995,7 @@ const DirectorDashboard = () => {
                     ) : null}
                     <div className="space-y-2">
                       {loadingClasses ? (
-                        <ListSkeleton rows={4} />
+                        <p className="text-xs text-muted-foreground">{tTable("loadingClasses")}</p>
                       ) : classes.length === 0 ? (
                         <p className="text-xs text-muted-foreground">
                           {isSchoolAdmin
@@ -3030,7 +3141,7 @@ const DirectorDashboard = () => {
                     ) : null}
                     <div className="space-y-1">
                       {loadingSubjects ? (
-                        <ListSkeleton rows={4} />
+                        <p className="text-xs text-muted-foreground">{tTable("loadingSubjects")}</p>
                       ) : subjects.length === 0 ? (
                         <p className="text-xs text-muted-foreground">
                           {isSchoolAdmin
@@ -3199,15 +3310,7 @@ const DirectorDashboard = () => {
                     {!selectedTimetableClassId ? (
                       <p className="text-sm text-muted-foreground">{t("schedule.selectClassToView")}</p>
                     ) : loadingTimetable ? (
-                      <div className="grid gap-3 md:grid-cols-5">
-                        {Array.from({ length: 5 }).map((_, idx) => (
-                          <div key={idx} className="space-y-2 rounded-lg border bg-muted/40 p-2">
-                            <Skeleton className="h-3 w-16" />
-                            <Skeleton className="h-12 w-full" />
-                            <Skeleton className="h-12 w-full" />
-                          </div>
-                        ))}
-                      </div>
+                      <p className="text-sm text-muted-foreground">{t("schedule.loading")}</p>
                     ) : timetableEntries.length === 0 ? (
                       <p className="text-sm text-muted-foreground">{t("schedule.empty")}</p>
                     ) : (
@@ -3448,7 +3551,11 @@ const DirectorDashboard = () => {
                           </TableHeader>
                           <TableBody>
                             {loadingExams ? (
-                              <TableSkeleton rows={5} columns={7} />
+                              <TableRow>
+                                <TableCell colSpan={7} className="h-16 text-center text-sm text-muted-foreground">
+                                  {t("exams.loading")}
+                                </TableCell>
+                              </TableRow>
                             ) : exams.length === 0 ? (
                               <TableRow>
                                 <TableCell colSpan={7} className="h-16 text-center text-sm text-muted-foreground">
@@ -3554,7 +3661,11 @@ const DirectorDashboard = () => {
                               </TableHeader>
                               <TableBody>
                                 {examResultsLoading ? (
-                                  <TableSkeleton rows={5} columns={6} />
+                                  <TableRow>
+                                    <TableCell colSpan={6} className="h-16 text-center text-sm text-muted-foreground">
+                                      {t("exams.resultsLoading")}
+                                    </TableCell>
+                                  </TableRow>
                                 ) : examResults.length === 0 ? (
                                   <TableRow>
                                     <TableCell colSpan={6} className="h-16 text-center text-sm text-muted-foreground">
@@ -3635,17 +3746,7 @@ const DirectorDashboard = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {loadingClassInsights ? (
-                        <div className="space-y-4">
-                          <div className="grid gap-4 md:grid-cols-3">
-                            {Array.from({ length: 3 }).map((_, idx) => (
-                              <div key={idx} className="rounded-lg border bg-card px-4 py-3">
-                                <Skeleton className="h-3 w-20" />
-                                <Skeleton className="mt-2 h-5 w-24" />
-                              </div>
-                            ))}
-                          </div>
-                          <ListSkeleton rows={4} />
-                        </div>
+                        <p className="text-sm text-muted-foreground">{t("analysis.loading")}</p>
                       ) : !selectedTimetableClassId ? (
                         <p className="text-sm text-muted-foreground">{t("analysis.selectClass")}</p>
                       ) : selectedTimetableClassId === ALL_CLASSES_VALUE ? (
@@ -3788,7 +3889,7 @@ const DirectorDashboard = () => {
                           )}
                         </>
                       ) : (
-                        <p className="text-sm text-muted-foreground">Tanlangan sinf uchun tahlil topilmadi.</p>
+                        <p className="text-sm text-muted-foreground">{t("ui.noAnalysisForClass")}</p>
                       )}
                     </CardContent>
                   </Card>
@@ -3808,18 +3909,18 @@ const DirectorDashboard = () => {
                       </DialogHeader>
                       <form onSubmit={handleAddQuestion} className="space-y-3">
                         <div className="space-y-1">
-                          <Label htmlFor="q-text">Savol matni</Label>
+                          <Label htmlFor="q-text">{t("ui.questionText")}</Label>
                           <Input
                             id="q-text"
                             value={questionText}
                             onChange={(e) => setQuestionText(e.target.value)}
-                            placeholder="Savol matnini kiriting"
+                            placeholder={t("ui.questionTextPlaceholder")}
                             required
                           />
                         </div>
                         <div className="grid gap-3 md:grid-cols-3">
                           <div className="space-y-1">
-                            <Label htmlFor="q-type">Savol turi</Label>
+                            <Label htmlFor="q-type">{t("ui.questionType")}</Label>
                             <select
                               id="q-type"
                               value={questionType}
@@ -3831,7 +3932,7 @@ const DirectorDashboard = () => {
                             </select>
                           </div>
                           <div className="space-y-1">
-                            <Label htmlFor="q-points">Ball</Label>
+                            <Label htmlFor="q-points">{t("ui.points")}</Label>
                             <Input
                               id="q-points"
                               type="number"
@@ -3844,7 +3945,7 @@ const DirectorDashboard = () => {
                           </div>
                           {questionType === "test" && (
                             <div className="space-y-1">
-                              <Label htmlFor="q-correct">To&apos;g&apos;ri javob</Label>
+                              <Label htmlFor="q-correct">{t("ui.correctAnswer")}</Label>
                               <select
                                 id="q-correct"
                                 value={correctOptionKey}
@@ -3863,19 +3964,19 @@ const DirectorDashboard = () => {
                         {questionType === "test" && (
                           <div className="grid gap-2 md:grid-cols-2">
                             <div className="space-y-1">
-                              <Label htmlFor="q-a">A varianti</Label>
+                              <Label htmlFor="q-a">{t("ui.optionA")}</Label>
                               <Input id="q-a" value={optionA} onChange={(e) => setOptionA(e.target.value)} />
                             </div>
                             <div className="space-y-1">
-                              <Label htmlFor="q-b">B varianti</Label>
+                              <Label htmlFor="q-b">{t("ui.optionB")}</Label>
                               <Input id="q-b" value={optionB} onChange={(e) => setOptionB(e.target.value)} />
                             </div>
                             <div className="space-y-1">
-                              <Label htmlFor="q-c">C varianti</Label>
+                              <Label htmlFor="q-c">{t("ui.optionC")}</Label>
                               <Input id="q-c" value={optionC} onChange={(e) => setOptionC(e.target.value)} />
                             </div>
                             <div className="space-y-1">
-                              <Label htmlFor="q-d">D varianti</Label>
+                              <Label htmlFor="q-d">{t("ui.optionD")}</Label>
                               <Input id="q-d" value={optionD} onChange={(e) => setOptionD(e.target.value)} />
                             </div>
                           </div>
@@ -3895,20 +3996,103 @@ const DirectorDashboard = () => {
           </Card>
         )}
 
-        {(section === "teachers" || section === "students") && (
-          <Card>
+        {(section === "teachers" || section === "students" || section === "school_admins") && (
+          <Card className={isSchoolAdmin ? undefined : "border-0 bg-transparent shadow-none"}>
+            {section === "school_admins" && !isSchoolAdmin && (
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle>{t("ui.schoolAdminsTitle")}</CardTitle>
+                  <CardDescription>Maktabni boshqarishda yordam beruvchi adminlar ro&apos;yxati.</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Dialog open={schoolAdminDialogOpen} onOpenChange={setSchoolAdminDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline">{t("ui.addNewAdmin")}</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>{t("ui.createSchoolAdminTitle")}</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleCreateSchoolAdmin} className="space-y-4">
+                        <div className="space-y-2 lg:col-span-3">
+                          <Label htmlFor="admin-name">{t("form.name")}</Label>
+                          <Input
+                            id="admin-name"
+                            value={schoolAdminName}
+                            onChange={(e) => setSchoolAdminName(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2 lg:col-span-3">
+                          <Label htmlFor="admin-email">Email</Label>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="admin-email"
+                              type="email"
+                              value={schoolAdminEmail}
+                              onChange={(e) => setSchoolAdminEmail(e.target.value)}
+                              className="pl-10"
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2 lg:col-span-3">
+                          <Label htmlFor="admin-phone">{t("phone")}</Label>
+                          <div className="relative">
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="admin-phone"
+                              value={schoolAdminPhone}
+                              onChange={(e) => setSchoolAdminPhone(e.target.value)}
+                              placeholder="+998901234567"
+                              className="pl-10"
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2 lg:col-span-3">
+                          <Label htmlFor="admin-password">{t("password")}</Label>
+                          <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="admin-password"
+                              type={showSchoolAdminPassword ? "text" : "password"}
+                              value={schoolAdminPassword}
+                              onChange={(e) => setSchoolAdminPassword(e.target.value)}
+                              className="pl-10 pr-10"
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowSchoolAdminPassword((prev) => !prev)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                              {showSchoolAdminPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button type="submit">{t("save")}</Button>
+                        </DialogFooter>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+            )}
 
             {section === "teachers" && (
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <div>
-                  <CardTitle className="text-[#212b36] text-bold text-[18px]">O'qituvchilar ro'yxati</CardTitle>
-                  <CardDescription className="text-[#FE9F43] font-medium gap-1 md:text-[12px] md:text-sm">Maktabingizdagi o'qituvchilar ro'yxati.</CardDescription>
+                  <CardTitle>{t("ui.teachersTitle")}</CardTitle>
+                  <CardDescription>Maktabinggizdagi o&apos;qituvchilar ro&apos;yxati.</CardDescription>
                 </div>
                 <div className="flex gap-2">
                   {isSchoolAdmin && (
                     <Dialog open={teacherDialogOpen} onOpenChange={setTeacherDialogOpen}>
                       <DialogTrigger asChild>
-                        <Button size="sm">Yangi o&apos;qituvchi qo&apos;shish</Button>
+                        <Button size="sm">{t("ui.addNewTeacher")}</Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
@@ -4178,9 +4362,15 @@ const DirectorDashboard = () => {
                 </CardHeader>
               )}
 
-              {section === "students" && (studentsView === "base" || studentsView === "list") && (
+              {section === "students" && studentsView === "list" && (
                 <CardContent className="p-0">
-                  <div className="space-y-3">
+                  <div className="space-y-3 px-6 py-4">
+                    <div className="pb-1">
+                      <h3 className="text-base font-semibold text-foreground">{t("ui.studentsListTitle")}</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {t("ui.studentsListHint")}
+                      </p>
+                    </div>
 
                     <form
                       onSubmit={(e) => {
@@ -4190,75 +4380,117 @@ const DirectorDashboard = () => {
                       onReset={(e) => {
                         e.preventDefault();
                         setDirectorUsersSearch("");
-                        setStudentsClassFilter("all");
-                        setDirectorUsersRoleFilter("student");
-                        setDirectorUsersPage(1);
                       }}
                       className="rounded-xl border bg-background"
                     >
-                      {studentsBaseFiltersOpen && (
-                        <div className="grid gap-3 border-b p-3 md:grid-cols-2 lg:grid-cols-4">
+                      <div className="grid gap-3 border-b p-3 md:grid-cols-2 lg:grid-cols-4">
                         <div className="space-y-2">
-                          <Label htmlFor="student-search">Qidirish</Label>
+                          <Label htmlFor="student-search">{t("ui.search")}</Label>
                           <div className="relative">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                               id="student-search"
                               name="q"
                               value={directorUsersSearch}
-                              onChange={(e) => {
-                                setDirectorUsersSearch(e.target.value);
-                                setDirectorUsersPage(1);
-                              }}
-                              placeholder="O&apos;quvchi to&apos;liq ismi va IDsi,"
+                              onChange={(e) => setDirectorUsersSearch(e.target.value)}
+                              placeholder={t("ui.searchStudentByNameIdPlaceholder")}
                               className="h-11 pl-10"
                             />
                           </div>
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="student-class">Sinf</Label>
+                          <Label htmlFor="student-class-code">{t("ui.searchByClassCode")}</Label>
+                          <Input
+                            id="student-class-code"
+                            name="classCode"
+                            placeholder={t("form.enter")}
+                            className="h-11"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="student-class">{tTable("class")}</Label>
                           <select
                             id="student-class"
-                            value={studentsClassFilter}
-                            onChange={(e) => {
-                              setStudentsClassFilter(e.target.value);
-                              setDirectorUsersPage(1);
-                            }}
+                            name="classId"
+                            defaultValue=""
                             className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                           >
-                            <option value="all">Barcha sinflar</option>
-                            {classes.map((c) => (
-                              <option key={c._id} value={c._id}>{c.name}</option>
-                            ))}
+                            <option value="" disabled>{tTable("selectClass")}</option>
                           </select>
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="student-status">Holati</Label>
+                          <Label htmlFor="student-class-type">{t("ui.classType")}</Label>
                           <select
-                            id="student-status"
-                            value={directorUsersRoleFilter}
-                            onChange={(e) => {
-                              const value = e.target.value as "student" | "parent";
-                              setDirectorUsersRoleFilter(value);
-                              setDirectorUsersPage(1);
-                            }}
+                            id="student-class-type"
+                            name="classType"
+                            defaultValue=""
                             className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                           >
-                            <option value="student">O&apos;quvchilar</option>
-                            <option value="parent">Ota-ona / Vasiylar</option>
+                            <option value="" disabled>{tTable("selectClass")}</option>
                           </select>
                         </div>
 
-                        <div className="flex items-end gap-3 lg:justify-end">
+                        <div className="space-y-2">
+                          <Label htmlFor="student-language">{t("ui.educationLanguage")}</Label>
+                          <select
+                            id="student-language"
+                            name="language"
+                            defaultValue=""
+                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          >
+                            <option value="" disabled>{tTable("selectClass")}</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="student-status">{t("ui.status")}</Label>
+                          <select
+                            id="student-status"
+                            name="status"
+                            defaultValue=""
+                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          >
+                            <option value="" disabled>{tTable("selectClass")}</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="student-year">{t("ui.academicYear")}</Label>
+                          <select
+                            id="student-year"
+                            name="year"
+                            defaultValue=""
+                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          >
+                            <option value="" disabled>{tTable("selectClass")}</option>
+                          </select>
+                        </div>
+
+                        <div className="flex items-end gap-3">
+                          <div className="flex-1 space-y-2">
+                            <Label htmlFor="student-shift">{t("ui.shift")}</Label>
+                            <select
+                              id="student-shift"
+                              name="shift"
+                              defaultValue=""
+                              className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            >
+                              <option value="" disabled>{tTable("selectClass")}</option>
+                            </select>
+                          </div>
                           <Button type="reset" variant="secondary" className="h-11 px-4">
                             <Eraser className="mr-2 h-4 w-4" />
-                            Tozalash
+                            {t("ui.clear")}
+                          </Button>
+                          <Button type="submit" className="h-11 px-4">
+                            <Search className="mr-2 h-4 w-4" />
+                            {t("ui.search")}
                           </Button>
                         </div>
-                        </div>
-                      )}
+                      </div>
 
                       <div className="overflow-x-auto">
                         <Table>
@@ -4388,7 +4620,11 @@ const DirectorDashboard = () => {
                   </TableHeader>
                   <TableBody>
                     {loadingTeachers ? (
-                      <TableSkeleton rows={5} columns={isSchoolAdmin ? 5 : 4} />
+                      <TableRow>
+                        <TableCell colSpan={isSchoolAdmin ? 5 : 4} className="py-6 text-center text-sm text-muted-foreground">
+                          {t("loading")}
+                        </TableCell>
+                      </TableRow>
                     ) : teachers.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={isSchoolAdmin ? 5 : 4} className="py-6 text-center text-sm text-muted-foreground">
@@ -4538,30 +4774,26 @@ const DirectorDashboard = () => {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="attach-academic-year">O&apos;quv yili</Label>
-                          <Input
-                            id="attach-academic-year"
-                            value={attachAcademicYear}
-                            onChange={(e) => setAttachAcademicYear(e.target.value)}
-                            placeholder="2025-2026"
-                            className="rounded-[5px]"
-                            required
-                          />
+                          <Label htmlFor="attach-education-language">{t("ui.educationLanguage")}</Label>
+                          <select
+                            id="attach-education-language"
+                            name="educationLanguage"
+                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            defaultValue=""
+                          >
+                            <option value="" disabled>{tTable("selectClass")}</option>
+                          </select>
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="attach-education-language">Ta&apos;lim tili</Label>
+                          <Label htmlFor="attach-class">{tTable("class")}</Label>
                           <select
-                            id="attach-education-language"
-                            value={attachEducationLanguage}
-                            onChange={(e) => setAttachEducationLanguage(e.target.value)}
-                            className="flex h-11 w-full rounded-[5px] border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            required
+                            id="attach-class"
+                            name="classId"
+                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            defaultValue=""
                           >
-                            <option value="">Tanlang</option>
-                            <option value="uzbek">O&apos;zbek</option>
-                            <option value="russian">Rus</option>
-                            <option value="english">Ingliz</option>
+                            <option value="" disabled>{tTable("selectClass")}</option>
                           </select>
                         </div>
 
@@ -4935,7 +5167,7 @@ const DirectorDashboard = () => {
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <Label>FISH</Label>
+                        <Label>{t("ui.fullName")}</Label>
                         <Input
                           value={`${profileForm.firstName} ${profileForm.lastName}`.trim()}
                           onChange={(e) => {
@@ -4946,24 +5178,24 @@ const DirectorDashboard = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>JSHSHIR</Label>
+                        <Label>{t("ui.pinfl")}</Label>
                         <Input value={profileForm.taxId} onChange={(e) => handleProfileFieldChange("taxId", e.target.value)} placeholder="Kiriting" />
                       </div>
                       <div className="space-y-2">
-                        <Label>Foydalanuvchi roli</Label>
+                        <Label>{t("profile.userRole")}</Label>
                         <Input value={profileRoleLabel} readOnly />
                       </div>
                       <div className="space-y-2">
-                        <Label>Passport seriyasi va raqami</Label>
-                        <Input value={profileForm.nationalId} onChange={(e) => handleProfileFieldChange("nationalId", e.target.value)} placeholder="Kiriting" />
+                        <Label>{t("profile.passportSeriesNumber")}</Label>
+                        <Input value={profileForm.nationalId} onChange={(e) => handleProfileFieldChange("nationalId", e.target.value)} placeholder={t("form.enter")} />
                       </div>
                       <div className="space-y-2">
-                        <Label>Foydalanuvchi nomi</Label>
+                        <Label>{t("profile.username")}</Label>
                         <Input value={(profileForm.email || currentUser?.email || "user").split("@")[0]} readOnly />
                       </div>
                       <div className="space-y-2">
                         <div className="mb-2 flex items-center gap-3">
-                          <Label htmlFor="director-change-password" className="mb-0">Parolni o&apos;zgartirish</Label>
+                          <Label htmlFor="director-change-password" className="mb-0">{t("profile.changePassword")}</Label>
                           <input
                             id="director-change-password"
                             type="checkbox"
@@ -5001,7 +5233,7 @@ const DirectorDashboard = () => {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label>Parolni tasdiqlash</Label>
+                        <Label>{t("profile.confirmPassword")}</Label>
                         <div className="relative">
                           <Input
                             type={showProfilePasswordConfirm ? "text" : "password"}

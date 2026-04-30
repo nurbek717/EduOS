@@ -65,10 +65,14 @@
   "deleted": "Удалено",
   "phone": "Телефон",
   "password": "Пароль",
+  "currencySuffix": "сум",
   "form": {
+    "name": "Имя",
     "email": "Email",
     "phoneExampleSpaced": "+998 90 123 45 67",
-    "passwordMin": "Минимум 6 символов"
+    "passwordMin": "Минимум 6 символов",
+    "enterDate": "Введите дату",
+    "enter": "Введите"
   },
   "parents": {
     "createLoginTitle": "Создать логин для родителя",
@@ -120,7 +124,14 @@
     "taxId": "Налоговый ID",
     "requiredFields": "Поля \"Имя\" и \"Email\" обязательны.",
     "locationFallback": "Ташкент, Узбекистан",
-    "locationDisplay": "Uzbekistan/Tashkent"
+    "locationDisplay": "Uzbekistan/Tashkent",
+    "newPasswordRequired": "Введите новый пароль.",
+    "passwordMismatch": "Пароль и подтверждение не совпадают.",
+    "userRole": "Роль пользователя",
+    "passportSeriesNumber": "Серия и номер паспорта",
+    "username": "Имя пользователя",
+    "changePassword": "Изменить пароль",
+    "confirmPassword": "Подтвердите пароль"
   },
   "studentPhoto": {
     "title": "Фото ученика: {{name}}",
@@ -216,5 +227,65 @@
     "studentSubjectsDesc": "Показывает, какие результаты ученик получил по каждому предмету.",
     "bestGrade": "Наивысшая",
     "lastGrade": "Последняя оценка"
+  },
+  "ui": {
+    "financeActivity": "ФИНАНСОВАЯ АКТИВНОСТЬ",
+    "noAnalysisForClass": "Для выбранного класса анализ не найден.",
+    "questionText": "Текст вопроса",
+    "questionTextPlaceholder": "Введите текст вопроса",
+    "questionType": "Тип вопроса",
+    "points": "Балл",
+    "correctAnswer": "Правильный ответ",
+    "optionA": "Вариант A",
+    "optionB": "Вариант B",
+    "optionC": "Вариант C",
+    "optionD": "Вариант D",
+    "schoolAdminsTitle": "Админы школы",
+    "addNewAdmin": "Добавить нового админа",
+    "createSchoolAdminTitle": "Создать нового админа школы",
+    "teachersTitle": "Учителя",
+    "addNewTeacher": "Добавить нового учителя",
+    "search": "Поиск",
+    "searchByClassCode": "Поиск по коду класса",
+    "searchStudentByNameIdPlaceholder": "Полное имя ученика и ID",
+    "studentsListTitle": "Список учеников",
+    "studentsListHint": "Этот раздел только для поиска.",
+    "classType": "Тип класса",
+    "classUpper": "КЛАСС",
+    "classTypeUpper": "ТИП КЛАССА",
+    "shiftUpper": "СМЕНА",
+    "educationLanguage": "Язык обучения",
+    "status": "Статус",
+    "academicYear": "Учебный год",
+    "shift": "Смена",
+    "clear": "Очистить",
+    "fullName": "ФИО",
+    "passportOrCertificate": "ПАСПОРТ / СВИДЕТЕЛЬСТВО",
+    "birthDate": "ДАТА РОЖДЕНИЯ",
+    "parentOrGuardian": "РОДИТЕЛЬ / ОПЕКУН",
+    "admission": "ПРИЕМ",
+    "admissionOrderDate": "Дата приказа о приеме",
+    "studentClassAdmissionDate": "Дата зачисления ученика в класс",
+    "attach": "Прикрепить",
+    "pinfl": "ПИНФЛ",
+    "targetClass": "Прикрепляемый класс",
+    "searchResultsPlaceholder": "Результаты поиска появятся здесь.",
+    "attachStudentTitle": "Прикрепить ученика",
+    "attachStudentHint": "Введите данные, чтобы прикрепить ученика к классу."
+  },
+  "alertsMessages": {
+    "noClasses": "Пока не создано ни одного класса. Сначала добавьте класс в разделе «Классы и предметы».",
+    "noTeachers": "В школе пока не зарегистрированы учителя. Вы можете добавить их в разделе «Пользователи».",
+    "noParentAccounts": "Для учеников еще не созданы аккаунты родителей. Они понадобятся для уведомлений.",
+    "noSchoolAdmin": "Администратор школы еще не создан. Для ежедневного операционного управления рекомендуется добавить school_admin.",
+    "classPerformanceDown": "В классе {{className}} снизились результаты.",
+    "attendanceIssue": "В классе {{className}} нужна проверка посещаемости: {{absentCount}} отсутствий, {{lateCount}} опозданий.",
+    "noClassData": "Для класса {{className}} пока недостаточно данных по оценкам или посещаемости.",
+    "debtorStudents": "У {{count}} учеников есть задолженность. Самая большая задолженность: {{studentName}}."
+  },
+  "recentActivityMessages": {
+    "teacherAdded": "Добавлен новый учитель",
+    "studentRegistered": "Зарегистрирован новый ученик",
+    "parentAccountCreated": "Создан новый аккаунт родителя"
   }
 }

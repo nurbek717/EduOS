@@ -23,7 +23,7 @@ const generateAccessToken = (user) => {
 const generateRefreshToken = (user) => {
   const payload = buildPayload(user, "refresh");
   const secret = process.env.JWT_SECRET || "dev-secret";
-  const expiresIn = process.env.JWT_REFRESH_EXPIRES_IN || "14d";
+  const expiresIn = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
   return jwt.sign(payload, secret, { expiresIn });
 };
 
