@@ -339,6 +339,36 @@ const createOrExtendSubscription = async (req, res) => {
   }
 };
 
+const setSubscriptionEndAt = async (req, res) => {
+  const { id } = req.params;
+  const { endAt } = req.body;
+
+  try {
+    const parsed = new Date(endAt);
+    if (Number.isNaN(parsed.getTime())) {
+      return fail(res, req, 400, "Tugash sanasi noto'g'ri");
+    }
+
+    const sub = await Subscription.findById(id).populate("school", "name").exec();
+    if (!sub) {
+      return fail(res, req, 404, "Obuna topilmadi");
+    }
+
+    sub.endAt = parsed;
+    await sub.save();
+
+    return res.json({
+      id: sub._id,
+      schoolId: sub.school?._id ?? null,
+      schoolName: sub.school?.name ?? "Maktab",
+      createdAt: sub.created_at || null,
+      endAt: sub.endAt,
+    });
+  } catch (err) {
+    return fail(res, req, 500, err.message || "Obunani yangilashda xatolik");
+  }
+};
+
 const listSubscriptions = async (req, res) => {
   try {
     const subs = await Subscription.find()
@@ -352,6 +382,7 @@ const listSubscriptions = async (req, res) => {
         id: s._id,
         schoolId: s.school?._id ?? null,
         schoolName: s.school?.name ?? "Maktab",
+        createdAt: s.created_at || null,
         endAt: s.endAt,
       })),
     );
@@ -367,6 +398,7 @@ module.exports = {
   updateUser,
   deleteUser,
   createOrExtendSubscription,
+  setSubscriptionEndAt,
   listSubscriptions,
 };
 

@@ -110,8 +110,26 @@ const validators = {
       name: nonEmptyStringField({ required: true, minLength: 2, maxLength: 100 }),
       email: { type: "email", required: true },
       phone: nonEmptyStringField({ minLength: 7, maxLength: 50 }),
+      parentName: nonEmptyStringField({ minLength: 2, maxLength: 100 }),
       password: { type: "password", required: true },
       classId: objectIdField({ required: true }),
+      studentCode: nullableStringField({ maxLength: 50 }),
+      birthDate: { type: "dateString" },
+      gender: { type: "enum", values: ["male", "female"] },
+      nationality: nullableStringField({ maxLength: 100 }),
+      birthCertSeries: nullableStringField({ maxLength: 20 }),
+      birthCertNumber: nullableStringField({ maxLength: 50 }),
+      status: { type: "enum", values: ["active", "inactive", "graduated"] },
+      admissionOrderNumber: nullableStringField({ maxLength: 100 }),
+      admissionOrderDate: { type: "dateString" },
+      classAdmissionDate: { type: "dateString" },
+      academicYear: nullableStringField({ maxLength: 50 }),
+      educationLanguage: nullableStringField({ maxLength: 50 }),
+      parentPassport: nullableStringField({ maxLength: 50 }),
+      parentPhone: nullableStringField({ maxLength: 50 }),
+      region: nullableStringField({ maxLength: 100 }),
+      district: nullableStringField({ maxLength: 100 }),
+      address: nullableStringField({ maxLength: 255 }),
     },
   }),
   directorUpdateStudent: validateRequest({
@@ -343,8 +361,15 @@ const validators = {
       email: { type: "email" },
       phone: nonEmptyStringField({ minLength: 7, maxLength: 50 }),
       password: { type: "password" },
+      classId: objectIdField(),
+      subjectId: objectIdField(),
+      studentId: objectIdField(),
+      academicYear: nonEmptyStringField({ maxLength: 50 }),
+      educationLanguage: nonEmptyStringField({ maxLength: 50 }),
+      admissionOrderDate: nonEmptyStringField({ maxLength: 30 }),
+      classAcceptedDate: nonEmptyStringField({ maxLength: 30 }),
     },
-    rules: [requireAtLeastOne(["name", "email", "phone", "password"])],
+    rules: [requireAtLeastOne(["name", "email", "phone", "password", "classId", "subjectId", "studentId", "academicYear", "educationLanguage", "admissionOrderDate", "classAcceptedDate"])],
   }),
   teacherCreateTimetable: validateRequest({
     body: {
@@ -486,6 +511,14 @@ const validators = {
     body: {
       schoolId: objectIdField({ required: true }),
       days: { type: "integer", required: true, min: 1, max: 3650 },
+    },
+  }),
+  adminSetSubscriptionEndAt: validateRequest({
+    params: {
+      id: objectIdField({ required: true }),
+    },
+    body: {
+      endAt: { type: "dateString", required: true },
     },
   }),
   createTicket: validateRequest({

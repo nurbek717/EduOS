@@ -27,7 +27,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import HeaderActions from "@/components/dashboard/HeaderActions";
 import { useTranslation } from "react-i18next";
 
-type AdminSection = "overview" | "schools" | "users" | "subscriptions" | "exams";
+type AdminSection = "overview" | "schools" | "users" | "subscriptions" | "exams" | "profile";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -45,6 +45,15 @@ interface AdminLayoutProps {
     status?: "active" | "expired";
     daysLeft?: number | null;
   };
+  subscriptionItems?: Array<{
+    planName: string;
+    schoolId?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    contractNumber?: string | null;
+    status?: "active" | "expired";
+    daysLeft?: number | null;
+  }>;
 }
 
 const AdminLayout = ({
@@ -56,13 +65,14 @@ const AdminLayout = ({
   searchItems,
   headerNotifications,
   subscriptionInfo,
+  subscriptionItems,
 }: AdminLayoutProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation("layout");
   const rawUser = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
   const currentUser = rawUser ? JSON.parse(rawUser) : null;
 
-  const navItems: { label: string; section: AdminSection; icon: typeof LayoutDashboard }[] = [
+  const navItems: { label: string; section: Exclude<AdminSection, "profile">; icon: typeof LayoutDashboard }[] = [
     { label: t("admin.nav.overview"), section: "overview", icon: LayoutDashboard },
     { label: t("admin.nav.schools"), section: "schools", icon: School },
     { label: t("admin.nav.users"), section: "users", icon: Users },
@@ -76,7 +86,22 @@ const AdminLayout = ({
     users: t("admin.nav.users"),
     subscriptions: t("admin.nav.subscriptions"),
     exams: t("admin.nav.exams"),
+    profile: "Profil",
   };
+
+  const subscriptionSummary = (() => {
+    if (!subscriptionItems?.length) {
+      return typeof subscriptionInfo?.daysLeft === "number"
+        ? `${subscriptionInfo.daysLeft} kun qoldi`
+        : "15 kun qoldi";
+    }
+
+    const activeCount = subscriptionItems.filter((item) => item.status !== "expired").length;
+    const expiredCount = subscriptionItems.length - activeCount;
+    return expiredCount > 0
+      ? `${activeCount} faol, ${expiredCount} tugagan`
+      : `${activeCount} ta faol`;
+  })();
 
   const handleLogout = () => {
     localStorage.removeItem("auth_token");
@@ -172,7 +197,7 @@ const AdminLayout = ({
               navItems={navItems}
               currentSection={currentSection}
               onSectionChange={onSectionChange}
-              profileTargetSection="users"
+              profileTargetSection="profile"
               settingsTargetSection="users"
               currentUserName={currentUser?.name}
               currentUserPhotoUrl={currentUser?.photoUrl}
@@ -183,12 +208,9 @@ const AdminLayout = ({
               onLogout={handleLogout}
               showTravelNavigation={false}
               compactHeader
-              subscriptionLabel={
-                typeof subscriptionInfo?.daysLeft === "number"
-                  ? t("admin.subscriptionDaysLeft", { count: subscriptionInfo.daysLeft })
-                  : t("admin.subscriptionDaysLeft", { count: 15 })
-              }
+              subscriptionLabel={subscriptionSummary}
               subscriptionInfo={subscriptionInfo}
+              subscriptionItems={subscriptionItems}
             />
           </div>
           <div className="flex-1 overflow-auto p-6">

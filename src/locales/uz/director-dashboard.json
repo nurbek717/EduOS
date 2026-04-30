@@ -47,6 +47,10 @@
   "students": {
     "title": "O'quvchilar ro'yxati",
     "description": "Maktabdagi o'quvchi va ota-ona foydalanuvchilarini boshqaring.",
+    "baseTitle": "O'quvchilar bazasi",
+    "baseDescription": "Oʻquvchilar bazasi roʻyxati",
+    "attachTitle": "O'quvchini biriktirish",
+    "attachDescription": "O'quvchini sinfga biriktirish uchun ma'lumotlarni kiriting.",
     "add": "Yangi o'quvchi qo'shish",
     "create": "O'quvchi yaratish"
   },

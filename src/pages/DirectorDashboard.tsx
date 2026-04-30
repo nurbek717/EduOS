@@ -1,13 +1,17 @@
-import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import * as XLSX from "xlsx";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import DirectorLayout from "@/components/DirectorLayout";
 import DirectorFinanceSection from "@/components/director/DirectorFinanceSection";
 import TicketSystem from "@/components/director/TicketSystem";
+import UnifiedProfileSection from "@/components/dashboard/UnifiedProfileSection";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ListSkeleton, StatsCardsSkeleton, TableSkeleton } from "@/components/ui/skeletons";
 import { useRef } from "react";
-import { BookOpen, Users, GraduationCap, UserCircle, Mail, Lock, Eye, EyeOff, Pencil, Trash2, Upload, Plus, Wallet, TrendingUp, TrendingDown, AlertTriangle, Info, ShieldAlert, Phone, MapPin, Camera, Calendar, Search, Eraser } from "lucide-react";
+import { BookOpen, Users, GraduationCap, UserCircle, Mail, Lock, Eye, EyeOff, Pencil, Trash2, Upload, Plus, Wallet, TrendingUp, TrendingDown, AlertTriangle, Info, ShieldAlert, Phone, MapPin, Camera, Calendar, Search, Eraser, ChevronLeft, ChevronRight, ChevronUp, RotateCcw, FileSpreadsheet, FileText } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -18,12 +22,35 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAppLocale } from "@/context/LanguageContext";
 import { useTranslation } from "react-i18next";
+import { normalizeUserRole, refreshAccessToken } from "@/lib/auth";
 
-type DirectorSection = "dashboard" | "students" | "teachers" | "school_admins" | "classes" | "schedule" | "payments" | "exams" | "settings" | "support";
+type DirectorSection = "dashboard" | "students" | "teachers" | "classes" | "schedule" | "payments" | "exams" | "settings" | "support";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const ALL_CLASSES_VALUE = "__all__";
 const DIRECTOR_USERS_PAGE_SIZE = 5;
+const STUDENTS_LIST_PAGE_SIZE = 10;
+const RENDER_LEGACY_PROFILE = Boolean(import.meta.env.VITE_RENDER_LEGACY_PROFILE);
+
+const resolveSubscriptionPlanName = (
+  startAt?: string | null,
+  endAt?: string | null,
+) => {
+  if (!startAt || !endAt) return "Obuna";
+
+  const startDate = new Date(startAt);
+  const endDate = new Date(endAt);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return "Obuna";
+  }
+
+  const durationMs = endDate.getTime() - startDate.getTime();
+  if (durationMs <= 0) return "Obuna";
+
+  const durationDays = Math.round(durationMs / (1000 * 60 * 60 * 24));
+  if (durationDays >= 330) return "1 yillik";
+  return "1 oylik";
+};
 
 type DirectorOverview = {
   classes: number;
@@ -56,6 +83,7 @@ type DirectorOverview = {
     message: string;
   }[];
   subscription?: {
+    startAt: string | null;
     endAt: string | null;
     daysLeft: number | null;
     isExpired: boolean;
@@ -195,12 +223,32 @@ type StudentRowForParent = {
   userId?: string;
   name?: string;
   email?: string;
+  phone?: string;
   photoUrl?: string | null;
   classId?: string;
   className?: string;
+  studentCode?: string;
+  birthDate?: string | null;
+  gender?: string;
+  nationality?: string;
+  birthCertSeries?: string;
+  birthCertNumber?: string;
+  status?: string;
+  admissionOrderNumber?: string;
+  academicYear?: string;
+  educationLanguage?: string;
+  admissionOrderDate?: string | null;
+  classAcceptedDate?: string | null;
+  parentName?: string;
+  parentPassport?: string;
+  parentPhone?: string;
+  region?: string;
+  district?: string;
+  address?: string;
+  createdAt?: string | null;
 };
 
-type DirectorManageableRole = "teacher" | "student" | "parent" | "school_admin";
+type DirectorManageableRole = "teacher" | "student" | "parent";
 
 type DirectorManagedUser = {
   id: string;
@@ -209,8 +257,10 @@ type DirectorManagedUser = {
   role: DirectorManageableRole;
   photoUrl?: string | null;
   phone?: string | null;
+  parentName?: string | null;
   debtAmount?: number | null;
   relatedLabel?: string | null;
+  relatedId?: string | null;
   createdAt?: string;
 };
 
@@ -302,10 +352,11 @@ const DirectorDashboard = () => {
   const { t: tTable } = useTranslation("director-table");
   const { t: tFilters } = useTranslation("director-filters");
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const locale = useAppLocale();
   const moneyFormatter = useMemo(() => new Intl.NumberFormat(locale), [locale]);
-  const formatMoney = (value: number) => `${moneyFormatter.format(Math.round(value || 0))} ${t("currencySuffix")}`;
+  const formatMoney = (value: number) => `${moneyFormatter.format(Math.round(value || 0))} so'm`;
 
   const directorRoleLabels: Record<DirectorManageableRole, string> = {
     teacher: tFilters("teacher"),
@@ -326,7 +377,8 @@ const DirectorDashboard = () => {
   );
   const rawUser = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
   const currentUser = rawUser ? JSON.parse(rawUser) : null;
-  const isSchoolAdmin = currentUser?.role === "school_admin";
+  const normalizedRole = normalizeUserRole(currentUser?.role);
+  const isSchoolAdmin = normalizedRole === "school_admin";
   const schoolManagerLoginMessage = t("schoolManagerLoginMessage");
   const profileRoleLabel = isSchoolAdmin ? tLayout("schoolAdmin.badge") : tLayout("director.badge");
   const rawSchoolAddress = typeof currentUser?.schoolAddress === "string" ? currentUser.schoolAddress : "";
@@ -382,7 +434,7 @@ const DirectorDashboard = () => {
   const profileLocationHref = `https://www.google.com/maps/search/${encodeURIComponent(rawSchoolAddress || profileLocationLabel)}`;
   const profileDisplayName = decodeHtmlEntities(currentUser?.name) || (isSchoolAdmin ? tLayout("schoolAdmin.fallbackName") : tLayout("director.fallbackName"));
   const [section, setSection] = useState<DirectorSection>("dashboard");
-  const [studentsView, setStudentsView] = useState<"list" | "attach">("list");
+  const [studentsView, setStudentsView] = useState<"base" | "list" | "attach">("base");
   const [overview, setOverview] = useState<DirectorOverview | null>(null);
   const [headerNotifications, setHeaderNotifications] = useState<DirectorHeaderNotification[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -397,6 +449,7 @@ const DirectorDashboard = () => {
   const [directorUsers, setDirectorUsers] = useState<DirectorManagedUser[]>([]);
   const [directorUsersSearch, setDirectorUsersSearch] = useState("");
   const [directorUsersRoleFilter, setDirectorUsersRoleFilter] = useState<"all" | DirectorManageableRole>("all");
+  const [studentsClassFilter, setStudentsClassFilter] = useState<string>("all");
   const [directorUsersPage, setDirectorUsersPage] = useState(1);
   const [directorUserDialogOpen, setDirectorUserDialogOpen] = useState(false);
   const [teacherName, setTeacherName] = useState("");
@@ -404,11 +457,32 @@ const DirectorDashboard = () => {
   const [teacherPassword, setTeacherPassword] = useState("");
   const [teacherSubjectId, setTeacherSubjectId] = useState("");
   const [showTeacherPassword, setShowTeacherPassword] = useState(false);
-  const [schoolAdminName, setSchoolAdminName] = useState("");
-  const [schoolAdminEmail, setSchoolAdminEmail] = useState("");
-  const [schoolAdminPassword, setSchoolAdminPassword] = useState("");
-  const [schoolAdminPhone, setSchoolAdminPhone] = useState("");
-  const [showSchoolAdminPassword, setShowSchoolAdminPassword] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const sectionParam = params.get("section");
+    const viewParam = params.get("view");
+
+    const allowedSections: DirectorSection[] = [
+      "dashboard",
+      "students",
+      "teachers",
+      "classes",
+      "schedule",
+      "payments",
+      "exams",
+      "settings",
+      "support",
+    ];
+    const allowedViews: Array<"base" | "list" | "attach"> = ["base", "list", "attach"];
+
+    if (sectionParam && allowedSections.includes(sectionParam as DirectorSection)) {
+      setSection(sectionParam as DirectorSection);
+    }
+    if (viewParam && allowedViews.includes(viewParam as "base" | "list" | "attach")) {
+      setStudentsView(viewParam as "base" | "list" | "attach");
+    }
+  }, [location.search]);
 
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newClassName, setNewClassName] = useState("");
@@ -459,6 +533,7 @@ const DirectorDashboard = () => {
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editRelatedId, setEditRelatedId] = useState("");
   const [editPassword, setEditPassword] = useState("");
   const [editSubjectId, setEditSubjectId] = useState("");
 
@@ -488,6 +563,23 @@ const DirectorDashboard = () => {
     if (res.status === 401) {
       const data = await res.clone().json().catch(() => null);
       const message = data?.message || "Invalid or expired token";
+
+      try {
+        const refreshed = await refreshAccessToken();
+        const [input, init] = args;
+        const nextHeaders = new Headers(init?.headers);
+        nextHeaders.set("Authorization", `Bearer ${refreshed.token}`);
+        const retryRes = await fetch(input, {
+          ...init,
+          headers: nextHeaders,
+        });
+        if (retryRes.status !== 401) {
+          return retryRes;
+        }
+      } catch {
+        // Fall through to the existing auth expiry handling.
+      }
+
       handleAuthExpiry(message);
       throw new Error(message);
     }
@@ -535,6 +627,7 @@ const DirectorDashboard = () => {
   const [parentPhone, setParentPhone] = useState("");
   const [parentPassword, setParentPassword] = useState("");
   const [showParentPassword, setShowParentPassword] = useState(false);
+  const [showParentLoginAfterAttach, setShowParentLoginAfterAttach] = useState(false);
 
   const [studentDialogOpen, setStudentDialogOpen] = useState(false);
   const [studentName, setStudentName] = useState("");
@@ -543,6 +636,14 @@ const DirectorDashboard = () => {
   const [studentPassword, setStudentPassword] = useState("");
   const [studentClassId, setStudentClassId] = useState("");
   const [showStudentPassword, setShowStudentPassword] = useState(false);
+  const [studentParentName, setStudentParentName] = useState("");
+  const [attachStudentUserId, setAttachStudentUserId] = useState("");
+  const [attachTargetClassId, setAttachTargetClassId] = useState("");
+  const [attachAcademicYear, setAttachAcademicYear] = useState("");
+  const [attachEducationLanguage, setAttachEducationLanguage] = useState("");
+  const [attachAdmissionOrderDate, setAttachAdmissionOrderDate] = useState("");
+  const [attachClassAcceptedDate, setAttachClassAcceptedDate] = useState("");
+  const [studentsBaseFiltersOpen, setStudentsBaseFiltersOpen] = useState(true);
 
   const [directorPhotoUrl, setDirectorPhotoUrl] = useState<string | null>(null);
   const [savingDirectorProfile, setSavingDirectorProfile] = useState(false);
@@ -573,6 +674,8 @@ const DirectorDashboard = () => {
   const [studentForPhoto, setStudentForPhoto] = useState<StudentRowForParent | null>(null);
   const [studentPhotoUrl, setStudentPhotoUrl] = useState<string | null>(null);
   const studentPhotoInputRef = useRef<HTMLInputElement>(null);
+  const [studentImporting, setStudentImporting] = useState(false);
+  const studentImportInputRef = useRef<HTMLInputElement>(null);
 
   const faceVideoRef = useRef<HTMLVideoElement>(null);
   const faceStreamRef = useRef<MediaStream | null>(null);
@@ -639,7 +742,7 @@ const DirectorDashboard = () => {
     localStorage.setItem("auth_user", JSON.stringify(next));
   };
 
-  const buildProfileFormFromAuth = () => {
+  const buildProfileFormFromAuth = useCallback(() => {
     const raw = localStorage.getItem("auth_user");
     const parsed = raw ? JSON.parse(raw) : {};
     const fullName = decodeHtmlEntities(parsed?.name) || profileDisplayName;
@@ -661,7 +764,7 @@ const DirectorDashboard = () => {
       postalCode: extras.postalCode || "",
       taxId: extras.taxId || "",
     };
-  };
+  }, [currentUser?.email, currentUser?.phone, profileDisplayName, profileRoleLabel]);
 
   const toDateTimeLocalValue = (value?: string | null) => {
     if (!value) return "";
@@ -1260,10 +1363,8 @@ const DirectorDashboard = () => {
       );
     }
 
-    return isSchoolAdmin
-      ? directorRoleFilterOptions.filter((filter) => filter.value !== "school_admin")
-      : directorRoleFilterOptions;
-  }, [directorRoleFilterOptions, isSchoolAdmin, section]);
+    return directorRoleFilterOptions;
+  }, [directorRoleFilterOptions, section]);
 
   const directorUsersTotal = directorUsers.length;
   const directorUsersTotalPages = Math.max(1, Math.ceil(directorUsersTotal / DIRECTOR_USERS_PAGE_SIZE));
@@ -1275,6 +1376,48 @@ const DirectorDashboard = () => {
     () => directorUsers.slice(directorUsersPageStartIndex, directorUsersPageEndIndex),
     [directorUsers, directorUsersPageStartIndex, directorUsersPageEndIndex],
   );
+
+  const filteredStudentUsers = useMemo(() => {
+    if (section !== "students") return [];
+
+    return directorUsers.filter((user) => {
+      if (studentsClassFilter === "all") return true;
+
+      const related = (user.relatedLabel || "").toLowerCase();
+      const className = classes.find((c) => c._id === studentsClassFilter)?.name?.toLowerCase() || "";
+      return className ? related.includes(className) : true;
+    });
+  }, [classes, directorUsers, section, studentsClassFilter]);
+
+  const filteredStudentUsersTotal = filteredStudentUsers.length;
+  const filteredStudentUsersTotalPages = Math.max(1, Math.ceil(filteredStudentUsersTotal / STUDENTS_LIST_PAGE_SIZE));
+  const safeFilteredStudentUsersPage = Math.min(directorUsersPage, filteredStudentUsersTotalPages);
+  const filteredStudentUsersPageStart = filteredStudentUsersTotal === 0 ? 0 : (safeFilteredStudentUsersPage - 1) * STUDENTS_LIST_PAGE_SIZE;
+  const filteredStudentUsersPageEnd = Math.min(filteredStudentUsersPageStart + STUDENTS_LIST_PAGE_SIZE, filteredStudentUsersTotal);
+
+  const paginatedFilteredStudentUsers = useMemo(
+    () => filteredStudentUsers.slice(filteredStudentUsersPageStart, filteredStudentUsersPageEnd),
+    [filteredStudentUsers, filteredStudentUsersPageEnd, filteredStudentUsersPageStart],
+  );
+
+  const studentPaginationPages = useMemo(() => {
+    const total = filteredStudentUsersTotalPages;
+    const current = safeFilteredStudentUsersPage;
+
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    if (current <= 3) {
+      return [1, 2, 3, 4, 5];
+    }
+
+    if (current >= total - 2) {
+      return [total - 4, total - 3, total - 2, total - 1, total];
+    }
+
+    return [current - 2, current - 1, current, current + 1, current + 2];
+  }, [filteredStudentUsersTotalPages, safeFilteredStudentUsersPage]);
 
   const fetchTimetableForClass = async (classId: string) => {
     if (!token || !classId) return;
@@ -1387,7 +1530,7 @@ const DirectorDashboard = () => {
         }
       }
     }
-  }, [section]);
+  }, [buildProfileFormFromAuth, section]);
 
   useEffect(() => {
     if (section !== "settings") {
@@ -1416,7 +1559,7 @@ const DirectorDashboard = () => {
         if ((isPeopleSection || section === "classes" || section === "schedule") && !loadedDirectorDataRef.current.teachers) {
           tasks.push(fetchTeachers());
         }
-        if (isSchoolAdmin && section === "students" && !loadedDirectorDataRef.current.students) {
+        if (section === "students" && !loadedDirectorDataRef.current.students) {
           tasks.push(fetchStudentsForParents());
         }
         if (tasks.length > 0) {
@@ -1434,15 +1577,10 @@ const DirectorDashboard = () => {
 
     void loadSectionData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section, isSchoolAdmin, selectedTimetableClassId]);
+  }, [section, selectedTimetableClassId]);
 
   useEffect(() => {
-    if (section !== "teachers" && section !== "students" && section !== "school_admins") return;
-
-    if (section === "school_admins" && directorUsersRoleFilter !== "school_admin") {
-      setDirectorUsersRoleFilter("school_admin");
-      return;
-    }
+    if (section !== "teachers" && section !== "students") return;
 
     if (section === "teachers" && directorUsersRoleFilter !== "all" && directorUsersRoleFilter !== "teacher") {
       setDirectorUsersRoleFilter("all");
@@ -1467,7 +1605,12 @@ const DirectorDashboard = () => {
   }, [directorUsersTotalPages]);
 
   useEffect(() => {
-    if (section !== "teachers" && section !== "students" && section !== "school_admins") return;
+    if (section !== "students") return;
+    setDirectorUsersPage((prev) => Math.min(prev, filteredStudentUsersTotalPages));
+  }, [filteredStudentUsersTotalPages, section]);
+
+  useEffect(() => {
+    if (section !== "teachers" && section !== "students") return;
     setDirectorUsersPage(1);
   }, [section, directorUsersRoleFilter, directorUsersSearch]);
 
@@ -1581,6 +1724,7 @@ const DirectorDashboard = () => {
           name: studentName,
           email: studentEmail,
           phone: studentPhone || undefined,
+          parentName: studentParentName || undefined,
           password: studentPassword,
           classId: studentClassId,
         }),
@@ -1597,6 +1741,7 @@ const DirectorDashboard = () => {
       setStudentName("");
       setStudentEmail("");
       setStudentPhone("");
+      setStudentParentName("");
       setStudentPassword("");
       setStudentClassId("");
       await fetchStudentsForParents();
@@ -1610,6 +1755,316 @@ const DirectorDashboard = () => {
       });
     }
   };
+
+  const handleAttachStudentToClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) {
+      toast({
+        title: t("errorTitle"),
+        description: schoolManagerLoginMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!attachStudentUserId || !attachAcademicYear || !attachEducationLanguage || !attachTargetClassId || !attachAdmissionOrderDate || !attachClassAcceptedDate) {
+      toast({
+        title: t("insufficientDataTitle"),
+        description: "Barcha maydonlarni to'ldiring.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const res = await apiFetch(`${API_BASE_URL}/api/director/users/${attachStudentUserId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          classId: attachTargetClassId,
+          academicYear: attachAcademicYear,
+          educationLanguage: attachEducationLanguage,
+          admissionOrderDate: attachAdmissionOrderDate,
+          classAcceptedDate: attachClassAcceptedDate,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "O'quvchini sinfga biriktirib bo'lmadi");
+      }
+
+      toast({
+        title: t("savedTitle"),
+        description: "O'quvchi sinfga muvaffaqiyatli biriktirildi.",
+      });
+
+      const attachedStudentId = studentsForParents.find((s) => s.userId === attachStudentUserId)?.id || "";
+      setParentStudentId(attachedStudentId);
+      setShowParentLoginAfterAttach(true);
+      setAttachTargetClassId("");
+      await fetchStudentsForParents();
+      await fetchDirectorUsers({ role: directorUsersRoleFilter, search: directorUsersSearch });
+      await fetchOverview();
+    } catch (err: unknown) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : "Biriktirishda xatolik yuz berdi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const selectedAttachStudent = useMemo(
+    () => studentsForParents.find((s) => s.userId === attachStudentUserId),
+    [attachStudentUserId, studentsForParents],
+  );
+
+  const attachedStudents = useMemo(
+    () => studentsForParents.filter((s) => Boolean(s.userId) && (Boolean(s.classId) || Boolean((s.className || "").trim() && s.className !== "—"))),
+    [studentsForParents],
+  );
+
+  const selectedAttachTargetClass = useMemo(
+    () => classes.find((c) => c._id === attachTargetClassId),
+    [attachTargetClassId, classes],
+  );
+
+  const handleDownloadStudentTemplate = () => {
+    const headers = [
+      "FISH",
+      "Email",
+      "Parol",
+      "ID",
+      "Tug'ilgan sana",
+      "Jinsi",
+      "Millati",
+      "Guvohnoma seriya va raqami",
+      "Sinf kodi",
+      "Ta'lim tili",
+      "O'quvchi holati",
+      "Qabul buyruq raqami",
+      "Qabul buyruq sanasi",
+      "Shaxsiy telefon raqami",
+      "Ota-ona yoki vasiy FISH",
+      "Ota-ona yoki vasiy passporti",
+      "Ota-ona yoki vasiy telefon raqami",
+      "Viloyat",
+      "Tuman",
+      "To'liq manzil",
+      "O'quv yili",
+      "Sinfga qabul sanasi",
+    ];
+    const rows: string[][] = [];
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws["!cols"] = headers.map((header) => ({ wch: Math.max(16, header.length + 4) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Import shabloni");
+    XLSX.writeFile(wb, "students-import-template.xlsx");
+    toast({
+      title: t("successTitle"),
+      description: "Import shabloni Excel fayl sifatida yuklandi.",
+    });
+  };
+
+  const convertImportFileToCsvFile = async (file: File) => {
+    const fileName = file.name.toLowerCase();
+    if (fileName.endsWith(".csv")) return file;
+
+    if (!fileName.endsWith(".xlsx") && !fileName.endsWith(".xls")) {
+      throw new Error("Faqat Excel (.xlsx/.xls) yoki CSV fayl yuklash mumkin.");
+    }
+
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: "array" });
+    const firstSheetName = workbook.SheetNames[0];
+    if (!firstSheetName) {
+      throw new Error("Excel faylda varaq topilmadi.");
+    }
+    const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[firstSheetName]);
+    return new File([csv], "students-import-template.csv", { type: "text/csv" });
+  };
+
+  const handleImportStudentsCsv = async (file: File) => {
+    if (!token) {
+      toast({
+        title: t("errorTitle"),
+        description: schoolManagerLoginMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setStudentImporting(true);
+    try {
+      const importFile = await convertImportFileToCsvFile(file);
+      const formData = new FormData();
+      formData.append("file", importFile);
+
+      const res = await apiFetch(`${API_BASE_URL}/api/director/students/import`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "O'quvchilarni import qilishda xatolik");
+      }
+
+      await Promise.all([
+        fetchStudentsForParents(),
+        fetchDirectorUsers({ role: directorUsersRoleFilter, search: directorUsersSearch }),
+        fetchOverview(),
+      ]);
+
+      const firstErrors = Array.isArray(data.errors)
+        ? data.errors.slice(0, 3).map((err: { row: number; message: string }) => `${err.row}-qator: ${err.message}`).join("\n")
+        : "";
+      toast({
+        title: data.failed > 0 ? "Import qisman bajarildi" : t("successTitle"),
+        description: `Qo'shildi: ${data.created || 0}, xato: ${data.failed || 0}${firstErrors ? `\n${firstErrors}` : ""}`,
+        variant: data.failed > 0 ? "destructive" : "default",
+      });
+    } catch (err) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : "O'quvchilarni import qilishda xatolik",
+        variant: "destructive",
+      });
+    } finally {
+      setStudentImporting(false);
+    }
+  };
+
+  const handleExportStudentsBase = () => {
+    const headers = [
+      "FISH",
+      "ID",
+      "Tug'ilgan sana",
+      "Jinsi",
+      "Millati",
+      "Guvohnoma seriya va raqami",
+      "Sinf kodi",
+      "Ta'lim tili",
+      "O'quvchi holati",
+      "Qabul buyruq raqami",
+      "Qabul buyruq sanasi",
+      "Shaxsiy telefon raqami",
+      "Ota-ona yoki vasiy FISH",
+      "Ota-ona yoki vasiy passporti",
+      "Ota-ona yoki vasiy telefon raqami",
+      "Viloyat",
+      "Tuman",
+      "To'liq manzil"
+    ];
+    const formatExportDate = (value?: string | null) => {
+      if (!value) return "";
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleDateString(locale);
+    };
+    const genderLabel = (value?: string) => {
+      if (value === "male") return "Erkak";
+      if (value === "female") return "Ayol";
+      return "";
+    };
+    const statusLabel = (value?: string) => {
+      if (value === "active") return "O'quvchi";
+      if (value === "inactive") return "Vaqtincha to'xtagan";
+      if (value === "graduated") return "Bitirgan";
+      return "";
+    };
+    const sortedStudents = [...studentsForParents].sort((a, b) =>
+      decodeHtmlEntities(a.name || "").localeCompare(decodeHtmlEntities(b.name || ""), locale, {
+        numeric: true,
+        sensitivity: "base",
+      }),
+    );
+    const rows = sortedStudents.map((student) => [
+      decodeHtmlEntities(student.name || ""),
+      student.studentCode || student.id || "",
+      formatExportDate(student.birthDate),
+      genderLabel(student.gender),
+      student.nationality || "",
+      [student.birthCertSeries, student.birthCertNumber].filter(Boolean).join(" "),
+      decodeHtmlEntities(student.className || ""),
+      student.educationLanguage || "",
+      statusLabel(student.status),
+      student.admissionOrderNumber || "",
+      formatExportDate(student.admissionOrderDate),
+      student.phone || "",
+      decodeHtmlEntities(student.parentName || ""),
+      student.parentPassport || "",
+      student.parentPhone || "",
+      student.region || "",
+      student.district || "",
+      student.address || "",
+    ]);
+
+    // SheetJS orqali .xlsx fayl yaratish
+    const wsData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    // Ustun kengliklarini belgilash (masalan, har bir ustun uchun 20)
+    // Ustunlar: A=25, D=28, F=28, N=28, qolganlari 20
+    ws['!cols'] = headers.map((_, idx) => {
+      // A=0, D=3, F=5, N=13
+      if (idx === 0) return { wch: 27 }; // A
+      if (idx === 3) return { wch: 28 }; // D
+      if (idx === 5) return { wch: 28 }; // F
+      if (idx === 13) return { wch: 28 }; // N
+      return { wch: 20 };
+    });
+
+    // Header ustunlariga to'q ko'k rang (Excel default header) berish
+    const headerFill = {
+      patternType: "solid",
+      fgColor: { rgb: "305496" }, // Excel default header color
+    };
+    headers.forEach((_, idx) => {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: idx });
+      if (!ws[cellRef]) return;
+      ws[cellRef].s = {
+        fill: headerFill,
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        alignment: { horizontal: "center", vertical: "center" },
+      };
+    });
+
+    // Workbook va faylni yuklash
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Oquvchilar");
+    XLSX.writeFile(wb, "Oquvchilar-bazasi.xlsx");
+
+    toast({
+      title: t("successTitle"),
+      description: "O'quvchilar bazasi .xlsx faylga eksport qilindi.",
+    });
+  };
+
+  const formatDateForInput = (dateValue?: string | null) => {
+    if (!dateValue) return "";
+    const parsed = new Date(dateValue);
+    if (Number.isNaN(parsed.getTime())) return "";
+    return parsed.toISOString().slice(0, 10);
+  };
+
+  useEffect(() => {
+    if (!selectedAttachStudent) {
+      setAttachAcademicYear("");
+      setAttachEducationLanguage("");
+      setAttachAdmissionOrderDate("");
+      setAttachClassAcceptedDate("");
+      return;
+    }
+
+    setAttachAcademicYear(selectedAttachStudent.academicYear || "");
+    setAttachEducationLanguage(selectedAttachStudent.educationLanguage || "");
+    setAttachAdmissionOrderDate(formatDateForInput(selectedAttachStudent.admissionOrderDate));
+    setAttachClassAcceptedDate(formatDateForInput(selectedAttachStudent.classAcceptedDate));
+  }, [selectedAttachStudent]);
 
   const handleCreateSubject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1959,6 +2414,7 @@ const DirectorDashboard = () => {
         phone: data.phone ?? data.user?.phone ?? null,
         debtAmount: typeof data.debtAmount === "number" ? data.debtAmount : null,
         relatedLabel: data.relatedLabel,
+        relatedId: data.relatedId || null,
         createdAt: data.createdAt,
       };
 
@@ -1966,6 +2422,7 @@ const DirectorDashboard = () => {
       setEditName(loaded.name);
       setEditEmail(loaded.email);
       setEditPhone(loaded.phone || "");
+      setEditRelatedId(loaded.relatedId || "");
       setEditPassword("");
       setDirectorUserDialogOpen(true);
     } catch (err: unknown) {
@@ -1993,6 +2450,9 @@ const DirectorDashboard = () => {
           email: editEmail,
           phone: editPhone,
           password: editPassword || undefined,
+          classId: selectedDirectorUser.role === "student" ? (editRelatedId || undefined) : undefined,
+          subjectId: selectedDirectorUser.role === "teacher" ? (editRelatedId || undefined) : undefined,
+          studentId: selectedDirectorUser.role === "parent" ? (editRelatedId || undefined) : undefined,
         }),
       });
       const data = await res.json();
@@ -2186,7 +2646,7 @@ const DirectorDashboard = () => {
       id: u.id,
       title: u.name,
       subtitle: `${u.role} • ${u.email}`,
-      section: u.role === "teacher" || u.role === "school_admin" ? ("teachers" as const) : ("students" as const),
+      section: u.role === "teacher" ? ("teachers" as const) : ("students" as const),
     })),
     ...timetableEntries.map((e) => ({
       id: e.id,
@@ -2196,17 +2656,39 @@ const DirectorDashboard = () => {
     })),
   ];
 
+  const subscriptionPlanName = resolveSubscriptionPlanName(
+    overview?.subscription?.startAt,
+    overview?.subscription?.endAt,
+  );
+
+  const studentsHeaderTitle =
+    studentsView === "attach"
+      ? t("students.attachTitle")
+      : studentsView === "base"
+        ? t("students.baseTitle")
+        : t("students.title");
+
+  const studentsHeaderDescription =
+    studentsView === "attach"
+      ? t("students.attachDescription")
+      : studentsView === "base"
+        ? t("students.baseDescription")
+        : t("students.description");
+
   return (
     <DirectorLayout
       currentSection={section}
-      onSectionChange={setSection}
+      onSectionChange={(nextSection) => {
+        if (nextSection === "school_admins") return;
+        setSection(nextSection as DirectorSection);
+      }}
       currentStudentsView={studentsView}
       onStudentsViewChange={setStudentsView}
       headerNotifications={headerNotifications}
       searchItems={searchItems}
       subscriptionInfo={{
-        planName: "TEST",
-        startDate: null,
+        planName: subscriptionPlanName,
+        startDate: overview?.subscription?.startAt || null,
         endDate: overview?.subscription?.endAt || null,
         contractNumber: localStorage.getItem("subscription_contract_number") || "MYS-133891/26",
         status: overview?.subscription?.isExpired ? "expired" : "active",
@@ -2273,202 +2755,213 @@ const DirectorDashboard = () => {
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card
-                className="cursor-pointer transition hover:ring-2 hover:ring-primary/30"
-                onClick={() => setSection("classes")}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("classesAndParallels")}</CardTitle>
-                  <div className="rounded-lg bg-blue-500/10 p-2">
-                    <BookOpen className="h-4 w-4 text-blue-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {overview ? overview.classes : "—"}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{tStats("classesAndParallelsDesc")}</p>
-                </CardContent>
-              </Card>
+            {!overview ? (
+              <>
+                <StatsCardsSkeleton count={6} className="md:grid-cols-2 lg:grid-cols-4" />
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <Skeleton className="h-5 w-40" />
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <ListSkeleton rows={4} />
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="space-y-2">
+                      <Skeleton className="h-5 w-48" />
+                      <Skeleton className="h-4 w-56" />
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <ListSkeleton rows={3} />
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <Card
+                    className="cursor-pointer transition hover:ring-2 hover:ring-primary/30"
+                    onClick={() => setSection("classes")}
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("classesAndParallels")}</CardTitle>
+                      <div className="rounded-lg bg-blue-500/10 p-2">
+                        <BookOpen className="h-4 w-4 text-blue-600" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{overview.classes}</div>
+                      <p className="mt-1 text-xs text-muted-foreground">{tStats("classesAndParallelsDesc")}</p>
+                    </CardContent>
+                  </Card>
 
-              <Card
-                className="cursor-pointer transition hover:ring-2 hover:ring-primary/30"
-                onClick={() => setSection("teachers")}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("teachers")}</CardTitle>
-                  <div className="rounded-lg bg-emerald-500/10 p-2">
-                    <GraduationCap className="h-4 w-4 text-emerald-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {overview && overview.teacherStats
-                      ? overview.teacherStats[statRange]
-                      : overview
-                        ? overview.teachers
-                        : "—"}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{tStats("teachersDesc")}</p>
-                </CardContent>
-              </Card>
+                  <Card
+                    className="cursor-pointer transition hover:ring-2 hover:ring-primary/30"
+                    onClick={() => setSection("teachers")}
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("teachers")}</CardTitle>
+                      <div className="rounded-lg bg-emerald-500/10 p-2">
+                        <GraduationCap className="h-4 w-4 text-emerald-600" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {overview.teacherStats ? overview.teacherStats[statRange] : overview.teachers}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{tStats("teachersDesc")}</p>
+                    </CardContent>
+                  </Card>
 
-              <Card className="cursor-pointer transition hover:ring-2 hover:ring-primary/30" onClick={() => setSection("students")}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("students")}</CardTitle>
-                  <div className="rounded-lg bg-violet-500/10 p-2">
-                    <UserCircle className="h-4 w-4 text-violet-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {overview && overview.studentStats
-                      ? overview.studentStats[statRange]
-                      : overview
-                        ? overview.students
-                        : "—"}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{tStats("studentsDesc")}</p>
-                </CardContent>
-              </Card>
+                  <Card className="cursor-pointer transition hover:ring-2 hover:ring-primary/30" onClick={() => setSection("students")}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("students")}</CardTitle>
+                      <div className="rounded-lg bg-violet-500/10 p-2">
+                        <UserCircle className="h-4 w-4 text-violet-600" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {overview.studentStats ? overview.studentStats[statRange] : overview.students}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{tStats("studentsDesc")}</p>
+                    </CardContent>
+                  </Card>
 
-              <Card className="cursor-default">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("parents")}</CardTitle>
-                  <div className="rounded-lg bg-amber-500/10 p-2">
-                    <Users className="h-4 w-4 text-amber-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {overview ? overview.parents : "—"}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{tStats("parentsDesc")}</p>
-                </CardContent>
-              </Card>
+                  <Card className="cursor-default">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("parents")}</CardTitle>
+                      <div className="rounded-lg bg-amber-500/10 p-2">
+                        <Users className="h-4 w-4 text-amber-600" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{overview.parents}</div>
+                      <p className="mt-1 text-xs text-muted-foreground">{tStats("parentsDesc")}</p>
+                    </CardContent>
+                  </Card>
 
-              <div className="md:col-span-2 lg:col-span-4">
-                <p className=" text-gray-500 text-sm font-semibold text-foreground">{t("ui.financeActivity")}</p>
-              </div>
-
-              <Card
-                className="cursor-pointer transition hover:ring-2 hover:ring-primary/30 lg:col-span-2"
-                onClick={() => setSection("payments")}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("monthIncome")}</CardTitle>
-                  <div className="rounded-lg bg-emerald-500/10 p-2">
-                    <TrendingUp className="h-4 w-4 text-emerald-600" />
+                  <div className="md:col-span-2 lg:col-span-4">
+                    <p className=" text-gray-500 text-sm font-semibold text-foreground"> MOLIYAVIY FAOLLIK</p>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatMoney(overview?.finance?.monthIncome || 0)}</div>
-                  <p className="mt-1 text-xs text-muted-foreground">{tStats("monthIncomeDesc")}</p>
-                </CardContent>
-              </Card>
 
-              <Card
-                className="cursor-pointer transition hover:ring-2 hover:ring-primary/30 lg:col-span-2"
-                onClick={() => setSection("payments")}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("monthExpense")}</CardTitle>
-                  <div className="rounded-lg bg-rose-500/10 p-2">
-                    <TrendingDown className="h-4 w-4 text-rose-600" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatMoney(overview?.finance?.monthExpense || 0)}</div>
-                  <p className="mt-1 text-xs text-muted-foreground">{tStats("monthExpenseDesc")}</p>
-                </CardContent>
-              </Card>
-            </div>
+                  <Card
+                    className="cursor-pointer transition hover:ring-2 hover:ring-primary/30 lg:col-span-2"
+                    onClick={() => setSection("payments")}
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("monthIncome")}</CardTitle>
+                      <div className="rounded-lg bg-emerald-500/10 p-2">
+                        <TrendingUp className="h-4 w-4 text-emerald-600" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{formatMoney(overview.finance?.monthIncome || 0)}</div>
+                      <p className="mt-1 text-xs text-muted-foreground">{tStats("monthIncomeDesc")}</p>
+                    </CardContent>
+                  </Card>
 
-            <div className="grid gap-4 lg:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("recentActivity")}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  {overview && overview.recentActivities.length > 0 ? (
-                    overview.recentActivities.map((item, idx) => (
-                      <div
-                        key={`${item.type}-${idx}-${item.title}`}
-                        className="border-b pb-2 last:border-b-0 last:pb-0"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-medium text-foreground">{item.title}</span>
-                          <Badge
-                            variant="outline"
-                            className={`text-[11px] capitalize border ${item.type === "teacher"
-                              ? "border-emerald-500 bg-emerald-50 text-foreground"
+                  <Card
+                    className="cursor-pointer transition hover:ring-2 hover:ring-primary/30 lg:col-span-2"
+                    onClick={() => setSection("payments")}
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("monthExpense")}</CardTitle>
+                      <div className="rounded-lg bg-rose-500/10 p-2">
+                        <TrendingDown className="h-4 w-4 text-rose-600" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{formatMoney(overview.finance?.monthExpense || 0)}</div>
+                      <p className="mt-1 text-xs text-muted-foreground">{tStats("monthExpenseDesc")}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{t("recentActivity")}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      {overview.recentActivities.length > 0 ? (
+                        overview.recentActivities.map((item, idx) => (
+                        <div
+                          key={`${item.type}-${idx}-${item.title}`}
+                          className="border-b pb-2 last:border-b-0 last:pb-0"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-medium text-foreground">{item.title}</span>
+                            <Badge
+                              variant="outline"
+                              className={`text-[11px] capitalize border ${item.type === "teacher"
+                                ? "border-emerald-500 bg-emerald-50 text-foreground"
+                                : item.type === "student"
+                                  ? "border-sky-500 bg-sky-50 text-foreground"
+                                  : "border-amber-500 bg-amber-50 text-foreground"
+                                }`}
+                            >
+                              {item.type === "teacher"
+                                ? tStats("typeTeacher")
+                                : item.type === "student"
+                                  ? tStats("typeStudent")
+                                  : tStats("typeParent")}
+                            </Badge>
+                          </div>
+                          <p
+                            className={`mt-0.5 text-[11px] font-medium ${item.type === "teacher"
+                              ? "text-emerald-600"
                               : item.type === "student"
-                                ? "border-sky-500 bg-sky-50 text-foreground"
-                                : "border-amber-500 bg-amber-50 text-foreground"
+                                ? "text-sky-600"
+                                : "text-amber-600"
                               }`}
                           >
-                            {item.type === "teacher"
-                              ? tStats("typeTeacher")
-                              : item.type === "student"
-                                ? tStats("typeStudent")
-                                : tStats("typeParent")}
-                          </Badge>
+                            {item.description}
+                          </p>
+                          <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                            {new Date(item.createdAt).toLocaleDateString()}
+                          </span>
                         </div>
-                        <p
-                          className={`mt-0.5 text-[11px] font-medium ${item.type === "teacher"
-                            ? "text-emerald-600"
-                            : item.type === "student"
-                              ? "text-sky-600"
-                              : "text-amber-600"
-                            }`}
-                        >
-                          {item.description}
-                        </p>
-                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                          {new Date(item.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      {t("recentActivityEmpty")}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+                      ))
+                      ) : (
+                        <p className="text-xs text-muted-foreground">{t("recentActivityEmpty")}</p>
+                      )}
+                    </CardContent>
+                  </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("alertsTitle")}</CardTitle>
-                  <CardDescription>{t("alertsDesc")}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  {overview && overview.alerts.length > 0 ? (
-                    overview.alerts.map((alert, idx) => (
-                      <div
-                        key={`${alert.level}-${idx}`}
-                        className={`rounded-md border px-3 py-2 text-xs ${alert.level === "warning"
-                          ? "border-amber-300 bg-amber-50 text-amber-900"
-                          : "border-sky-200 bg-sky-50 text-sky-900"
-                          }`}
-                      >
-                        {alert.message}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      {t("alertsEmpty")}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{t("alertsTitle")}</CardTitle>
+                      <CardDescription>{t("alertsDesc")}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      {overview.alerts.length > 0 ? (
+                        overview.alerts.map((alert, idx) => (
+                          <div
+                            key={`${alert.level}-${idx}`}
+                            className={`rounded-md border px-3 py-2 text-xs ${alert.level === "warning"
+                              ? "border-amber-300 bg-amber-50 text-amber-900"
+                              : "border-sky-200 bg-sky-50 text-sky-900"
+                              }`}
+                          >
+                            {alert.message}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-muted-foreground">{t("alertsEmpty")}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            )}
           </>
         )}
 
         {(section === "classes" || section === "schedule" || section === "exams") && (
-          <Card className={section === "schedule" ? "border-0 bg-transparent shadow-none" : undefined}>
+          <Card className={section === "schedule" ? "border-none bg-transparent shadow-none" : undefined}>
             {section !== "schedule" && (
               <CardHeader>
                 <CardTitle>
@@ -2674,7 +3167,7 @@ const DirectorDashboard = () => {
                 <Card>
                   <CardHeader className="space-y-3">
                     <div>
-                      <CardTitle>{t("schedule.title")}</CardTitle>
+                      <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{t("schedule.title")}</h3>
                       <CardDescription>{t("schedule.description")}</CardDescription>
                     </div>
                     <div className="space-y-1">
@@ -2914,10 +3407,10 @@ const DirectorDashboard = () => {
                   <Card>
                     <CardHeader className="space-y-3">
                       <div>
-                        <CardTitle>{t("exams.title")}</CardTitle>
-                        <CardDescription>
+                        <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{t("exams.title")}</h3>
+                        <p className="text-sm flex items-center justify-start gap-1 text-[#FE9F43] font-medium md:text-sm">
                             {t("exams.description")}
-                        </CardDescription>
+                        </p>
                       </div>
 
                       {isSchoolAdmin && (
@@ -3676,19 +4169,100 @@ const DirectorDashboard = () => {
                 </div>
               </CardHeader>
             )}
-            <CardContent className={isSchoolAdmin ? "space-y-8" : "space-y-8 p-0"}>
+            <CardContent className="space-y-8">
               {section === "students" && (
-                <CardHeader className="space-y-4">
+                <CardHeader className="space-y-4 ">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <CardTitle>{t("students.title")}</CardTitle>
-                      <CardDescription>{t("students.description")}</CardDescription>
+                    <div className="student">
+                      <CardTitle className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{studentsHeaderTitle}</CardTitle>
+                      <CardDescription className="flex items-center justify-start gap-1 text-[#FE9F43] font-medium md:text-[12px] md:text-sm">{studentsHeaderDescription}</CardDescription>
                     </div>
-                    {isSchoolAdmin && studentsView === "list" && (
-                      <Dialog open={studentDialogOpen} onOpenChange={setStudentDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button size="sm" className="self-start">{t("students.add")}</Button>
-                        </DialogTrigger>
+                    {isSchoolAdmin && (studentsView === "base" || studentsView === "list") && (
+                      <>
+                        <input
+                          ref={studentImportInputRef}
+                          type="file"
+                          accept=".xlsx,.xls,.csv"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            void handleImportStudentsCsv(file);
+                            e.currentTarget.value = "";
+                          }}
+                        />
+
+                        <Dialog open={studentDialogOpen} onOpenChange={setStudentDialogOpen}>
+                          {studentsView === "base" ? (
+                            <div className="flex w-full flex-nowrap items-center justify-end gap-2 overflow-x-auto pb-1 lg:w-auto">
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="outline"
+                                className="h-9 w-10 shrink-0"
+                                onClick={async () => {
+                                  await Promise.all([
+                                    fetchDirectorUsers({ role: directorUsersRoleFilter, search: directorUsersSearch }),
+                                    fetchStudentsForParents(),
+                                  ]);
+                                }}
+                                title="Yangilash"
+                              >
+                                <RotateCcw className="h-5 w-5" />
+                              </Button>
+
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="outline"
+                                className="h-9 w-10 shrink-0"
+                                onClick={() => setStudentsBaseFiltersOpen((prev) => !prev)}
+                                title="Filtrlarni yig'ish/ochish"
+                              >
+                                <ChevronUp className={`h-4 w-4 transition-transform ${studentsBaseFiltersOpen ? "" : "rotate-180"}`} />
+                              </Button>
+
+                              <Button
+                                type="button"
+                                className="h-9 shrink-0 bg-blue-600 px-4 text-sm text-white hover:bg-blue-700"
+                                disabled={studentImporting}
+                                onClick={() => studentImportInputRef.current?.click()}
+                              >
+                                <Upload className="mr-2 h-4 w-4" />
+                                {studentImporting ? "Import qilinmoqda..." : "Import"}
+                              </Button>
+
+                              <Button
+                                type="button"
+                                className="h-9 w-10 shrink-0 bg-emerald-600 px-0 text-white hover:bg-emerald-700"
+                                onClick={handleExportStudentsBase}
+                                title="Eksport"
+                              >
+                                <FileSpreadsheet className="h-4 w-4" />
+                              </Button>
+
+                              <Button
+                                type="button"
+                                className="h-9 shrink-0 bg-orange-500 px-4 text-sm text-white hover:bg-orange-600"
+                                onClick={handleDownloadStudentTemplate}
+                              >
+                                <FileText className="mr-2 h-4 w-4" />
+                                Import shabloni
+                              </Button>
+
+                              <Link to="/school-admin/dashboard/add-student">
+                                <Button className="h-9 shrink-0 bg-emerald-700 px-4 text-sm text-white hover:bg-emerald-800">
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Qo&apos;shish
+                                </Button>
+                              </Link>
+                            </div>
+                          ) : (
+                            <DialogTrigger asChild>
+                              <Button size="sm" className="self-start">{t("students.add")}</Button>
+                            </DialogTrigger>
+                          )}
+
                         <DialogContent>
                           <DialogHeader>
                             <DialogTitle>{t("dialogs.createStudentTitle")}</DialogTitle>
@@ -3751,6 +4325,15 @@ const DirectorDashboard = () => {
                               />
                             </div>
                             <div className="space-y-2">
+                              <Label htmlFor="student-parent-name">{t("parents.parentName")}</Label>
+                              <Input
+                                id="student-parent-name"
+                                value={studentParentName}
+                                onChange={(e) => setStudentParentName(e.target.value)}
+                                placeholder={t("parents.parentNameExample")}
+                              />
+                            </div>
+                            <div className="space-y-2">
                               <Label htmlFor="student-class">{tTable("class")}</Label>
                               <select
                                 id="student-class"
@@ -3772,7 +4355,8 @@ const DirectorDashboard = () => {
                             </DialogFooter>
                           </form>
                         </DialogContent>
-                      </Dialog>
+                        </Dialog>
+                      </>
                     )}
                   </div>
                 </CardHeader>
@@ -3913,139 +4497,114 @@ const DirectorDashboard = () => {
                           <TableHeader>
                             <TableRow>
                               <TableHead className="w-[56px]">#</TableHead>
-                              <TableHead>{t("ui.fullName")}</TableHead>
-                              <TableHead>{t("ui.passportOrCertificate")}</TableHead>
-                              <TableHead>{t("ui.birthDate")}</TableHead>
-                              <TableHead>{t("ui.parentOrGuardian")}</TableHead>
-                              <TableHead>{t("ui.classUpper")}</TableHead>
-                              <TableHead>{t("ui.classTypeUpper")}</TableHead>
-                              <TableHead>{t("ui.shiftUpper")}</TableHead>
-                              <TableHead>{t("ui.admission")}</TableHead>
+                              <TableHead>FISH</TableHead>
+                              <TableHead>Rol</TableHead>
+                              <TableHead>Aloqa</TableHead>
+                              <TableHead>Ota-ona ismi</TableHead>
+                              <TableHead>SINF</TableHead>
+                              <TableHead>Qo&apos;shimcha</TableHead>
+                              <TableHead>Yaratilgan</TableHead>
+                              {isSchoolAdmin && <TableHead className="text-right">Amallar</TableHead>}
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            <TableRow>
-                              <TableCell colSpan={9} className="h-40 text-center text-sm text-muted-foreground">
-                                {t("ui.searchResultsPlaceholder")}
-                              </TableCell>
-                            </TableRow>
+                            {directorUsersLoading ? (
+                              <TableSkeleton rows={5} columns={isSchoolAdmin ? 8 : 7} />
+                            ) : paginatedFilteredStudentUsers.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={isSchoolAdmin ? 8 : 7} className="h-24 text-center text-sm text-muted-foreground">
+                                  {t("users.notFound")}
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              paginatedFilteredStudentUsers.map((user, index) => (
+                                <TableRow key={user.id}>
+                                  <TableCell>{filteredStudentUsersPageStart + index + 1}</TableCell>
+                                  <TableCell>
+                                    <div className="font-medium text-foreground">{decodeHtmlEntities(user.name)}</div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline">
+                                      {user.role === "student" ? "O'quvchi" : "Ota-ona"}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="text-sm text-muted-foreground">{user.phone || "—"}</div>
+                                  </TableCell>
+                                  <TableCell>
+                                    {decodeHtmlEntities(user.parentName) || (user.role === "student" ? "Bog'lanmagan" : "—")}
+                                  </TableCell>
+                                  <TableCell>{decodeHtmlEntities(user.relatedLabel) || "—"}</TableCell>
+                                  <TableCell>{typeof user.debtAmount === "number" ? `${Math.round(user.debtAmount)} so'm` : "—"}</TableCell>
+                                  <TableCell>
+                                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString(locale) : "—"}
+                                  </TableCell>
+                                  {isSchoolAdmin && (
+                                    <TableCell className="text-right">
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => openDirectorUserDialog(user.id)}
+                                        title={tr("edit")}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    </TableCell>
+                                  )}
+                                </TableRow>
+                              ))
+                            )}
                           </TableBody>
                         </Table>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 border-t px-3 py-3 text-sm">
+                        <p className="text-muted-foreground">
+                          {filteredStudentUsersTotal === 0
+                            ? "0-0"
+                            : `${filteredStudentUsersPageStart + 1}-${filteredStudentUsersPageEnd}`} / Jami: {filteredStudentUsersTotal}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 rounded-full"
+                            disabled={safeFilteredStudentUsersPage <= 1}
+                            onClick={() => setDirectorUsersPage((prev) => Math.max(1, prev - 1))}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+
+                          {studentPaginationPages.map((page) => (
+                            <Button
+                              key={page}
+                              type="button"
+                              variant={safeFilteredStudentUsersPage === page ? "default" : "outline"}
+                              size="icon"
+                              className="h-9 w-9 rounded-full"
+                              onClick={() => setDirectorUsersPage(page)}
+                            >
+                              {page}
+                            </Button>
+                          ))}
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 rounded-full"
+                            disabled={safeFilteredStudentUsersPage >= filteredStudentUsersTotalPages}
+                            onClick={() => setDirectorUsersPage((prev) => Math.min(filteredStudentUsersTotalPages, prev + 1))}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </form>
                   </div>
                 </CardContent>
-              )}
-
-              {section === "school_admins" && (
-                <>
-                  <div className="w-full px-6 py-4 border-b">
-                    <div className="flex w-full items-center gap-2 overflow-x-auto pb-1">
-                      <Input
-                        value={directorUsersSearch}
-                        onChange={(e) => setDirectorUsersSearch(e.target.value)}
-                        placeholder={t("search.usersPlaceholder")}
-                        className="w-full min-w-[260px] max-w-[280px] shrink-0"
-                      />
-
-                      <div className="flex gap-2 shrink-0">
-                        {visibleDirectorRoleFilters.map((filter) => (
-                          <Button
-                            key={filter.value}
-                            type="button"
-                            size="sm"
-                            className="shrink-0"
-                            variant={directorUsersRoleFilter === filter.value ? "default" : "outline"}
-                            onClick={() => setDirectorUsersRoleFilter(filter.value)}
-                          >
-                            {filter.label}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <CardContent className="px-6 pt-4">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t("table.user")}</TableHead>
-                          <TableHead>{t("table.role")}</TableHead>
-                          <TableHead>{t("table.related")}</TableHead>
-                          <TableHead>{t("phone")}</TableHead>
-                          <TableHead>{t("table.createdAt")}</TableHead>
-                          {isSchoolAdmin && <TableHead className="w-[50px]" />}
-                          <TableHead className="w-[88px] text-center">{t("table.photo")}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {directorUsersLoading ? (
-                          <TableRow>
-                            <TableCell colSpan={isSchoolAdmin ? 7 : 6} className="h-24 text-center text-sm text-muted-foreground">
-                              {t("users.loading")}
-                            </TableCell>
-                          </TableRow>
-                        ) : directorUsers.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={isSchoolAdmin ? 7 : 6} className="h-28 text-center">
-                              <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                                <Users className="h-10 w-10 opacity-40" />
-                                <p className="text-sm font-medium">{t("users.notFound")}</p>
-                                <p className="text-xs">{t("users.noAdminsYet")}</p>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          paginatedDirectorUsers.map((user) => (
-                            <TableRow key={user.id}>
-                              <TableCell>
-                                <div className="space-y-1">
-                                  <div className="font-medium text-foreground">{decodeHtmlEntities(user.name)}</div>
-                                  <div className="text-sm text-muted-foreground">{decodeHtmlEntities(user.email)}</div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{directorRoleLabels[user.role]}</Badge>
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {decodeHtmlEntities(user.relatedLabel) || "—"}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {user.phone || "—"}
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {user.createdAt ? new Date(user.createdAt).toLocaleDateString(locale) : "—"}
-                              </TableCell>
-                              {isSchoolAdmin && (
-                                <TableCell>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => openDirectorUserDialog(user.id)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                </TableCell>
-                              )}
-                              <TableCell>
-                                <div className="flex justify-center">
-                                  <Avatar className="h-9 w-9">
-                                    {user.photoUrl ? (
-                                      <AvatarImage src={user.photoUrl} alt={decodeHtmlEntities(user.name)} className="object-cover" />
-                                    ) : null}
-                                    <AvatarFallback className="text-xs">
-                                      <UserCircle className="h-4 w-4" />
-                                    </AvatarFallback>
-                                  </Avatar>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </>
               )}
 
               {section === "teachers" && (
@@ -4124,31 +4683,93 @@ const DirectorDashboard = () => {
 
               {isSchoolAdmin && section === "students" && studentsView === "attach" && (
                 <div className="mt-6 border-t pt-4">
-                  <div className="mb-6 rounded-2xl border bg-card p-6">
-                    <h3 className="text-base font-semibold text-foreground">{t("ui.attachStudentTitle")}</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {t("ui.attachStudentHint")}
-                    </p>
+                  <div className="mb-6 rounded-2xl bg-card p-6">
+                    <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
+                      <div className="rounded-[5px] border bg-muted/10 p-4">
+                        <h3 className="text-sm font-semibold text-foreground">Biriktirilgan o&apos;quvchilar ro&apos;yxati</h3>
+                        <p className="mt-1 text-xs text-muted-foreground">Tartib raqami bilan biriktirilgan o&apos;quvchilar.</p>
+                        {loadingStudentsForParents ? (
+                          <div className="mt-4">
+                            <ListSkeleton rows={4} />
+                          </div>
+                        ) : attachedStudents.length === 0 ? (
+                          <p className="mt-4 text-xs text-muted-foreground">Hozircha biriktirilgan o&apos;quvchilar yo&apos;q.</p>
+                        ) : (
+                          <div className="mt-4 max-h-[560px] overflow-y-auto pr-1">
+                            <ul className="space-y-2">
+                              {attachedStudents.map((s, index) => {
+                                if (!s.userId) return null;
+                                return (
+                                  <li key={s.id}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setAttachStudentUserId(s.userId || "");
+                                        setShowParentLoginAfterAttach(false);
+                                        setParentStudentId("");
+                                      }}
+                                      className={`w-full rounded-[5px] border bg-background p-3 text-left transition ${attachStudentUserId === s.userId ? "border-primary/60 ring-1 ring-primary/30" : "border-border hover:border-primary/30"}`}
+                                    >
+                                      <div className="flex items-start gap-3">
+                                        <span className="mt-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-[5px] bg-primary/10 px-1 text-[11px] font-semibold text-primary">
+                                          {index + 1}
+                                        </span>
+                                        <div className="min-w-0">
+                                          <p className="truncate text-sm font-medium text-foreground">{decodeHtmlEntities(s.name) || "—"}</p>
+                                          <p className="text-xs text-muted-foreground">
+                                            {decodeHtmlEntities(s.className) || "Sinf biriktirilmagan"}
+                                            {s.academicYear ? ` • ${s.academicYear}` : ""}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
 
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                      }}
-                      onReset={(e) => {
-                        e.preventDefault();
-                      }}
-                      className="mt-5 space-y-5"
-                    >
-                      <div className="grid gap-4 md:grid-cols-2">
+                      <form
+                        onSubmit={handleAttachStudentToClass}
+                        onReset={(e) => {
+                          e.preventDefault();
+                          setAttachStudentUserId("");
+                          setAttachTargetClassId("");
+                          setAttachAcademicYear("");
+                          setAttachEducationLanguage("");
+                          setAttachAdmissionOrderDate("");
+                          setAttachClassAcceptedDate("");
+                          setShowParentLoginAfterAttach(false);
+                          setParentStudentId("");
+                        }}
+                        className="space-y-4"
+                      >
                         <div className="space-y-2">
-                          <Label htmlFor="attach-academic-year">{t("ui.academicYear")}</Label>
+                          <Label htmlFor="attach-student">O&apos;quvchi</Label>
                           <select
-                            id="attach-academic-year"
-                            name="academicYear"
-                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            defaultValue=""
+                            id="attach-student"
+                            value={attachStudentUserId}
+                            onChange={(e) => {
+                              setAttachStudentUserId(e.target.value);
+                              setShowParentLoginAfterAttach(false);
+                              setParentStudentId("");
+                            }}
+                            className="flex h-11 w-full rounded-[5px] border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            required
                           >
-                            <option value="" disabled>{tTable("selectClass")}</option>
+                            <option value="">Tanlang</option>
+                            {loadingStudentsForParents ? (
+                              <option value="" disabled>{t("loading")}</option>
+                            ) : (
+                              studentsForParents.filter((s) => Boolean(s.userId)).map((s) => (
+                                <option key={s.id} value={s.userId}>
+                                  {decodeHtmlEntities(s.name) || "—"}
+                                  {s.className ? ` (${decodeHtmlEntities(s.className)})` : ""}
+                                </option>
+                              ))
+                            )}
                           </select>
                         </div>
 
@@ -4177,139 +4798,189 @@ const DirectorDashboard = () => {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="attach-class-type">{t("ui.classType")}</Label>
-                          <select
-                            id="attach-class-type"
-                            name="classType"
-                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            defaultValue=""
-                          >
-                            <option value="" disabled>{tTable("selectClass")}</option>
-                          </select>
+                          <Label htmlFor="attach-current-class">Sinf</Label>
+                          <Input
+                            id="attach-current-class"
+                            value={selectedAttachStudent?.className || "—"}
+                            className="rounded-[5px]"
+                            readOnly
+                            disabled
+                          />
                         </div>
 
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="attach-target-class">{t("ui.targetClass")}</Label>
+                        <div className="space-y-2">
+                          <Label htmlFor="attach-target-class">Biriktirilgan sinf</Label>
                           <select
                             id="attach-target-class"
-                            name="targetClassId"
-                            className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            defaultValue=""
+                            value={attachTargetClassId}
+                            onChange={(e) => setAttachTargetClassId(e.target.value)}
+                            className="flex h-11 w-full rounded-[5px] border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            required
                           >
-                            <option value="" disabled>{tTable("selectClass")}</option>
+                            <option value="">Tanlang</option>
+                            {classes.map((c) => (
+                              <option key={c._id} value={c._id}>{c.name}</option>
+                            ))}
                           </select>
                         </div>
-                      </div>
 
-                      <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                          <Label htmlFor="attach-order-date">{t("ui.admissionOrderDate")}</Label>
-                          <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                              id="attach-order-date"
-                              name="orderDate"
-                              type="date"
-                              className="h-11 pl-10"
-                              placeholder={t("form.enterDate")}
-                            />
-                          </div>
+                          <Label htmlFor="attach-target-class-count">O&apos;quvchilar soni</Label>
+                          <Input
+                            id="attach-target-class-count"
+                            value={selectedAttachTargetClass?.studentCount ?? 0}
+                            className="rounded-[5px]"
+                            readOnly
+                            disabled
+                          />
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="attach-accepted-date">{t("ui.studentClassAdmissionDate")}</Label>
-                          <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                              id="attach-accepted-date"
-                              name="acceptedDate"
-                              type="date"
-                              className="h-11 pl-10"
-                              placeholder={t("form.enterDate")}
-                            />
-                          </div>
+                          <Label htmlFor="attach-order-date">Qabul buyrug&apos;i sanasi</Label>
+                          <Input
+                            id="attach-order-date"
+                            type="date"
+                            value={attachAdmissionOrderDate}
+                            onChange={(e) => setAttachAdmissionOrderDate(e.target.value)}
+                            className="rounded-[5px]"
+                            required
+                          />
                         </div>
-                      </div>
 
-                      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
-                        <Button type="reset" variant="secondary" className="h-11 px-6">
-                          {t("ui.clear")}
-                        </Button>
-                        <Button type="submit" className="h-11 px-6">
-                          {t("ui.attach")}
-                        </Button>
-                      </div>
-                    </form>
+                        <div className="space-y-2">
+                          <Label htmlFor="attach-accepted-date">O&apos;quvchini sinfga qabul qilish sanasi</Label>
+                          <Input
+                            id="attach-accepted-date"
+                            type="date"
+                            value={attachClassAcceptedDate}
+                            onChange={(e) => setAttachClassAcceptedDate(e.target.value)}
+                            className="rounded-[5px]"
+                            required
+                          />
+                        </div>
+
+                        {selectedAttachStudent && (
+                          <div className="rounded-[5px] border bg-muted/20 p-4">
+                          <h4 className="text-sm font-semibold text-foreground">Joriy biriktirilgan ma&apos;lumot</h4>
+                          <div className="mt-3 grid gap-3 text-xs md:grid-cols-2 lg:grid-cols-4">
+                            <div>
+                              <p className="text-muted-foreground">O&apos;quvchi</p>
+                              <p className="font-medium text-foreground">{decodeHtmlEntities(selectedAttachStudent.name) || "—"}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Biriktirilgan sinf</p>
+                              <p className="font-medium text-foreground">{decodeHtmlEntities(selectedAttachStudent.className) || "—"}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">O&apos;quv yili</p>
+                              <p className="font-medium text-foreground">{selectedAttachStudent.academicYear || "—"}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Ta&apos;lim tili</p>
+                              <p className="font-medium text-foreground">{selectedAttachStudent.educationLanguage || "—"}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Qabul buyrug&apos;i sanasi</p>
+                              <p className="font-medium text-foreground">
+                                {selectedAttachStudent.admissionOrderDate
+                                  ? new Date(selectedAttachStudent.admissionOrderDate).toLocaleDateString(locale)
+                                  : "—"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Sinfga qabul sanasi</p>
+                              <p className="font-medium text-foreground">
+                                {selectedAttachStudent.classAcceptedDate
+                                  ? new Date(selectedAttachStudent.classAcceptedDate).toLocaleDateString(locale)
+                                  : "—"}
+                              </p>
+                            </div>
+                          </div>
+                          </div>
+                        )}
+
+                        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
+                          <Button type="reset" variant="secondary" className="h-11 px-6 rounded-[5px]">
+                            Tozalash
+                          </Button>
+                          <Button type="submit" className="h-11 px-6 rounded-[5px]">
+                            Biriktirish
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
                   </div>
 
-                  <div className="mb-3">
-                    <h3 className="text-sm font-medium text-foreground">{t("parents.createLoginTitle")}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {t("parents.createLoginDescription")}
-                    </p>
-                  </div>
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      if (!token) {
-                        toast({
-                          title: t("errorTitle"),
-                          description: schoolManagerLoginMessage,
-                          variant: "destructive",
-                        });
-                        return;
-                      }
-                      if (!parentStudentId || !parentName || !parentEmail || !parentPhone || !parentPassword) {
-                        toast({
-                          title: t("insufficientDataTitle"),
-                          description: t("validation.parentRequired"),
-                          variant: "destructive",
-                        });
-                        return;
-                      }
-                      try {
-                        const res = await apiFetch(`${API_BASE_URL}/api/director/parents`, {
-                          method: "POST",
-                          headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
-                          },
-                          body: JSON.stringify({
-                            name: parentName,
-                            email: parentEmail,
-                            phone: parentPhone,
-                            password: parentPassword,
-                            studentId: parentStudentId,
-                          }),
-                        });
-                        const data = await res.json();
-                        if (!res.ok) {
-                          throw new Error(data.message || t("errors.parentCreate"));
-                        }
-                        toast({
-                          title: t("successTitle"),
-                          description: t("messages.parentCreated"),
-                        });
-                        setParentStudentId("");
-                        setParentName("");
-                        setParentEmail("");
-                        setParentPhone("");
-                        setParentPassword("");
-                        setDirectorUsersSearch("");
-                        setDirectorUsersRoleFilter("parent");
-                        await fetchDirectorUsers({ role: "parent", search: "" });
-                        await fetchOverview();
-                      } catch (err: unknown) {
-                        toast({
-                          title: t("errorTitle"),
-                          description:
-                            err instanceof Error ? err.message : t("errors.parentCreateDesc"),
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                    className="grid gap-3 text-xs md:grid-cols-2 lg:grid-cols-3"
-                  >
+                  {showParentLoginAfterAttach && (
+                    <>
+                      <div className="mb-3 mt-2">
+                        <h3 className="text-sm font-medium text-foreground">{t("parents.createLoginTitle")}</h3>
+                        <p className="text-xs text-muted-foreground">
+                          {t("parents.createLoginDescription")}
+                        </p>
+                      </div>
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          if (!token) {
+                            toast({
+                              title: t("errorTitle"),
+                              description: schoolManagerLoginMessage,
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          if (!parentStudentId || !parentName || !parentEmail || !parentPhone || !parentPassword) {
+                            toast({
+                              title: t("insufficientDataTitle"),
+                              description: t("validation.parentRequired"),
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          try {
+                            const res = await apiFetch(`${API_BASE_URL}/api/director/parents`, {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${token}`,
+                              },
+                              body: JSON.stringify({
+                                name: parentName,
+                                email: parentEmail,
+                                phone: parentPhone,
+                                password: parentPassword,
+                                studentId: parentStudentId,
+                              }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok) {
+                              throw new Error(data.message || t("errors.parentCreate"));
+                            }
+                            toast({
+                              title: t("successTitle"),
+                              description: t("messages.parentCreated"),
+                            });
+                            setParentStudentId("");
+                            setParentName("");
+                            setParentEmail("");
+                            setParentPhone("");
+                            setParentPassword("");
+                            setDirectorUsersSearch("");
+                            setDirectorUsersRoleFilter("parent");
+                            await fetchDirectorUsers({ role: "parent", search: "" });
+                            await fetchOverview();
+                          } catch (err: unknown) {
+                            toast({
+                              title: t("errorTitle"),
+                              description:
+                                err instanceof Error ? err.message : t("errors.parentCreateDesc"),
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        className="grid gap-3 text-xs md:grid-cols-2 lg:grid-cols-3"
+                      >
                     <div className="space-y-1">
                       <Label className="text-[11px]" htmlFor="parent-student">
                         {t("analysis.student")}
@@ -4400,7 +5071,9 @@ const DirectorDashboard = () => {
                         {t("parents.createLogin")}
                       </Button>
                     </div>
-                  </form>
+                      </form>
+                    </>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -4413,6 +5086,14 @@ const DirectorDashboard = () => {
         {
           section === "settings" && (
             <div className="space-y-6">
+              <UnifiedProfileSection
+                token={token}
+                user={currentUser}
+                storageKey="director_profile_meta"
+                roleLabel={profileRoleLabel}
+              />
+
+              {RENDER_LEGACY_PROFILE && (
               <Card className="border-slate-200 bg-slate-50/40">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-3">
@@ -4602,6 +5283,7 @@ const DirectorDashboard = () => {
                   </div>
                 </CardContent>
               </Card>
+              )}
 
               <Card>
                   <CardHeader>
@@ -4737,7 +5419,7 @@ const DirectorDashboard = () => {
         {section === "support" && (
           <TicketSystem
             token={token}
-            userRole={currentUser?.role as "director" | "school_admin"}
+            userRole={isSchoolAdmin ? "school_admin" : "director"}
             API_BASE_URL={API_BASE_URL}
           />
         )}
@@ -4879,7 +5561,43 @@ const DirectorDashboard = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>{t("table.related")}</Label>
-                  <Input value={selectedDirectorUser.relatedLabel || "—"} disabled />
+                  {selectedDirectorUser.role === "student" ? (
+                    <select
+                      value={editRelatedId}
+                      onChange={(e) => setEditRelatedId(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">Sinfni tanlang</option>
+                      {classes.map((c) => (
+                        <option key={c._id} value={c._id}>{c.name}</option>
+                      ))}
+                    </select>
+                  ) : selectedDirectorUser.role === "teacher" ? (
+                    <select
+                      value={editRelatedId}
+                      onChange={(e) => setEditRelatedId(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">Fan tanlang</option>
+                      {subjects.map((s) => (
+                        <option key={s._id} value={s._id}>{s.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      value={editRelatedId}
+                      onChange={(e) => setEditRelatedId(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">O&apos;quvchini tanlang</option>
+                      {studentsForParents.map((student) => (
+                        <option key={student.id} value={student.id}>
+                          {decodeHtmlEntities(student.name) || "—"}
+                          {student.className ? ` (${student.className})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="director-user-phone">{t("phone")}</Label>
@@ -4890,7 +5608,7 @@ const DirectorDashboard = () => {
                     placeholder="+998901234567"
                   />
                 </div>
-                {selectedDirectorUser.role !== "school_admin" && (
+                {(selectedDirectorUser.role === "student" || selectedDirectorUser.role === "parent") && (
                   <div className="space-y-2">
                     <Label>{t("table.debt")}</Label>
                     <Input
@@ -4993,4 +5711,7 @@ const DirectorDashboard = () => {
 };
 
 export default DirectorDashboard;
+// Nested routes chiqishi uchun layout oxirida Outlet qo'shildi
+// ...existing code...
+  <Outlet />
 

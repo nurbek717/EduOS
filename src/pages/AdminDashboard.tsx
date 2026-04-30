@@ -14,6 +14,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { ChartSkeleton, StatsCardsSkeleton, TableSkeleton } from "@/components/ui/skeletons";
+import UnifiedProfileSection from "@/components/dashboard/UnifiedProfileSection";
 import { useToast } from "@/hooks/use-toast";
 import { useAppLocale } from "@/context/LanguageContext";
 import { useTranslation } from "react-i18next";
@@ -103,6 +105,7 @@ type SubscriptionItem = {
   id: string;
   schoolId: string;
   schoolName: string;
+  createdAt?: string | null;
   endAt: string;
 };
 
@@ -205,7 +208,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [schools, setSchools] = useState<School[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [section, setSection] = useState<"overview" | "schools" | "users" | "subscriptions" | "exams">("schools");
+  const [section, setSection] = useState<"overview" | "schools" | "users" | "subscriptions" | "exams" | "profile">("schools");
   const [weekOffset, setWeekOffset] = useState(0);
   const [examsLoading, setExamsLoading] = useState(false);
   const [exams, setExams] = useState<AdminExam[]>([]);
@@ -274,16 +277,12 @@ const AdminDashboard = () => {
   const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
   const [subscriptionsLoading, setSubscriptionsLoading] = useState(false);
   const [subscriptionsSubmitting, setSubscriptionsSubmitting] = useState(false);
+  const [subscriptionEditOpen, setSubscriptionEditOpen] = useState(false);
+  const [subscriptionEditSubmitting, setSubscriptionEditSubmitting] = useState(false);
+  const [subscriptionEditTarget, setSubscriptionEditTarget] = useState<SubscriptionItem | null>(null);
+  const [subscriptionEditEndAt, setSubscriptionEditEndAt] = useState<string>("");
   const [subscriptionSchoolId, setSubscriptionSchoolId] = useState<string>("");
   const [subscriptionDays, setSubscriptionDays] = useState<number>(30);
-  const [subscriptionFormErrors, setSubscriptionFormErrors] = useState<{
-    schoolId?: string;
-    days?: string;
-  }>({});
-  const [subscriptionFormTouched, setSubscriptionFormTouched] = useState<{
-    schoolId: boolean;
-    days: boolean;
-  }>({ schoolId: false, days: false });
   const [nowMs, setNowMs] = useState<number>(Date.now());
 
   const subscriptionsForOverviewUI = subscriptions
@@ -512,63 +511,8 @@ const AdminDashboard = () => {
     });
   };
 
-  const validateSchoolForm = () => {
-    const nextErrors: {
-      schoolName?: string;
-      directorInfo?: string;
-      directorEmail?: string;
-      directorPassword?: string;
-    } = {};
-    const hasDirectorName = Boolean(directorName.trim());
-    const hasDirectorEmail = Boolean(directorEmail.trim());
-    const hasDirectorPassword = Boolean(directorPassword.trim());
-    const hasAnyDirectorField = hasDirectorName || hasDirectorEmail || hasDirectorPassword;
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!schoolName.trim()) {
-      nextErrors.schoolName = ad("schools.validation.nameRequired");
-    }
-    if (hasAnyDirectorField && !(hasDirectorName && hasDirectorEmail && hasDirectorPassword)) {
-      nextErrors.directorInfo = ad("schools.validation.directorInfoIncomplete");
-    }
-    if (hasDirectorEmail && !emailPattern.test(directorEmail.trim())) {
-      nextErrors.directorEmail = ad("schools.validation.directorEmailInvalid");
-    }
-    if (hasDirectorPassword && directorPassword.trim().length < 6) {
-      nextErrors.directorPassword = ad("schools.validation.directorPasswordMin");
-    }
-    return nextErrors;
-  };
-
-  const validateSubscriptionForm = () => {
-    const nextErrors: { schoolId?: string; days?: string } = {};
-    if (!subscriptionSchoolId) {
-      nextErrors.schoolId = ad("subscriptions.validation.selectSchool");
-    }
-    if (!Number.isFinite(subscriptionDays) || subscriptionDays < 1) {
-      nextErrors.days = ad("subscriptions.validation.days");
-    }
-    return nextErrors;
-  };
-
-  const validateUserPasswordForm = () => {
-    if (!changePasswordEnabled) return {};
-    const nextErrors: { editPassword?: string; confirmEditPassword?: string } = {};
-    if (!editPassword.trim()) {
-      nextErrors.editPassword = ad("users.edit.newPasswordRequired");
-      return nextErrors;
-    }
-    if (editPassword !== confirmEditPassword) {
-      nextErrors.confirmEditPassword = ad("users.edit.passwordMismatch");
-    }
-    return nextErrors;
-  };
-
   const handleCreateSubscription = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubscriptionFormTouched({ schoolId: true, days: true });
-    const validationErrors = validateSubscriptionForm();
-    setSubscriptionFormErrors(validationErrors);
 
     if (!token) {
       toast({
@@ -579,19 +523,19 @@ const AdminDashboard = () => {
       return;
     }
 
-    if (validationErrors.schoolId) {
+    if (!subscriptionSchoolId) {
       toast({
         title: ad("toasts.insufficient"),
-        description: validationErrors.schoolId,
+        description: ad("subscriptions.validation.selectSchool"),
         variant: "destructive",
       });
       return;
     }
 
-    if (validationErrors.days) {
+    if (!Number.isFinite(subscriptionDays) || subscriptionDays < 1) {
       toast({
         title: ad("toasts.insufficient"),
-        description: validationErrors.days,
+        description: ad("subscriptions.validation.days"),
         variant: "destructive",
       });
       return;
@@ -637,30 +581,72 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleCreateSchool = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSchoolFormTouched({
-      schoolName: true,
-      directorEmail: true,
-      directorPassword: true,
-    });
-    const validationErrors = validateSchoolForm();
-    setSchoolFormErrors(validationErrors);
+  const handleOpenSubscriptionEdit = (sub: SubscriptionItem) => {
+    setSubscriptionEditTarget(sub);
+    const d = sub.endAt ? new Date(sub.endAt) : null;
+    const yyyy = d ? d.getFullYear() : new Date().getFullYear();
+    const mm = d ? String(d.getMonth() + 1).padStart(2, "0") : String(new Date().getMonth() + 1).padStart(2, "0");
+    const dd = d ? String(d.getDate()).padStart(2, "0") : String(new Date().getDate()).padStart(2, "0");
+    setSubscriptionEditEndAt(`${yyyy}-${mm}-${dd}`);
+    setSubscriptionEditOpen(true);
+  };
 
-    if (Object.keys(validationErrors).length > 0) {
+  const handleSaveSubscriptionEndAt = async () => {
+    if (!token) {
+      toast({
+        title: ad("toasts.error"),
+        description: ad("errors.superAdminLoginRequired"),
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!subscriptionEditTarget) return;
+    if (!subscriptionEditEndAt) {
       toast({
         title: ad("toasts.insufficient"),
-        description:
-          validationErrors.schoolName ||
-          validationErrors.directorInfo ||
-          validationErrors.directorEmail ||
-          validationErrors.directorPassword ||
-          ad("errors.createSchool"),
+        description: "Tugash sanasini tanlang",
         variant: "destructive",
       });
       return;
     }
 
+    setSubscriptionEditSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/subscriptions/${subscriptionEditTarget.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          endAt: subscriptionEditEndAt,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Obunani yangilashda xatolik");
+
+      toast({
+        title: ad("toasts.success"),
+        description: "Obuna tugash sanasi yangilandi",
+      });
+
+      setSubscriptionEditOpen(false);
+      setSubscriptionEditTarget(null);
+      await fetchSubscriptions();
+      await fetchStats(weekOffset);
+    } catch (err: unknown) {
+      toast({
+        title: ad("toasts.error"),
+        description: err instanceof Error ? err.message : "Obunani yangilashda xatolik",
+        variant: "destructive",
+      });
+    } finally {
+      setSubscriptionEditSubmitting(false);
+    }
+  };
+
+  const handleCreateSchool = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!token) {
       toast({
         title: ad("toasts.error"),
@@ -762,16 +748,24 @@ const AdminDashboard = () => {
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token || !selectedUser) return;
-    setUserPasswordSubmitted(true);
 
-    const passwordValidationErrors = validateUserPasswordForm();
-    if (passwordValidationErrors.editPassword || passwordValidationErrors.confirmEditPassword) {
-      toast({
-        title: ad("toasts.error"),
-        description: passwordValidationErrors.editPassword || passwordValidationErrors.confirmEditPassword,
-        variant: "destructive",
-      });
-      return;
+    if (changePasswordEnabled) {
+      if (!editPassword.trim()) {
+        toast({
+          title: ad("toasts.insufficient"),
+          description: "Yangi parolni kiriting.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (editPassword !== confirmEditPassword) {
+        toast({
+          title: ad("toasts.error"),
+          description: "Parol tasdiqlash bilan mos emas.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     try {
@@ -973,6 +967,7 @@ const AdminDashboard = () => {
       month: "2-digit",
     });
 
+    const attentionItems = stats?.platformOverview?.attentionItems || [];
     attentionItems.slice(0, 4).forEach((item, index) => {
       next.push({
         id: `admin:attention:${index}:${item}`,
@@ -1050,6 +1045,23 @@ const AdminDashboard = () => {
     typeof topSubscriptionEnd === "number"
       ? Math.max(0, Math.ceil((topSubscriptionEnd - nowMs) / (24 * 60 * 60 * 1000)))
       : null;
+  const adminSubscriptionItems = subscriptionsForOverviewUI.map((sub) => {
+    const endTime = sub.endAt ? new Date(sub.endAt).getTime() : NaN;
+    const diffMs = Number.isNaN(endTime) ? null : endTime - nowMs;
+    const expired = typeof diffMs === "number" ? diffMs <= 0 : false;
+    const daysLeft = typeof diffMs === "number" ? (expired ? 0 : Math.max(0, Math.ceil(diffMs / (24 * 60 * 60 * 1000)))) : null;
+
+    return {
+      planName: sub.schoolName || "Maktab",
+      schoolId: sub.schoolId,
+      startDate: sub.createdAt || null,
+      endDate: sub.endAt || null,
+      contractNumber: `SUB-${sub.schoolId?.slice?.(-6) || "000000"}`,
+      status: expired ? "expired" as const : "active" as const,
+      daysLeft,
+    };
+  });
+
   return (
     <AdminLayout
       title={t("dashboard.admin.title")}
@@ -1060,15 +1072,28 @@ const AdminDashboard = () => {
       searchItems={searchItems}
       subscriptionInfo={{
         planName: topSubscription?.schoolName || "TEST",
-        startDate: null,
+        startDate: topSubscription?.createdAt || null,
         endDate: topSubscription?.endAt || null,
         contractNumber: topSubscription ? `SUB-${topSubscription.schoolId?.slice?.(-6) || "000000"}` : "MYS-133891/26",
         status: topSubscriptionDaysLeft === 0 ? "expired" : "active",
         daysLeft: topSubscriptionDaysLeft,
       }}
+      subscriptionItems={adminSubscriptionItems}
     >
       <div className="space-y-8">
+        {section === "profile" && (
+          <UnifiedProfileSection
+            token={token}
+            user={typeof window !== "undefined" ? JSON.parse(localStorage.getItem("auth_user") || "{}") : null}
+            storageKey="admin_profile_meta"
+            roleLabel="Super Admin"
+          />
+        )}
+
         {/* Stats cards */}
+        {!stats && section === "overview" && (
+          <StatsCardsSkeleton count={6} className="md:grid-cols-2 lg:grid-cols-3" />
+        )}
         {stats && section === "overview" && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {overviewStatCards.map((card) => (
@@ -1134,7 +1159,7 @@ const AdminDashboard = () => {
           <div className="space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="space-y-1">
-                <h3 className="text-sm font-medium text-foreground">{ad("common.statistics")}</h3>
+                <h3 className="text-sm font-medium text-foreground">Umumiy statistika</h3>
                 <p className="text-xs text-muted-foreground">
                   {ad("overview.summaryDescription")}
                 </p>
@@ -1227,7 +1252,7 @@ const AdminDashboard = () => {
               </CardContent>
               </Card>
 
-              <Suspense fallback={<Card><CardContent className="h-64 flex items-center justify-center text-sm text-muted-foreground">{ad("overview.chartLoading")}</CardContent></Card>}>
+              <Suspense fallback={<ChartSkeleton height={256} />}>
                 <AdminSchoolsChart
                   data={stats?.schoolsLast7Days || []}
                   range={stats?.range}
@@ -1245,9 +1270,9 @@ const AdminDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {attentionItems.length ? (
+                {stats?.platformOverview?.attentionItems?.length ? (
                   <div className="space-y-2">
-                    {attentionItems.map((item) => (
+                    {stats.platformOverview.attentionItems.map((item) => (
                       <div
                         key={item}
                         className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
@@ -1271,7 +1296,7 @@ const AdminDashboard = () => {
           <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div>
-              <CardTitle>{ad("schoolsList")}</CardTitle>
+              <CardTitle>Maktablar ro'yxati</CardTitle>
               <CardDescription>
                 {ad("schools.description")}
               </CardDescription>
@@ -1296,22 +1321,10 @@ const AdminDashboard = () => {
                     <Input
                       id="school-name"
                       value={schoolName}
-                      onChange={(e) => {
-                        setSchoolName(e.target.value);
-                        if (schoolFormErrors.schoolName) {
-                          setSchoolFormErrors((prev) => ({ ...prev, schoolName: undefined }));
-                        }
-                      }}
-                      onBlur={() => {
-                        setSchoolFormTouched((prev) => ({ ...prev, schoolName: true }));
-                        setSchoolFormErrors((prev) => ({ ...prev, schoolName: validateSchoolForm().schoolName }));
-                      }}
+                      onChange={(e) => setSchoolName(e.target.value)}
                       placeholder={ad("schools.form.namePlaceholder")}
                       required
                     />
-                    {schoolFormTouched.schoolName && schoolFormErrors.schoolName ? (
-                      <p className="text-xs text-destructive">{schoolFormErrors.schoolName}</p>
-                    ) : null}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -1355,30 +1368,9 @@ const AdminDashboard = () => {
                           id="director-email"
                           type="email"
                           value={directorEmail}
-                          onChange={(e) => {
-                            setDirectorEmail(e.target.value);
-                            if (schoolFormErrors.directorEmail || schoolFormErrors.directorInfo) {
-                              setSchoolFormErrors((prev) => ({
-                                ...prev,
-                                directorEmail: undefined,
-                                directorInfo: undefined,
-                              }));
-                            }
-                          }}
-                          onBlur={() => {
-                            setSchoolFormTouched((prev) => ({ ...prev, directorEmail: true }));
-                            const nextErrors = validateSchoolForm();
-                            setSchoolFormErrors((prev) => ({
-                              ...prev,
-                              directorEmail: nextErrors.directorEmail,
-                              directorInfo: nextErrors.directorInfo,
-                            }));
-                          }}
+                          onChange={(e) => setDirectorEmail(e.target.value)}
                           placeholder="email@maktab.uz"
                         />
-                        {(schoolFormTouched.directorEmail && schoolFormErrors.directorEmail) || schoolFormErrors.directorInfo ? (
-                          <p className="text-xs text-destructive">{schoolFormErrors.directorEmail || schoolFormErrors.directorInfo}</p>
-                        ) : null}
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -1389,25 +1381,7 @@ const AdminDashboard = () => {
                           id="director-password"
                           type={showDirectorPassword ? "text" : "password"}
                           value={directorPassword}
-                          onChange={(e) => {
-                            setDirectorPassword(e.target.value);
-                            if (schoolFormErrors.directorPassword || schoolFormErrors.directorInfo) {
-                              setSchoolFormErrors((prev) => ({
-                                ...prev,
-                                directorPassword: undefined,
-                                directorInfo: undefined,
-                              }));
-                            }
-                          }}
-                          onBlur={() => {
-                            setSchoolFormTouched((prev) => ({ ...prev, directorPassword: true }));
-                            const nextErrors = validateSchoolForm();
-                            setSchoolFormErrors((prev) => ({
-                              ...prev,
-                              directorPassword: nextErrors.directorPassword,
-                              directorInfo: nextErrors.directorInfo,
-                            }));
-                          }}
+                          onChange={(e) => setDirectorPassword(e.target.value)}
                           placeholder="••••••••"
                           className="pl-10 pr-10"
                         />
@@ -1532,7 +1506,7 @@ const AdminDashboard = () => {
             {schoolsPagination.total > 0 && (
               <div className="mt-4 flex items-center justify-between gap-3 border-t pt-4">
                 <p className="text-sm text-muted-foreground">
-                  {schoolsPagination.start + 1} - {schoolsPagination.end} / {ad("common.total")}: {schoolsPagination.total}
+                  {schoolsPagination.start + 1} - {schoolsPagination.end} / Jami: {schoolsPagination.total}
                 </p>
                 <div className="flex items-center gap-2">
                   <Button
@@ -1620,7 +1594,7 @@ const AdminDashboard = () => {
           <Card>
             <CardHeader className="space-y-4">
               <div>
-                <CardTitle>{ad("subscriptions.form.submit")}</CardTitle>
+                <CardTitle>Obunani qo'shish</CardTitle>
                 <CardDescription>{ad("subscriptions.description")}</CardDescription>
               </div>
             </CardHeader>
@@ -1631,19 +1605,7 @@ const AdminDashboard = () => {
                   <select
                     id="subscription-school"
                     value={subscriptionSchoolId}
-                    onChange={(e) => {
-                      setSubscriptionSchoolId(e.target.value);
-                      if (subscriptionFormErrors.schoolId) {
-                        setSubscriptionFormErrors((prev) => ({ ...prev, schoolId: undefined }));
-                      }
-                    }}
-                    onBlur={() => {
-                      setSubscriptionFormTouched((prev) => ({ ...prev, schoolId: true }));
-                      setSubscriptionFormErrors((prev) => ({
-                        ...prev,
-                        schoolId: validateSubscriptionForm().schoolId,
-                      }));
-                    }}
+                    onChange={(e) => setSubscriptionSchoolId(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
                     required
                   >
@@ -1669,24 +1631,9 @@ const AdminDashboard = () => {
                     min={1}
                     step={1}
                     value={subscriptionDays}
-                    onChange={(e) => {
-                      setSubscriptionDays(Number.parseInt(e.target.value || "0", 10));
-                      if (subscriptionFormErrors.days) {
-                        setSubscriptionFormErrors((prev) => ({ ...prev, days: undefined }));
-                      }
-                    }}
-                    onBlur={() => {
-                      setSubscriptionFormTouched((prev) => ({ ...prev, days: true }));
-                      setSubscriptionFormErrors((prev) => ({
-                        ...prev,
-                        days: validateSubscriptionForm().days,
-                      }));
-                    }}
+                    onChange={(e) => setSubscriptionDays(Number.parseInt(e.target.value || "0", 10))}
                     required
                   />
-                  {subscriptionFormTouched.days && subscriptionFormErrors.days ? (
-                    <p className="text-xs text-destructive">{subscriptionFormErrors.days}</p>
-                  ) : null}
                 </div>
 
                 <Button
@@ -1709,18 +1656,15 @@ const AdminDashboard = () => {
                       <TableHead>{ad("subscriptions.table.school")}</TableHead>
                       <TableHead>{ad("subscriptions.table.endDate")}</TableHead>
                       <TableHead className="text-right">{ad("subscriptions.table.daysLeft")}</TableHead>
+                      <TableHead className="text-right">Amallar</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {subscriptionsLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="h-24 text-center text-sm text-muted-foreground">
-                          {ad("subscriptions.loading")}
-                        </TableCell>
-                      </TableRow>
+                      <TableSkeleton rows={5} columns={4} />
                     ) : subscriptions.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={3} className="h-24 text-center">
+                        <TableCell colSpan={4} className="h-24 text-center">
                           <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                             <School className="h-10 w-10 opacity-40" />
                             <p className="text-sm font-medium">{ad("subscriptions.empty")}</p>
@@ -1747,6 +1691,12 @@ const AdminDashboard = () => {
                                 ad("subscriptions.daysLeft", { count: daysLeft })
                               )}
                             </TableCell>
+                            <TableCell className="text-right">
+                              <Button type="button" variant="outline" size="sm" onClick={() => handleOpenSubscriptionEdit(sub)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                O'zgartirish
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         );
                       })
@@ -1757,7 +1707,7 @@ const AdminDashboard = () => {
                 {!subscriptionsLoading && subscriptionsPagination.total > 0 && (
                   <div className="mt-4 flex items-center justify-between gap-3 border-t pt-4">
                     <p className="text-sm text-muted-foreground">
-                      {subscriptionsPagination.start + 1} - {subscriptionsPagination.end} / {ad("common.total")}: {subscriptionsPagination.total}
+                      {subscriptionsPagination.start + 1} - {subscriptionsPagination.end} / Jami: {subscriptionsPagination.total}
                     </p>
                     <div className="flex items-center gap-2">
                       <Button
@@ -1787,6 +1737,37 @@ const AdminDashboard = () => {
                   </div>
                 )}
               </div>
+
+              <Dialog open={subscriptionEditOpen} onOpenChange={setSubscriptionEditOpen}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Obuna tugash sanasini o'zgartirish</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-2">
+                    <Label>Maktab</Label>
+                    <div className="rounded-md border bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                      {subscriptionEditTarget?.schoolName || "-"}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="subscription-edit-endAt">Tugash sanasi</Label>
+                    <Input
+                      id="subscription-edit-endAt"
+                      type="date"
+                      value={subscriptionEditEndAt}
+                      onChange={(e) => setSubscriptionEditEndAt(e.target.value)}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setSubscriptionEditOpen(false)} disabled={subscriptionEditSubmitting}>
+                      Bekor qilish
+                    </Button>
+                    <Button type="button" onClick={() => void handleSaveSubscriptionEndAt()} disabled={subscriptionEditSubmitting || !subscriptionEditEndAt}>
+                      {subscriptionEditSubmitting ? ad("common.saving") : "Saqlash"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         )}
@@ -1796,7 +1777,7 @@ const AdminDashboard = () => {
             <CardHeader className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <CardTitle>{ad("exams.title")}</CardTitle>
+                  <CardTitle>Imtihonlar va natijalar</CardTitle>
                   <CardDescription>
                     {ad("exams.description")}
                   </CardDescription>
@@ -1820,11 +1801,7 @@ const AdminDashboard = () => {
                 </TableHeader>
                 <TableBody>
                   {examsLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center text-sm text-muted-foreground">
-                        {ad("exams.loading")}
-                      </TableCell>
-                    </TableRow>
+                    <TableSkeleton rows={5} columns={6} />
                   ) : exams.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="h-24 text-center text-sm text-muted-foreground">
@@ -1869,7 +1846,7 @@ const AdminDashboard = () => {
               {!examsLoading && examsPagination.total > 0 && (
                 <div className="flex items-center justify-between gap-3 border-t pt-4">
                   <p className="text-sm text-muted-foreground">
-                    {examsPagination.start + 1} - {examsPagination.end} / {ad("common.total")}: {examsPagination.total}
+                    {examsPagination.start + 1} - {examsPagination.end} / Jami: {examsPagination.total}
                   </p>
                   <div className="flex items-center gap-2">
                     <Button
@@ -1919,7 +1896,7 @@ const AdminDashboard = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{ad("exams.results.student")}</TableHead>
+                        <TableHead>O&apos;quvchi</TableHead>
                         <TableHead>{ad("table.status")}</TableHead>
                         <TableHead>{ad("table.score")}</TableHead>
                         <TableHead>{ad("table.percent")}</TableHead>
@@ -1928,11 +1905,7 @@ const AdminDashboard = () => {
                     </TableHeader>
                     <TableBody>
                       {examResultsLoading ? (
-                        <TableRow>
-                          <TableCell colSpan={5} className="h-20 text-center text-sm text-muted-foreground">
-                            {ad("exams.results.loading")}
-                          </TableCell>
-                        </TableRow>
+                        <TableSkeleton rows={5} columns={5} />
                       ) : examResults.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="h-20 text-center text-sm text-muted-foreground">
@@ -1961,7 +1934,7 @@ const AdminDashboard = () => {
                   {!examResultsLoading && examResultsPagination.total > 0 && (
                     <div className="mt-4 flex items-center justify-between gap-3 border-t pt-4">
                       <p className="text-sm text-muted-foreground">
-                        {examResultsPagination.start + 1} - {examResultsPagination.end} / {ad("common.total")}: {examResultsPagination.total}
+                        {examResultsPagination.start + 1} - {examResultsPagination.end} / Jami: {examResultsPagination.total}
                       </p>
                       <div className="flex items-center gap-2">
                         <Button
@@ -2031,11 +2004,7 @@ const AdminDashboard = () => {
                 </TableHeader>
                 <TableBody>
                   {usersLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center text-sm text-muted-foreground">
-                        {ad("users.loading")}
-                      </TableCell>
-                    </TableRow>
+                    <TableSkeleton rows={5} columns={5} />
                   ) : users.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="h-28 text-center">
@@ -2083,7 +2052,7 @@ const AdminDashboard = () => {
               {!usersLoading && usersPagination.total > 0 && (
                 <div className="mt-4 flex items-center justify-between gap-3 border-t pt-4">
                   <p className="text-sm text-muted-foreground">
-                    {usersPagination.start + 1} - {usersPagination.end} / {ad("common.total")}: {usersPagination.total}
+                    {usersPagination.start + 1} - {usersPagination.end} / Jami: {usersPagination.total}
                   </p>
                   <div className="flex items-center gap-2">
                     <Button
@@ -2137,7 +2106,7 @@ const AdminDashboard = () => {
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="edit-name">{ad("common.fullName")}</Label>
+                      <Label htmlFor="edit-name">FISH</Label>
                       <Input
                         id="edit-name"
                         value={editName}
@@ -2168,7 +2137,7 @@ const AdminDashboard = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>{ad("common.username")}</Label>
+                      <Label>Foydalanuvchi nomi</Label>
                       <Input
                         value={(editEmail.split("@")[0] || selectedUser.id).trim()}
                         disabled
@@ -2177,7 +2146,7 @@ const AdminDashboard = () => {
 
                     <div className="space-y-2">
                       <div className="flex items-center gap-3">
-                        <Label htmlFor="change-password" className="mb-0">{ad("common.changePassword")}</Label>
+                        <Label htmlFor="change-password" className="mb-0">Parolni o&apos;zgartirish</Label>
                         <input
                           id="change-password"
                           type="checkbox"
@@ -2200,7 +2169,7 @@ const AdminDashboard = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="edit-password">{ad("users.edit.newPasswordLabel")}</Label>
+                      <Label htmlFor="edit-password">Yangi parol</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
@@ -2227,15 +2196,10 @@ const AdminDashboard = () => {
                           {showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
-                      {changePasswordEnabled &&
-                      (userPasswordSubmitted || userPasswordTouched.editPassword) &&
-                      !editPassword.trim() ? (
-                        <p className="text-xs text-destructive">{ad("users.edit.newPasswordRequired")}</p>
-                      ) : null}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="edit-password-confirm">{ad("users.edit.confirmPasswordLabel")}</Label>
+                      <Label htmlFor="edit-password-confirm">Parolni tasdiqlash</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input

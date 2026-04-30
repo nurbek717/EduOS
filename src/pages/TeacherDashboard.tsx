@@ -3,10 +3,13 @@ import { motion } from "framer-motion";
 import { Users, BookOpen, ClipboardList, Clock, CheckSquare, Pencil, Trash2, Eye, EyeOff, Upload, UserCircle, MapPin, Camera } from "lucide-react";
 import TeacherLayout from "@/components/TeacherLayout";
 import SectionTitle from "@/components/SectionTitle";
+import UnifiedProfileSection from "@/components/dashboard/UnifiedProfileSection";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ChatSkeleton, ListSkeleton, StatsCardsSkeleton } from "@/components/ui/skeletons";
 import LiveDateTimeBadge from "@/components/dashboard/LiveDateTimeBadge";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
@@ -15,6 +18,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 type TeacherSection = "overview" | "students" | "classes" | "grades" | "homework" | "exams" | "schedule" | "faceAttendance" | "profile" | "support";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const RENDER_LEGACY_PROFILE = Boolean(import.meta.env.VITE_RENDER_LEGACY_PROFILE);
 
 const timetableDays = [
   { value: 1, labelKey: "days.monday" },
@@ -1787,177 +1791,225 @@ const TeacherDashboard = () => {
           <>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="space-y-1">
-                <h3 className="text-sm font-medium text-foreground">{td("overview.title")}</h3>
-                <p className="text-xs text-muted-foreground">
+                <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{td("overview.title")}</h3>
+                <p className="text-sm flex items-center justify-start gap-1 text-[#FE9F43] font-medium md:text-sm">
                   {td("overview.desc")}
                 </p>
               </div>
               <LiveDateTimeBadge />
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-4">
-              {[
-                { title: td("overview.stats.assignedClasses"), value: classes.length, hint: td("overview.stats.assignedClassesHint"), icon: BookOpen, color: "text-blue-600", bg: "bg-blue-500/10" },
-                { title: td("overview.stats.totalStudents"), value: totalStudentsCount, hint: td("overview.stats.totalStudentsHint"), icon: Users, color: "text-emerald-600", bg: "bg-emerald-500/10" },
-                { title: td("overview.stats.todayLessons"), value: todayLessons.length, hint: td("overview.stats.todayLessonsHint"), icon: Clock, color: "text-amber-600", bg: "bg-amber-500/10" },
-                { title: td("overview.stats.homeroom"), value: homeroomClassCount, hint: td("overview.stats.homeroomHint"), icon: CheckSquare, color: "text-violet-600", bg: "bg-violet-500/10" },
-              ].map((stat) => (
-                <Card key={stat.title} className="cursor-default">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
-                    <div className={`rounded-lg p-2 ${stat.bg}`}>
-                      <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                    </div>
+            {loadingClasses || loadingStudents || loadingTimetable ? (
+              <StatsCardsSkeleton count={4} className="lg:grid-cols-4" />
+            ) : (
+              <div className="grid gap-4 lg:grid-cols-4">
+                {[
+                  { title: td("overview.stats.assignedClasses"), value: classes.length, hint: td("overview.stats.assignedClassesHint"), icon: BookOpen, color: "text-blue-600", bg: "bg-blue-500/10" },
+                  { title: td("overview.stats.totalStudents"), value: totalStudentsCount, hint: td("overview.stats.totalStudentsHint"), icon: Users, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+                  { title: td("overview.stats.todayLessons"), value: todayLessons.length, hint: td("overview.stats.todayLessonsHint"), icon: Clock, color: "text-amber-600", bg: "bg-amber-500/10" },
+                  { title: td("overview.stats.homeroom"), value: homeroomClassCount, hint: td("overview.stats.homeroomHint"), icon: CheckSquare, color: "text-violet-600", bg: "bg-violet-500/10" },
+                ].map((stat) => (
+                  <Card key={stat.title} className="cursor-default">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
+                      <div className={`rounded-lg p-2 ${stat.bg}`}>
+                        <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-3xl font-bold text-foreground">{stat.value}</div>
+                      <p className="mt-1 text-xs text-muted-foreground">{stat.hint}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {loadingClasses || loadingStudents || loadingTimetable || loadingGrades ? (
+              <>
+                <div className="grid gap-4 lg:grid-cols-[2fr,3fr]">
+                  <Card>
+                    <CardHeader className="space-y-2">
+                      <Skeleton className="h-5 w-40" />
+                      <Skeleton className="h-4 w-56" />
+                    </CardHeader>
+                    <CardContent>
+                      <ListSkeleton rows={3} />
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="space-y-2">
+                      <Skeleton className="h-5 w-40" />
+                      <Skeleton className="h-4 w-56" />
+                    </CardHeader>
+                    <CardContent>
+                      <ListSkeleton rows={3} />
+                    </CardContent>
+                  </Card>
+                </div>
+                <Card>
+                  <CardHeader className="space-y-2">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-4 w-56" />
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-foreground">{stat.value}</div>
-                    <p className="mt-1 text-xs text-muted-foreground">{stat.hint}</p>
+                  <CardContent className="space-y-3">
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <div key={index} className="grid grid-cols-5 gap-4 rounded-md border p-4">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="mx-auto h-7 w-7 rounded-full" />
+                        <Skeleton className="ml-auto h-4 w-20" />
+                      </div>
+                    ))}
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-[2fr,3fr]">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{td("overview.todayScheduleTitle")}</CardTitle>
-                  <CardDescription>{td("overview.todayScheduleDesc")}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {todayLessons.length > 0 ? (
-                    todayLessons.map((lesson) => (
-                      <div
-                        key={lesson.id}
-                        className="flex items-start justify-between gap-4 rounded-lg border px-4 py-3"
-                      >
-                        <div className="min-w-[90px] text-xs font-mono text-muted-foreground">
-                          {lesson.startTime} - {lesson.endTime}
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge className="bg-primary text-primary-foreground">{lesson.className}</Badge>
-                            <span className="font-medium text-foreground">{lesson.subjectName}</span>
+              </>
+            ) : (
+              <>
+                <div className="grid gap-4 lg:grid-cols-[2fr,3fr]">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{td("overview.todayScheduleTitle")}</CardTitle>
+                      <CardDescription>{td("overview.todayScheduleDesc")}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {todayLessons.length > 0 ? (
+                        todayLessons.map((lesson) => (
+                          <div
+                            key={lesson.id}
+                            className="flex items-start justify-between gap-4 rounded-lg border px-4 py-3"
+                          >
+                            <div className="min-w-[90px] text-xs font-mono text-muted-foreground">
+                              {lesson.startTime} - {lesson.endTime}
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Badge className="bg-primary text-primary-foreground">{lesson.className}</Badge>
+                                <span className="font-medium text-foreground">{lesson.subjectName}</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {lesson.room ? td("common.room", { room: lesson.room }) : td("common.roomMissing")}
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            {lesson.room ? td("common.room", { room: lesson.room }) : td("common.roomMissing")}
-                          </p>
-                        </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          {td("overview.noTodaySchedule")}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{td("overview.myClassesTitle")}</CardTitle>
+                      <CardDescription>
+                        {td("overview.myClassesDesc")}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {overviewClasses.length > 0 ? (
+                        overviewClasses.map((cls) => (
+                          <div
+                            key={cls._id}
+                            className="flex flex-col gap-3 rounded-lg border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`rounded-lg px-3 py-2 text-sm font-bold ${cls.isHomeroom ? "bg-secondary text-secondary-foreground" : "bg-muted text-foreground"}`}>
+                                {cls.name}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-foreground">
+                                  {cls.isHomeroom ? td("common.classTeacher") : td("common.subjectTeacher")}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {td("overview.classMeta", {
+                                    students: cls.studentCount || 0,
+                                    lessons: cls.lessonsToday || 0,
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="space-y-1 text-left sm:text-right">
+                              <p className="text-xs font-medium text-foreground">
+                                {cls.nextLesson ? td("overview.nextLessonAt", { time: cls.nextLesson.startTime }) : td("overview.noLessonToday")}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {cls.nextLesson
+                                  ? td("overview.nextLessonInfo", {
+                                      subject: cls.nextLesson.subjectName,
+                                      room: cls.nextLesson.room || "",
+                                    })
+                                  : td("overview.nextLessonMissing")}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          {td("overview.noClasses")}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{td("overview.latestGradesTitle")}</CardTitle>
+                    <CardDescription>{td("overview.latestGradesDesc")}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {recentGradesForOverview.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[720px] text-sm">
+                          <thead>
+                            <tr className="border-b bg-muted/60">
+                              <th className="p-4 text-left font-semibold text-foreground">{td("table.student")}</th>
+                              <th className="p-4 text-left font-semibold text-foreground">{td("table.class")}</th>
+                              <th className="p-4 text-left font-semibold text-foreground">{td("table.subject")}</th>
+                              <th className="p-4 text-center font-semibold text-foreground">{td("table.grade")}</th>
+                              <th className="p-4 text-right font-semibold text-foreground">{td("table.date")}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {recentGradesForOverview.map((g) => (
+                              <tr key={g.id} className="border-b last:border-0">
+                                <td className="p-4 text-foreground">{g.studentName}</td>
+                                <td className="p-4">
+                                  <Badge variant="outline">{g.className}</Badge>
+                                </td>
+                                <td className="p-4 text-muted-foreground">{g.subjectName}</td>
+                                <td className="p-4 text-center">
+                                  <span
+                                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
+                                      g.grade >= 5
+                                        ? "bg-secondary text-secondary-foreground"
+                                        : g.grade === 4
+                                          ? "bg-primary text-primary-foreground"
+                                          : "gradient-accent text-accent-foreground"
+                                    }`}
+                                  >
+                                    {g.grade}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-right text-xs text-muted-foreground">{g.date}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {td("overview.noTodaySchedule")}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>{td("overview.myClassesTitle")}</CardTitle>
-                  <CardDescription>
-                    {td("overview.myClassesDesc")}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {overviewClasses.length > 0 ? (
-                    overviewClasses.map((cls) => (
-                      <div
-                        key={cls._id}
-                        className="flex flex-col gap-3 rounded-lg border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`rounded-lg px-3 py-2 text-sm font-bold ${cls.isHomeroom ? "bg-secondary text-secondary-foreground" : "bg-muted text-foreground"}`}>
-                            {cls.name}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-foreground">
-                              {cls.isHomeroom ? td("common.classTeacher") : td("common.subjectTeacher")}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {td("overview.classMeta", {
-                                students: cls.studentCount || 0,
-                                lessons: cls.lessonsToday || 0,
-                              })}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="space-y-1 text-left sm:text-right">
-                          <p className="text-xs font-medium text-foreground">
-                            {cls.nextLesson ? td("overview.nextLessonAt", { time: cls.nextLesson.startTime }) : td("overview.noLessonToday")}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {cls.nextLesson
-                              ? td("overview.nextLessonInfo", {
-                                  subject: cls.nextLesson.subjectName,
-                                  room: cls.nextLesson.room || "",
-                                })
-                              : td("overview.nextLessonMissing")}
-                          </p>
-                        </div>
+                    ) : (
+                      <div className="p-6 text-sm text-muted-foreground">
+                        {td("grades.empty")}
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {td("overview.noClasses")}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{td("overview.latestGradesTitle")}</CardTitle>
-                <CardDescription>{td("overview.latestGradesDesc")}</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                {recentGradesForOverview.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[720px] text-sm">
-                      <thead>
-                        <tr className="border-b bg-muted/60">
-                          <th className="p-4 text-left font-semibold text-foreground">{td("table.student")}</th>
-                          <th className="p-4 text-left font-semibold text-foreground">{td("table.class")}</th>
-                          <th className="p-4 text-left font-semibold text-foreground">{td("table.subject")}</th>
-                          <th className="p-4 text-center font-semibold text-foreground">{td("table.grade")}</th>
-                          <th className="p-4 text-right font-semibold text-foreground">{td("table.date")}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {recentGradesForOverview.map((g) => (
-                          <tr key={g.id} className="border-b last:border-0">
-                            <td className="p-4 text-foreground">{g.studentName}</td>
-                            <td className="p-4">
-                              <Badge variant="outline">{g.className}</Badge>
-                            </td>
-                            <td className="p-4 text-muted-foreground">{g.subjectName}</td>
-                            <td className="p-4 text-center">
-                              <span
-                                className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
-                                  g.grade >= 5
-                                    ? "bg-secondary text-secondary-foreground"
-                                    : g.grade === 4
-                                      ? "bg-primary text-primary-foreground"
-                                      : "gradient-accent text-accent-foreground"
-                                }`}
-                              >
-                                {g.grade}
-                              </span>
-                            </td>
-                            <td className="p-4 text-right text-xs text-muted-foreground">{g.date}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="p-6 text-sm text-muted-foreground">
-                    {td("grades.empty")}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </>
         )}
 
@@ -1965,7 +2017,12 @@ const TeacherDashboard = () => {
           <Card>
             <CardContent className="space-y-6 pt-6">
               <div className="space-y-2">
-                <SectionTitle title={td("students.title")} centered={false} />
+                <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{td("students.title")}</h3>
+                {!classes.some((c) => c.isHomeroom) && (
+                  <p className="inline-flex max-w-2xl rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium leading-relaxed text-rose-700">
+                    {td("students.form.noHomeroomWarning")}
+                  </p>
+                )}
               </div>
 
               <form onSubmit={handleCreateStudent} className="grid gap-3 md:grid-cols-4 md:items-end">
@@ -2111,11 +2168,15 @@ const TeacherDashboard = () => {
                   </thead>
                   <tbody>
                     {loadingStudents ? (
-                      <tr>
-                        <td colSpan={7} className="p-4 text-center text-xs text-muted-foreground">
-                          {td("students.table.loading")}
-                        </td>
-                      </tr>
+                      Array.from({ length: 5 }).map((_, idx) => (
+                        <tr key={`students-skel-${idx}`} className="border-b last:border-0">
+                          {Array.from({ length: 7 }).map((__, cIdx) => (
+                            <td key={cIdx} className="p-3">
+                              <Skeleton className="h-4 w-full max-w-[140px]" />
+                            </td>
+                          ))}
+                        </tr>
+                      ))
                     ) : students.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="p-4 text-center text-xs text-muted-foreground">
@@ -2159,11 +2220,11 @@ const TeacherDashboard = () => {
         {section === "classes" && (
           <Card>
             <CardHeader>
-              <SectionTitle title={td("classes.title")} centered={false} />
+              <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{td("classes.title")}</h3>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               {loadingClasses ? (
-                <p className="text-xs text-muted-foreground">{td("common.loadingClasses")}</p>
+                <ListSkeleton rows={4} />
               ) : classes.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
                   {td("classes.empty")}
@@ -2218,7 +2279,7 @@ const TeacherDashboard = () => {
         {section === "grades" && (
           <Card>
             <CardHeader>
-              <SectionTitle title={td("grades.title")} centered={false} />
+              <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{td("grades.title")}</h3>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex flex-wrap items-end gap-3 justify-between">
@@ -2247,7 +2308,7 @@ const TeacherDashboard = () => {
                 className="mt-2 grid gap-2 rounded-md border bg-muted/40 p-3 text-xs md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_110px_130px_90px]"
               >
                 <div className="space-y-1">
-                  <label className="block text-[11px] font-medium text-muted-foreground">{td("table.student")}</label>
+                  <label className="block text-[11px] font-medium text-muted-foreground">O&apos;quvchi</label>
                   <select
                     value={newGradeStudentId}
                     onChange={(e) => setNewGradeStudentId(e.target.value)}
@@ -2313,21 +2374,25 @@ const TeacherDashboard = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted">
-                      <th className="text-left p-3 font-semibold text-foreground">{td("table.student")}</th>
+                      <th className="text-left p-3 font-semibold text-foreground">O&apos;quvchi</th>
                       <th className="text-center p-3 font-semibold text-foreground">{td("table.class")}</th>
-                      <th className="text-center p-3 font-semibold text-foreground">{td("table.subject")}</th>
+                      <th className="text-center p-3 font-semibold text-foreground">Fan</th>
                       <th className="text-center p-3 font-semibold text-foreground">{td("table.grade")}</th>
-                      <th className="text-right p-3 font-semibold text-foreground">{td("table.date")}</th>
+                      <th className="text-right p-3 font-semibold text-foreground">Sana</th>
                       <th className="w-[90px]" />
                     </tr>
                   </thead>
                   <tbody>
                     {loadingGrades ? (
-                      <tr>
-                        <td colSpan={5} className="p-4 text-center text-xs text-muted-foreground">
-                          {td("grades.loading")}
-                        </td>
-                      </tr>
+                      Array.from({ length: 5 }).map((_, idx) => (
+                        <tr key={`grades-skel-${idx}`} className="border-b last:border-0">
+                          {Array.from({ length: 6 }).map((__, cIdx) => (
+                            <td key={cIdx} className="p-3">
+                              <Skeleton className="h-4 w-full max-w-[120px]" />
+                            </td>
+                          ))}
+                        </tr>
+                      ))
                     ) : grades.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="p-4 text-center text-xs text-muted-foreground">
@@ -2428,7 +2493,7 @@ const TeacherDashboard = () => {
         {section === "homework" && (
           <Card>
             <CardHeader>
-              <SectionTitle title={td("homework.title")} centered={false} />
+              <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{td("homework.title")}</h3>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex flex-wrap items-end gap-3 justify-between">
@@ -2517,11 +2582,15 @@ const TeacherDashboard = () => {
                   </thead>
                   <tbody>
                     {loadingHomework ? (
-                      <tr>
-                        <td colSpan={7} className="p-4 text-center text-xs text-muted-foreground">
-                          {td("homework.loading")}
-                        </td>
-                      </tr>
+                      Array.from({ length: 5 }).map((_, idx) => (
+                        <tr key={`homework-skel-${idx}`} className="border-b last:border-0">
+                          {Array.from({ length: 7 }).map((__, cIdx) => (
+                            <td key={cIdx} className="p-3">
+                              <Skeleton className="h-4 w-full max-w-[140px]" />
+                            </td>
+                          ))}
+                        </tr>
+                      ))
                     ) : homework.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="p-4 text-center text-xs text-muted-foreground">
@@ -2616,10 +2685,10 @@ const TeacherDashboard = () => {
         {section === "exams" && (
           <Card>
             <CardHeader>
-              <SectionTitle title={td("exams.title")} centered={false} />
-              <CardDescription>
+              <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{td("exams.title")}</h3>
+              <p className="text-sm flex items-center justify-start gap-1 text-[#FE9F43] font-medium md:text-sm">
                 {td("exams.desc")}
-              </CardDescription>
+              </p>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex justify-end">
@@ -2643,11 +2712,15 @@ const TeacherDashboard = () => {
                   </thead>
                   <tbody>
                     {loadingExams ? (
-                      <tr>
-                        <td colSpan={7} className="p-4 text-center text-xs text-muted-foreground">
-                          {td("exams.loading")}
-                        </td>
-                      </tr>
+                      Array.from({ length: 5 }).map((_, idx) => (
+                        <tr key={`exams-skel-${idx}`} className="border-b last:border-0">
+                          {Array.from({ length: 7 }).map((__, cIdx) => (
+                            <td key={cIdx} className="p-3">
+                              <Skeleton className="h-4 w-full max-w-[140px]" />
+                            </td>
+                          ))}
+                        </tr>
+                      ))
                     ) : exams.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="p-4 text-center text-xs text-muted-foreground">
@@ -2722,11 +2795,15 @@ const TeacherDashboard = () => {
                     </thead>
                     <tbody>
                       {loadingExamResults ? (
-                        <tr>
-                          <td colSpan={5} className="p-4 text-center text-xs text-muted-foreground">
-                            {td("exams.results.loading")}
-                          </td>
-                        </tr>
+                        Array.from({ length: 5 }).map((_, idx) => (
+                          <tr key={`exam-results-skel-${idx}`} className="border-b last:border-0">
+                            {Array.from({ length: 5 }).map((__, cIdx) => (
+                              <td key={cIdx} className="p-3">
+                                <Skeleton className="h-4 w-full max-w-[120px]" />
+                              </td>
+                            ))}
+                          </tr>
+                        ))
                       ) : examResults.length === 0 ? (
                         <tr>
                           <td colSpan={5} className="p-4 text-center text-xs text-muted-foreground">
@@ -2775,7 +2852,10 @@ const TeacherDashboard = () => {
         {section === "schedule" && (
           <Card>
             <CardHeader>
-              <SectionTitle title={td("schedule.title")} centered={false} />
+              <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{td("schedule.title")}</h3>
+              <p className="text-sm flex items-center justify-start gap-1 text-[#FE9F43] font-medium md:text-sm">
+                {td("schedule.weeklyDesc")}
+              </p>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -2812,7 +2892,10 @@ const TeacherDashboard = () => {
                       </div>
                       <div className="space-y-1.5">
                         {loadingTimetable ? (
-                          <p className="text-[11px] text-muted-foreground">{td("common.loading")}</p>
+                          <>
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                          </>
                         ) : lessons.length === 0 ? (
                           <p className="text-[11px] text-muted-foreground">{td("schedule.noLessonThisDay")}</p>
                         ) : (
@@ -2856,8 +2939,10 @@ const TeacherDashboard = () => {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
             <Card>
               <CardHeader>
-                <CardTitle>{td("support.title")}</CardTitle>
-                <CardDescription>{td("support.desc")}</CardDescription>
+                <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{td("support.title")}</h3>
+                <p className="text-sm flex items-center justify-start gap-1 text-[#FE9F43] font-medium md:text-sm">
+                  {td("support.desc")}
+                </p>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex justify-end">
@@ -2866,7 +2951,7 @@ const TeacherDashboard = () => {
                   </Button>
                 </div>
                 {chatLoadingThreads ? (
-                  <p className="text-xs text-muted-foreground">{td("common.loading")}</p>
+                  <ChatSkeleton variant="threads" rows={4} />
                 ) : chatThreads.length === 0 ? (
                   <p className="text-xs text-muted-foreground">{td("support.noRequests")}</p>
                 ) : (
@@ -2898,8 +2983,10 @@ const TeacherDashboard = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>{td("support.chatTitle")}</CardTitle>
-                <CardDescription>{td("support.chatDesc")}</CardDescription>
+                <h3 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{td("support.chatTitle")}</h3>
+                <p className="text-sm flex items-center justify-start gap-1 text-[#FE9F43] font-medium md:text-sm">
+                  {td("support.chatDesc")}
+                </p>
               </CardHeader>
               <CardContent className="space-y-3">
                 {!chatSelectedThreadId ? (
@@ -2908,7 +2995,7 @@ const TeacherDashboard = () => {
                   <>
                     <div className="h-[430px] overflow-auto rounded-md border p-3 bg-muted/20 space-y-2">
                       {chatLoadingMessages ? (
-                        <p className="text-xs text-muted-foreground">{td("support.messagesLoading")}</p>
+                        <ChatSkeleton variant="messages" rows={5} />
                       ) : chatMessages.length === 0 ? (
                         <p className="text-xs text-muted-foreground">{td("support.noMessages")}</p>
                       ) : (
@@ -3082,6 +3169,15 @@ const TeacherDashboard = () => {
         )}
 
         {section === "profile" && (
+          <UnifiedProfileSection
+            token={token}
+            user={authUser}
+            storageKey="teacher_profile_meta"
+            roleLabel={td("common.subjectTeacher")}
+          />
+        )}
+
+        {RENDER_LEGACY_PROFILE && section === "profile" && (
           <Card className="border-slate-200 bg-slate-50/40">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3">
@@ -3451,7 +3547,7 @@ const TeacherDashboard = () => {
             </DialogHeader>
 
             {viewQuestionsLoading ? (
-              <p className="text-sm text-muted-foreground">{td("questionDialog.viewLoading")}</p>
+              <ListSkeleton rows={4} />
             ) : viewQuestionsRows.length === 0 ? (
               <p className="text-sm text-muted-foreground">{td("questionDialog.viewEmpty")}</p>
             ) : (
@@ -3514,7 +3610,7 @@ const TeacherDashboard = () => {
             </DialogHeader>
 
             {loadingReviewAnswers ? (
-              <p className="text-sm text-muted-foreground">{td("review.loading")}</p>
+              <ListSkeleton rows={4} />
             ) : reviewAnswers.length === 0 ? (
               <p className="text-sm text-muted-foreground">{td("review.empty")}</p>
             ) : (
@@ -3859,11 +3955,15 @@ const TeacherDashboard = () => {
                     </thead>
                     <tbody>
                       {loadingStudents ? (
-                        <tr>
-                          <td colSpan={6} className="px-4 py-6 text-center text-xs text-muted-foreground">
-                            {td("students.table.loading")}
-                          </td>
-                        </tr>
+                        Array.from({ length: 5 }).map((_, idx) => (
+                          <tr key={`students-face-skel-${idx}`} className="border-b last:border-0">
+                            {Array.from({ length: 6 }).map((__, cIdx) => (
+                              <td key={cIdx} className="px-4 py-3">
+                                <Skeleton className="h-4 w-full max-w-[140px]" />
+                              </td>
+                            ))}
+                          </tr>
+                        ))
                       ) : students.length === 0 ? (
                         <tr>
                           <td colSpan={6} className="px-4 py-6 text-center text-xs text-muted-foreground">
@@ -3944,7 +4044,7 @@ const TeacherDashboard = () => {
               >
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">
-                    {td("table.student")}: <span className="font-medium text-foreground">{editingGrade.studentName}</span>
+                    O&apos;quvchi: <span className="font-medium text-foreground">{editingGrade.studentName}</span>
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {td("table.class")}: <span className="font-medium text-foreground">{editingGrade.className}</span> | {td("table.subject")}:{" "}
@@ -4072,7 +4172,7 @@ const TeacherDashboard = () => {
                 <table className="w-full table-fixed text-sm min-w-[980px]">
                   <thead>
                     <tr className="border-b bg-muted">
-                      <th className="w-[24%] p-3 text-left font-semibold text-foreground">{td("table.student")}</th>
+                      <th className="w-[24%] p-3 text-left font-semibold text-foreground">O&apos;quvchi</th>
                       <th className="w-[14%] p-3 text-left font-semibold text-foreground">{td("homework.monitor.table.submittedDate")}</th>
                       <th className="w-[8%] p-3 text-left font-semibold text-foreground">{td("table.grade")}</th>
                       <th className="w-[29%] p-3 text-left font-semibold text-foreground">{td("homework.monitor.table.answerText")}</th>

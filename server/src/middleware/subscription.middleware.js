@@ -2,6 +2,10 @@ const Subscription = require("../models/Subscription");
 const School = require("../models/School");
 
 const CHECK_ROLES = ["director", "school_admin"];
+const ALLOWED_EXPIRED_GET_PATHS = new Set([
+  "/overview",
+  "/subscription/status",
+]);
 
 const checkSubscription = async (req, res, next) => {
   // Faqat direktor va maktab adminlari uchun tekshiramiz
@@ -49,23 +53,35 @@ const checkSubscription = async (req, res, next) => {
     const endAt = new Date(subscription.endAt);
     const graceDeadline = new Date(endAt.getTime() + gracePeriodDays * 24 * 60 * 60 * 1000);
     const lockDeadline = new Date(endAt.getTime() + totalLockDays * 24 * 60 * 60 * 1000);
+    const isExpired = endAt.getTime() < now.getTime();
 
-    // 3. To'liq bloklash (lockDeadline dan o'tgan bo'lsa)
-    if (now > lockDeadline) {
-      return res.status(402).json({ 
-        message: "Obuna muddati butunlay tugagan. Tizim bloklangan. Davom etish uchun to'lov qiling.",
-        subscriptionExpired: true,
-        isLocked: true
-      });
-    }
+    if (isExpired) {
+      const isAllowedGet = req.method === "GET" && ALLOWED_EXPIRED_GET_PATHS.has(req.path);
+      if (isAllowedGet) {
+        return next();
+      }
 
-    // 4. Read-only rejimi (graceDeadline dan o'tgan bo'lsa faqat ko'rish mumkin)
-    if (now > graceDeadline && req.method !== "GET") {
-      return res.status(402).json({ 
-        message: "Obuna muddati va 3 kunlik imtiyozli davr tugadi. Hozirda faqat ma'lumotlarni ko'rish mumkin. O'zgartirish kiritish uchun to'lov qiling.",
-        subscriptionExpired: true,
-        isReadOnly: true
-      });
+      // 3 kunlik imtiyozli davrda mavjud ish jarayonlari to'liq ishlaydi.
+      if (now <= graceDeadline) {
+        return next();
+      }
+
+      if (now > lockDeadline) {
+        return res.status(402).json({
+          message: "Obuna muddati butunlay tugagan. Tizim bloklangan. Davom etish uchun to'lov qiling.",
+          subscriptionExpired: true,
+          isLocked: true,
+          endAt: subscription.endAt || null,
+        });
+      }
+
+      if (!isAllowedGet) {
+        return res.status(402).json({
+          message: "Tarif davringiz yakunlangan. Tizimdan to'liq foydalanishni davom ettirish uchun to'lovni amalga oshiring.",
+          subscriptionExpired: true,
+          endAt: subscription.endAt || null,
+        });
+      }
     }
 
     next();

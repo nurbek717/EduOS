@@ -158,7 +158,7 @@ const StudentLayout = ({
 
       <SidebarInset>
         <div className="flex flex-1 flex-col overflow-auto">
-          <div className="flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-background px-6 text-sm text-muted-foreground">
+          <div className="flex h-[71px] shrink-0 items-center justify-between gap-4 border-b bg-background px-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2 overflow-hidden">
               <SidebarTrigger className="h-8 w-8 rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700" />
               <ChevronRight className="h-4 w-4 shrink-0" />

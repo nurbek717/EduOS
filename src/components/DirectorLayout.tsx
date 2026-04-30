@@ -19,6 +19,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import HeaderActions from "@/components/dashboard/HeaderActions";
 import { useTranslation } from "react-i18next";
+import { normalizeUserRole } from "@/lib/auth";
 
 type DirectorSection = "dashboard" | "students" | "teachers" | "school_admins" | "classes" | "schedule" | "payments" | "exams" | "settings" | "support";
 
@@ -28,8 +29,8 @@ interface DirectorLayoutProps {
   subtitle?: string;
   currentSection?: DirectorSection;
   onSectionChange?: (section: DirectorSection) => void;
-  currentStudentsView?: "list" | "attach";
-  onStudentsViewChange?: (view: "list" | "attach") => void;
+  currentStudentsView?: "base" | "list" | "attach";
+  onStudentsViewChange?: (view: "base" | "list" | "attach") => void;
   searchItems?: Array<{ id: string; title: string; subtitle?: string; section: DirectorSection }>;
   headerNotifications?: Array<{ id: string; text: string; at: string; section: DirectorSection }>;
   subscriptionInfo?: {
@@ -48,7 +49,7 @@ const DirectorLayout = ({
   subtitle,
   currentSection = "dashboard",
   onSectionChange,
-  currentStudentsView = "list",
+  currentStudentsView = "base",
   onStudentsViewChange,
   searchItems,
   headerNotifications,
@@ -58,10 +59,28 @@ const DirectorLayout = ({
   const { t } = useTranslation("layout");
   const rawUser = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
   const currentUser = rawUser ? JSON.parse(rawUser) : null;
-  const isSchoolAdmin = currentUser?.role === "school_admin";
+  const normalizedRole = normalizeUserRole(currentUser?.role);
+  const isSchoolAdmin = normalizedRole === "school_admin";
   const dashboardHomePath = isSchoolAdmin ? "/school-admin/dashboard" : "/director/dashboard";
   const dashboardLabel = isSchoolAdmin ? t("schoolAdmin.fallbackName") : t("director.fallbackName");
   const dashboardLabelUpper = isSchoolAdmin ? t("schoolAdmin.badge") : t("director.badge");
+  const subscriptionStorageKey = `dashboard:${isSchoolAdmin ? "school_admin" : "director"}:subscriptionInfo`;
+
+  const cachedSubscriptionInfo = (() => {
+    if (typeof window === "undefined") return undefined;
+    const raw = localStorage.getItem(subscriptionStorageKey);
+    if (!raw) return undefined;
+    try {
+      const parsed = JSON.parse(raw) as DirectorLayoutProps["subscriptionInfo"];
+      if (!parsed || typeof parsed !== "object") return undefined;
+      if (typeof parsed.planName !== "string") return undefined;
+      return parsed;
+    } catch {
+      return undefined;
+    }
+  })();
+
+  const effectiveSubscriptionInfo = subscriptionInfo ?? cachedSubscriptionInfo;
   const [studentsDropdownOpen, setStudentsDropdownOpen] = useState(false);
   const navItems: { label: string; section: DirectorSection; icon: typeof LayoutDashboard }[] = [
     { label: t("director.nav.dashboard"), section: "dashboard", icon: LayoutDashboard },
@@ -112,6 +131,61 @@ const DirectorLayout = ({
     if (currentSection === "students") setStudentsDropdownOpen(true);
   }, [currentSection, isSchoolAdmin]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!effectiveSubscriptionInfo) return;
+    try {
+      localStorage.setItem(subscriptionStorageKey, JSON.stringify(effectiveSubscriptionInfo));
+    } catch {
+      // ignore storage failures (private mode, quota, etc.)
+    }
+  }, [effectiveSubscriptionInfo, subscriptionStorageKey]);
+
+  const resolvedSubscriptionInfo = (() => {
+    if (!effectiveSubscriptionInfo) return undefined;
+
+    const safeParse = (value?: string | null) => {
+      if (!value) return null;
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? null : date;
+    };
+
+    const endDate = safeParse(effectiveSubscriptionInfo.endDate);
+    const startDate = safeParse(effectiveSubscriptionInfo.startDate);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const computedDaysLeft = (() => {
+      if (typeof effectiveSubscriptionInfo.daysLeft === "number") return effectiveSubscriptionInfo.daysLeft;
+      if (!endDate) return null;
+      const end = new Date(endDate);
+      end.setHours(0, 0, 0, 0);
+      const diff = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return diff;
+    })();
+
+    const computedStatus: "active" | "expired" = (() => {
+      if (effectiveSubscriptionInfo.status === "expired") return "expired";
+      if (effectiveSubscriptionInfo.status === "active") return "active";
+      if (typeof computedDaysLeft === "number") return computedDaysLeft < 0 ? "expired" : "active";
+      if (endDate) return endDate.getTime() < today.getTime() ? "expired" : "active";
+      if (startDate && startDate.getTime() > today.getTime()) return "active";
+      return "active";
+    })();
+
+    return {
+      ...effectiveSubscriptionInfo,
+      status: computedStatus,
+      daysLeft: typeof computedDaysLeft === "number" ? computedDaysLeft : effectiveSubscriptionInfo.daysLeft ?? null,
+    };
+  })();
+
+  const subscriptionExpired = resolvedSubscriptionInfo?.status === "expired";
+  const notifyBlocked = () => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent("subscription:blocked"));
+  };
 
   return (
     <SidebarProvider>
@@ -148,6 +222,10 @@ const DirectorLayout = ({
                             isActive={isActive}
                             className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:justify-center text-white hover:bg-white/10 hover:text-white data-[active=true]:bg-white/15 data-[active=true]:text-accent"
                             onClick={() => {
+                              if (subscriptionExpired) {
+                                notifyBlocked();
+                                return;
+                              }
                               onSectionChange?.("students");
                               setStudentsDropdownOpen((prev) => !prev);
                             }}
@@ -162,6 +240,38 @@ const DirectorLayout = ({
                               <button
                                 type="button"
                                 onClick={() => {
+                                  if (subscriptionExpired) {
+                                    notifyBlocked();
+                                    return;
+                                  }
+                                  onSectionChange?.("students");
+                                  onStudentsViewChange?.("base");
+                                }}
+                                className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs text-white/80 hover:bg-white/10 ${
+                                  currentStudentsView === "base" ? "bg-white/10 text-amber-200" : ""
+                                }`}
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className={`inline-flex h-2 w-2 items-center justify-center rounded-full border ${
+                                    currentStudentsView === "base" ? "border-amber-500" : "border-white/40"
+                                  }`}
+                                >
+                                  <span
+                                    className={`h-1 w-1 rounded-full ${
+                                      currentStudentsView === "base" ? "bg-amber-500" : "bg-transparent"
+                                    }`}
+                                  />
+                                </span>
+                                O&apos;quvchilar bazasi
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (subscriptionExpired) {
+                                    notifyBlocked();
+                                    return;
+                                  }
                                   onSectionChange?.("students");
                                   onStudentsViewChange?.("list");
                                 }}
@@ -186,6 +296,10 @@ const DirectorLayout = ({
                               <button
                                 type="button"
                                 onClick={() => {
+                                  if (subscriptionExpired) {
+                                    notifyBlocked();
+                                    return;
+                                  }
                                   onSectionChange?.("students");
                                   onStudentsViewChange?.("attach");
                                 }}
@@ -214,7 +328,13 @@ const DirectorLayout = ({
                         <SidebarMenuButton
                           isActive={isActive}
                           className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:justify-center text-white hover:bg-white/10 hover:text-white data-[active=true]:bg-white/15 data-[active=true]:text-accent"
-                          onClick={() => onSectionChange?.(item.section)}
+                          onClick={() => {
+                            if (subscriptionExpired) {
+                              notifyBlocked();
+                              return;
+                            }
+                            onSectionChange?.(item.section);
+                          }}
                         >
                           <item.icon className="h-4 w-4" />
                           <span>{item.label}</span>
@@ -277,11 +397,13 @@ const DirectorLayout = ({
               onLogout={handleLogout}
               compactHeader
               subscriptionLabel={
-                typeof subscriptionInfo?.daysLeft === "number"
-                  ? t("director.subscriptionDaysLeft", { count: subscriptionInfo.daysLeft })
-                  : t("director.subscriptionDaysLeft", { count: 15 })
+                resolvedSubscriptionInfo?.status === "expired"
+                  ? t("subscription.expired", { defaultValue: "Muddat tugagan" })
+                  : typeof resolvedSubscriptionInfo?.daysLeft === "number"
+                    ? t("director.subscriptionDaysLeft", { count: Math.max(0, resolvedSubscriptionInfo.daysLeft) })
+                    : t("subscription.active", { defaultValue: "Faol" })
               }
-              subscriptionInfo={subscriptionInfo}
+              subscriptionInfo={resolvedSubscriptionInfo}
             />
           </div>
           <div className="flex-1 overflow-auto p-6">

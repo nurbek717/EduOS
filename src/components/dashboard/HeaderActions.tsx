@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, LogOut, Monitor, Moon, Search, Settings, Sun, User, MapPin, Heart, Plane, Clock3, ChevronDown, ScanFace, UserCircle, Tag, CalendarDays, Hash, ShieldCheck, Copy, Languages } from "lucide-react";
+import { Bell, LogOut, Monitor, Moon, Search, Settings, Sun, User, MapPin, Heart, Plane, Clock3, ChevronDown, Scan, UserCircle, Tag, CalendarDays, Hash, ShieldCheck, Copy, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,6 +27,15 @@ type NotificationItem = {
   section: string;
 };
 
+type ExternalNotification<T extends string> = {
+  id: string;
+  text: string;
+  at: string;
+  section: T;
+};
+
+const EMPTY_EXTERNAL_NOTIFICATIONS: ExternalNotification<never>[] = [];
+
 type SubscriptionInfo = {
   planName: string;
   startDate?: string | null;
@@ -34,6 +43,10 @@ type SubscriptionInfo = {
   contractNumber?: string | null;
   status?: "active" | "expired";
   daysLeft?: number | null;
+};
+
+type SubscriptionListItem = SubscriptionInfo & {
+  schoolId?: string | null;
 };
 
 interface HeaderActionsProps<T extends string> {
@@ -64,6 +77,7 @@ interface HeaderActionsProps<T extends string> {
   compactHeader?: boolean;
   subscriptionLabel?: string;
   subscriptionInfo?: SubscriptionInfo;
+  subscriptionItems?: SubscriptionListItem[];
 }
 
 const nowLabel = (locale: string) =>
@@ -82,21 +96,25 @@ const HeaderActions = <T extends string>({
   currentUserPhotoUrl,
   initialsFallback,
   notificationStorageKey,
-  notifications: externalNotifications = [],
+  notifications,
   searchItems = [],
   onLogout,
-  locationLabel,
+  locationLabel = "Tashkent, Uzbekistan",
   showTravelNavigation = true,
   profileTargetSection,
   settingsTargetSection,
   compactHeader = false,
-  subscriptionLabel,
+  subscriptionLabel = "15 kun qoldi",
   subscriptionInfo,
+  subscriptionItems = [],
 }: HeaderActionsProps<T>) => {
   const [query, setQuery] = useState("");
   const [localNotifications, setLocalNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const lastNotifiedSectionRef = useRef<T | null>(null);
+  const externalNotifications =
+    (notifications as ExternalNotification<T>[] | undefined)
+    ?? (EMPTY_EXTERNAL_NOTIFICATIONS as unknown as ExternalNotification<T>[]);
   const [themeMode, setThemeMode] = useState<"light" | "dark" | "system">(() => {
     if (typeof window === "undefined") return "system";
     const saved = localStorage.getItem("theme");
@@ -243,13 +261,16 @@ const HeaderActions = <T extends string>({
     { code: "en", label: t("preferences.languageEn") },
   ];
   const resolvedSubscription: SubscriptionInfo = subscriptionInfo || {
-    planName: "TEST",
+    planName: t("subscription.currentPlan"),
     startDate: null,
     endDate: null,
     contractNumber: "-",
     status: "active",
     daysLeft: null,
   };
+  const hasSubscriptionList = subscriptionItems.length > 0;
+  const expiredSubscriptions = subscriptionItems.filter((item) => item.status === "expired").length;
+  const isSubscriptionExpired = hasSubscriptionList ? expiredSubscriptions > 0 : resolvedSubscription.status === "expired";
 
   const formatDate = (value?: string | null) => {
     if (!value) return "-";
@@ -343,64 +364,106 @@ const HeaderActions = <T extends string>({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="hidden h-8 w-[136.6px] items-center justify-between rounded-[5px] border border-[#c7ddd5] bg-[#eef6f3] px-2.5 text-sm font-semibold text-amber-700 md:inline-flex"
+                className={`hidden h-8 min-w-[168px] items-center justify-between gap-2 rounded-[5px] border px-2.5 text-sm font-semibold md:inline-flex ${
+                  isSubscriptionExpired
+                    ? "border-rose-200 bg-rose-50 text-rose-700"
+                    : "border-[#c7ddd5] bg-[#eef6f3] text-amber-700"
+                }`}
               >
-                <Clock3 className="h-4 w-4 text-amber-600" />
-                <span>{subscriptionLabel || t("subscription.daysLeft", { count: 15 })}</span>
+                <Clock3 className={`h-4 w-4 ${isSubscriptionExpired ? "text-rose-600" : "text-amber-600"}`} />
+                <span className="whitespace-nowrap leading-none">{subscriptionLabel}</span>
                 <ChevronDown className="h-4 w-4 text-slate-500" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
               sideOffset={10}
-         
-              className="relative !min-w-400 !w-400 !h-[199px] !px-3.5 !py-2.5 border-none rounded-none bg-white p-0 overflow-hidden"
+              className={`relative border-none rounded-none bg-white p-0 overflow-hidden ${
+                hasSubscriptionList
+                  ? "!w-[520px] !px-3.5 !py-2.5"
+                  : "!min-w-400 !w-400 !h-[199px] !px-3.5 !py-2.5"
+              }`}
             >
               <div className="absolute -top-[7px] right-7 h-3.5 w-3.5 rotate-45 border-l border-t border-slate-200 bg-white" />
-              <div
-                className="relative h-[179px] w-[311px] overflow-auto  bg-white border border-1"
-              >
-                <div
-                  style={{ height: "273px", width: "37.59px" }}
-                  className="pointer-events-none absolute right-1 top-8 h-[273px] w-[37.59px] rounded-md"
-                />
-                <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
-                  <div className="flex items-center gap-2 text-slate-600"><Tag className="h-4 w-4 text-teal-600" /> {t("subscription.currentPlan")}</div>
-                  <div className="font-semibold text-slate-900">{resolvedSubscription.planName || "-"}</div>
-                </div>
-                <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
-                  <div className="flex items-center gap-2 text-slate-600"><CalendarDays className="h-4 w-4 text-teal-600" /> {t("subscription.startDate")}</div>
-                  <div className="font-semibold text-slate-900">{formatDate(resolvedSubscription.startDate)}</div>
-                </div>
-                <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
-                  <div className="flex items-center gap-2 text-slate-600"><CalendarDays className="h-4 w-4 text-teal-600" /> {t("subscription.endDate")}</div>
-                  <div className="font-semibold text-slate-900">{formatDate(resolvedSubscription.endDate)}</div>
-                </div>
-                <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
-                  <div className="flex items-center gap-2 text-slate-600"><Hash className="h-4 w-4 text-teal-600" /> {t("subscription.contractNumber")}</div>
-                  <div className="flex items-center gap-2 font-semibold text-slate-900">
-                    <span>{resolvedSubscription.contractNumber || "-"}</span>
-                    <button
-                      type="button"
-                      className="text-slate-400 hover:text-slate-600"
-                      onClick={() => {
-                        const value = resolvedSubscription.contractNumber || "";
-                        if (value && typeof navigator !== "undefined" && navigator.clipboard) {
-                          void navigator.clipboard.writeText(value);
-                        }
-                      }}
+              {hasSubscriptionList ? (
+                <div className="relative max-h-[420px] w-full overflow-auto bg-white border border-1">
+                  <div className="sticky top-0 z-10 grid grid-cols-[1.2fr_0.8fr_0.8fr_0.7fr_0.7fr] gap-2 border-b bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-600">
+                    <span>{t("subscription.currentPlan")}</span>
+                    <span>{t("subscription.startDate")}</span>
+                    <span>{t("subscription.endDate")}</span>
+                    <span>{t("subscription.daysLeft", { count: "" }).trim()}</span>
+                    <span className="text-right">{t("subscription.status")}</span>
+                  </div>
+                  {subscriptionItems.map((item) => (
+                    <div
+                      key={`${item.schoolId || item.planName}-${item.endDate || ""}`}
+                      className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.7fr_0.7fr] items-center gap-2 border-b px-3 py-2 text-xs last:border-b-0"
                     >
-                      <Copy className="h-4 w-4" />
-                    </button>
+                      <div className="min-w-0">
+                        <div className="truncate font-semibold text-slate-900">{item.planName || "-"}</div>
+                        <div className="truncate text-[10px] text-slate-500">{item.contractNumber || "-"}</div>
+                      </div>
+                      <span className="font-medium text-slate-700">{formatDate(item.startDate)}</span>
+                      <span className="font-medium text-slate-700">{formatDate(item.endDate)}</span>
+                      <span className="font-semibold text-slate-900">
+                        {item.status === "expired"
+                          ? t("subscription.expired")
+                          : typeof item.daysLeft === "number"
+                            ? t("subscription.daysLeft", { count: Math.max(0, item.daysLeft) })
+                            : "-"}
+                      </span>
+                      <span className={`justify-self-end rounded-full px-3 py-1 font-semibold ${
+                        item.status === "expired" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"
+                      }`}>
+                        {item.status === "expired" ? t("subscription.expired") : t("subscription.active")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="relative h-[179px] w-[311px] overflow-auto  bg-white border border-1">
+                  <div
+                    style={{ height: "273px", width: "37.59px" }}
+                    className="pointer-events-none absolute right-1 top-8 h-[273px] w-[37.59px] rounded-md"
+                  />
+                  <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
+                    <div className="flex items-center gap-2 text-slate-600"><Tag className="h-4 w-4 text-teal-600" /> {t("subscription.currentPlan")}</div>
+                    <div className="font-semibold text-slate-900">{resolvedSubscription.planName || "-"}</div>
+                  </div>
+                  <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
+                    <div className="flex items-center gap-2 text-slate-600"><CalendarDays className="h-4 w-4 text-teal-600" /> {t("subscription.startDate")}</div>
+                    <div className="font-semibold text-slate-900">{formatDate(resolvedSubscription.startDate)}</div>
+                  </div>
+                  <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
+                    <div className="flex items-center gap-2 text-slate-600"><CalendarDays className="h-4 w-4 text-teal-600" /> {t("subscription.endDate")}</div>
+                    <div className="font-semibold text-slate-900">{formatDate(resolvedSubscription.endDate)}</div>
+                  </div>
+                  <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
+                    <div className="flex items-center gap-2 text-slate-600"><Hash className="h-4 w-4 text-teal-600" /> {t("subscription.contractNumber")}</div>
+                    <div className="flex items-center gap-2 font-semibold text-slate-900">
+                      <span>{resolvedSubscription.contractNumber || "-"}</span>
+                      <button
+                        type="button"
+                        className="text-slate-400 hover:text-slate-600"
+                        onClick={() => {
+                          const value = resolvedSubscription.contractNumber || "";
+                          if (value && typeof navigator !== "undefined" && navigator.clipboard) {
+                            void navigator.clipboard.writeText(value);
+                          }
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-[1fr_auto] items-center px-2 py-2 text-xs">
+                    <div className="flex items-center gap-2 text-slate-600"><ShieldCheck className="h-4 w-4 text-teal-600" /> {t("subscription.status")}</div>
+                    <div className={`rounded-full px-3 py-1 font-semibold ${resolvedSubscription.status === "expired" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
+                      {resolvedSubscription.status === "expired" ? t("subscription.expired") : t("subscription.active")}
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-[1fr_auto] items-center px-2 py-2 text-xs">
-                  <div className="flex items-center gap-2 text-slate-600"><ShieldCheck className="h-4 w-4 text-teal-600" /> {t("subscription.status")}</div>
-                  <div className={`rounded-full px-3 py-1 font-semibold ${resolvedSubscription.status === "expired" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
-                    {resolvedSubscription.status === "expired" ? t("subscription.expired") : t("subscription.active")}
-                  </div>
-                </div>
-              </div>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -470,7 +533,7 @@ const HeaderActions = <T extends string>({
             title={t("preferences.fullscreen")}
             aria-label={t("preferences.fullscreen")}
           >
-            <ScanFace className="h-4 w-4 text-slate-700" />
+            <Scan className="h-4 w-4 text-slate-700" />
           </button>
         </>
       )}
