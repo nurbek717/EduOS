@@ -170,6 +170,12 @@
       "validation": {
         "required": "Enter director name, email and password."
       }
+    },
+    "validation": {
+      "nameRequired": "Enter school name.",
+      "directorInfoIncomplete": "Provide complete director details (name, email, password).",
+      "directorEmailInvalid": "Director email is invalid.",
+      "directorPasswordMin": "Director password must be at least 6 characters."
     }
   },
   "subscriptions": {

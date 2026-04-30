@@ -170,6 +170,12 @@
       "validation": {
         "required": "Введите имя, email и пароль директора."
       }
+    },
+    "validation": {
+      "nameRequired": "Введите название школы.",
+      "directorInfoIncomplete": "Заполните данные директора полностью (имя, email, пароль).",
+      "directorEmailInvalid": "Некорректный email директора.",
+      "directorPasswordMin": "Пароль директора должен содержать минимум 6 символов."
     }
   },
   "subscriptions": {

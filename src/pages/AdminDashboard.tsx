@@ -232,6 +232,21 @@ const AdminDashboard = () => {
   const [directorName, setDirectorName] = useState("");
   const [directorEmail, setDirectorEmail] = useState("");
   const [directorPassword, setDirectorPassword] = useState("");
+  const [schoolFormErrors, setSchoolFormErrors] = useState<{
+    schoolName?: string;
+    directorInfo?: string;
+    directorEmail?: string;
+    directorPassword?: string;
+  }>({});
+  const [schoolFormTouched, setSchoolFormTouched] = useState<{
+    schoolName: boolean;
+    directorEmail: boolean;
+    directorPassword: boolean;
+  }>({
+    schoolName: false,
+    directorEmail: false,
+    directorPassword: false,
+  });
   const [assignDirectorName, setAssignDirectorName] = useState("");
   const [assignDirectorEmail, setAssignDirectorEmail] = useState("");
   const [assignDirectorPassword, setAssignDirectorPassword] = useState("");
@@ -245,6 +260,11 @@ const AdminDashboard = () => {
   const [changePasswordEnabled, setChangePasswordEnabled] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [showEditPasswordConfirm, setShowEditPasswordConfirm] = useState(false);
+  const [userPasswordTouched, setUserPasswordTouched] = useState<{
+    editPassword: boolean;
+    confirmEditPassword: boolean;
+  }>({ editPassword: false, confirmEditPassword: false });
+  const [userPasswordSubmitted, setUserPasswordSubmitted] = useState(false);
   const [showDirectorPassword, setShowDirectorPassword] = useState(false);
   const usersRequestIdRef = useRef(0);
 
@@ -256,6 +276,14 @@ const AdminDashboard = () => {
   const [subscriptionsSubmitting, setSubscriptionsSubmitting] = useState(false);
   const [subscriptionSchoolId, setSubscriptionSchoolId] = useState<string>("");
   const [subscriptionDays, setSubscriptionDays] = useState<number>(30);
+  const [subscriptionFormErrors, setSubscriptionFormErrors] = useState<{
+    schoolId?: string;
+    days?: string;
+  }>({});
+  const [subscriptionFormTouched, setSubscriptionFormTouched] = useState<{
+    schoolId: boolean;
+    days: boolean;
+  }>({ schoolId: false, days: false });
   const [nowMs, setNowMs] = useState<number>(Date.now());
 
   const subscriptionsForOverviewUI = subscriptions
@@ -484,8 +512,63 @@ const AdminDashboard = () => {
     });
   };
 
+  const validateSchoolForm = () => {
+    const nextErrors: {
+      schoolName?: string;
+      directorInfo?: string;
+      directorEmail?: string;
+      directorPassword?: string;
+    } = {};
+    const hasDirectorName = Boolean(directorName.trim());
+    const hasDirectorEmail = Boolean(directorEmail.trim());
+    const hasDirectorPassword = Boolean(directorPassword.trim());
+    const hasAnyDirectorField = hasDirectorName || hasDirectorEmail || hasDirectorPassword;
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!schoolName.trim()) {
+      nextErrors.schoolName = ad("schools.validation.nameRequired");
+    }
+    if (hasAnyDirectorField && !(hasDirectorName && hasDirectorEmail && hasDirectorPassword)) {
+      nextErrors.directorInfo = ad("schools.validation.directorInfoIncomplete");
+    }
+    if (hasDirectorEmail && !emailPattern.test(directorEmail.trim())) {
+      nextErrors.directorEmail = ad("schools.validation.directorEmailInvalid");
+    }
+    if (hasDirectorPassword && directorPassword.trim().length < 6) {
+      nextErrors.directorPassword = ad("schools.validation.directorPasswordMin");
+    }
+    return nextErrors;
+  };
+
+  const validateSubscriptionForm = () => {
+    const nextErrors: { schoolId?: string; days?: string } = {};
+    if (!subscriptionSchoolId) {
+      nextErrors.schoolId = ad("subscriptions.validation.selectSchool");
+    }
+    if (!Number.isFinite(subscriptionDays) || subscriptionDays < 1) {
+      nextErrors.days = ad("subscriptions.validation.days");
+    }
+    return nextErrors;
+  };
+
+  const validateUserPasswordForm = () => {
+    if (!changePasswordEnabled) return {};
+    const nextErrors: { editPassword?: string; confirmEditPassword?: string } = {};
+    if (!editPassword.trim()) {
+      nextErrors.editPassword = ad("users.edit.newPasswordRequired");
+      return nextErrors;
+    }
+    if (editPassword !== confirmEditPassword) {
+      nextErrors.confirmEditPassword = ad("users.edit.passwordMismatch");
+    }
+    return nextErrors;
+  };
+
   const handleCreateSubscription = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubscriptionFormTouched({ schoolId: true, days: true });
+    const validationErrors = validateSubscriptionForm();
+    setSubscriptionFormErrors(validationErrors);
 
     if (!token) {
       toast({
@@ -496,19 +579,19 @@ const AdminDashboard = () => {
       return;
     }
 
-    if (!subscriptionSchoolId) {
+    if (validationErrors.schoolId) {
       toast({
         title: ad("toasts.insufficient"),
-        description: ad("subscriptions.validation.selectSchool"),
+        description: validationErrors.schoolId,
         variant: "destructive",
       });
       return;
     }
 
-    if (!Number.isFinite(subscriptionDays) || subscriptionDays < 1) {
+    if (validationErrors.days) {
       toast({
         title: ad("toasts.insufficient"),
-        description: ad("subscriptions.validation.days"),
+        description: validationErrors.days,
         variant: "destructive",
       });
       return;
@@ -538,6 +621,8 @@ const AdminDashboard = () => {
 
       setSubscriptionSchoolId("");
       setSubscriptionDays(30);
+      setSubscriptionFormErrors({});
+      setSubscriptionFormTouched({ schoolId: false, days: false });
       await fetchSubscriptions();
       // "Umumiy ko'rinish" dagi kartalarda ham obuna tugash kunlari yangilanishi uchun
       await fetchStats(weekOffset);
@@ -554,6 +639,28 @@ const AdminDashboard = () => {
 
   const handleCreateSchool = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSchoolFormTouched({
+      schoolName: true,
+      directorEmail: true,
+      directorPassword: true,
+    });
+    const validationErrors = validateSchoolForm();
+    setSchoolFormErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      toast({
+        title: ad("toasts.insufficient"),
+        description:
+          validationErrors.schoolName ||
+          validationErrors.directorInfo ||
+          validationErrors.directorEmail ||
+          validationErrors.directorPassword ||
+          ad("errors.createSchool"),
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!token) {
       toast({
         title: ad("toasts.error"),
@@ -596,6 +703,12 @@ const AdminDashboard = () => {
       setDirectorName("");
       setDirectorEmail("");
       setDirectorPassword("");
+      setSchoolFormErrors({});
+      setSchoolFormTouched({
+        schoolName: false,
+        directorEmail: false,
+        directorPassword: false,
+      });
 
       await fetchSchools();
       await fetchStats(weekOffset);
@@ -634,6 +747,8 @@ const AdminDashboard = () => {
       setChangePasswordEnabled(false);
       setShowEditPassword(false);
       setShowEditPasswordConfirm(false);
+      setUserPasswordTouched({ editPassword: false, confirmEditPassword: false });
+      setUserPasswordSubmitted(false);
       setUserDialogOpen(true);
     } catch (err: unknown) {
       toast({
@@ -647,24 +762,16 @@ const AdminDashboard = () => {
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token || !selectedUser) return;
+    setUserPasswordSubmitted(true);
 
-    if (changePasswordEnabled) {
-      if (!editPassword.trim()) {
-        toast({
-          title: ad("toasts.insufficient"),
-          description: ad("users.edit.newPasswordRequired"),
-          variant: "destructive",
-        });
-        return;
-      }
-      if (editPassword !== confirmEditPassword) {
-        toast({
-          title: ad("toasts.error"),
-          description: ad("users.edit.passwordMismatch"),
-          variant: "destructive",
-        });
-        return;
-      }
+    const passwordValidationErrors = validateUserPasswordForm();
+    if (passwordValidationErrors.editPassword || passwordValidationErrors.confirmEditPassword) {
+      toast({
+        title: ad("toasts.error"),
+        description: passwordValidationErrors.editPassword || passwordValidationErrors.confirmEditPassword,
+        variant: "destructive",
+      });
+      return;
     }
 
     try {
@@ -690,6 +797,8 @@ const AdminDashboard = () => {
       setEditPassword("");
       setConfirmEditPassword("");
       setChangePasswordEnabled(false);
+      setUserPasswordTouched({ editPassword: false, confirmEditPassword: false });
+      setUserPasswordSubmitted(false);
       await fetchSchools();
       await fetchUsers();
     } catch (err: unknown) {
@@ -1187,10 +1296,22 @@ const AdminDashboard = () => {
                     <Input
                       id="school-name"
                       value={schoolName}
-                      onChange={(e) => setSchoolName(e.target.value)}
+                      onChange={(e) => {
+                        setSchoolName(e.target.value);
+                        if (schoolFormErrors.schoolName) {
+                          setSchoolFormErrors((prev) => ({ ...prev, schoolName: undefined }));
+                        }
+                      }}
+                      onBlur={() => {
+                        setSchoolFormTouched((prev) => ({ ...prev, schoolName: true }));
+                        setSchoolFormErrors((prev) => ({ ...prev, schoolName: validateSchoolForm().schoolName }));
+                      }}
                       placeholder={ad("schools.form.namePlaceholder")}
                       required
                     />
+                    {schoolFormTouched.schoolName && schoolFormErrors.schoolName ? (
+                      <p className="text-xs text-destructive">{schoolFormErrors.schoolName}</p>
+                    ) : null}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -1234,9 +1355,30 @@ const AdminDashboard = () => {
                           id="director-email"
                           type="email"
                           value={directorEmail}
-                          onChange={(e) => setDirectorEmail(e.target.value)}
+                          onChange={(e) => {
+                            setDirectorEmail(e.target.value);
+                            if (schoolFormErrors.directorEmail || schoolFormErrors.directorInfo) {
+                              setSchoolFormErrors((prev) => ({
+                                ...prev,
+                                directorEmail: undefined,
+                                directorInfo: undefined,
+                              }));
+                            }
+                          }}
+                          onBlur={() => {
+                            setSchoolFormTouched((prev) => ({ ...prev, directorEmail: true }));
+                            const nextErrors = validateSchoolForm();
+                            setSchoolFormErrors((prev) => ({
+                              ...prev,
+                              directorEmail: nextErrors.directorEmail,
+                              directorInfo: nextErrors.directorInfo,
+                            }));
+                          }}
                           placeholder="email@maktab.uz"
                         />
+                        {(schoolFormTouched.directorEmail && schoolFormErrors.directorEmail) || schoolFormErrors.directorInfo ? (
+                          <p className="text-xs text-destructive">{schoolFormErrors.directorEmail || schoolFormErrors.directorInfo}</p>
+                        ) : null}
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -1247,7 +1389,25 @@ const AdminDashboard = () => {
                           id="director-password"
                           type={showDirectorPassword ? "text" : "password"}
                           value={directorPassword}
-                          onChange={(e) => setDirectorPassword(e.target.value)}
+                          onChange={(e) => {
+                            setDirectorPassword(e.target.value);
+                            if (schoolFormErrors.directorPassword || schoolFormErrors.directorInfo) {
+                              setSchoolFormErrors((prev) => ({
+                                ...prev,
+                                directorPassword: undefined,
+                                directorInfo: undefined,
+                              }));
+                            }
+                          }}
+                          onBlur={() => {
+                            setSchoolFormTouched((prev) => ({ ...prev, directorPassword: true }));
+                            const nextErrors = validateSchoolForm();
+                            setSchoolFormErrors((prev) => ({
+                              ...prev,
+                              directorPassword: nextErrors.directorPassword,
+                              directorInfo: nextErrors.directorInfo,
+                            }));
+                          }}
                           placeholder="••••••••"
                           className="pl-10 pr-10"
                         />
@@ -1259,6 +1419,9 @@ const AdminDashboard = () => {
                           {showDirectorPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
+                      {(schoolFormTouched.directorPassword && schoolFormErrors.directorPassword) || schoolFormErrors.directorInfo ? (
+                        <p className="text-xs text-destructive">{schoolFormErrors.directorPassword || schoolFormErrors.directorInfo}</p>
+                      ) : null}
                     </div>
                   </div>
 
@@ -1468,7 +1631,19 @@ const AdminDashboard = () => {
                   <select
                     id="subscription-school"
                     value={subscriptionSchoolId}
-                    onChange={(e) => setSubscriptionSchoolId(e.target.value)}
+                    onChange={(e) => {
+                      setSubscriptionSchoolId(e.target.value);
+                      if (subscriptionFormErrors.schoolId) {
+                        setSubscriptionFormErrors((prev) => ({ ...prev, schoolId: undefined }));
+                      }
+                    }}
+                    onBlur={() => {
+                      setSubscriptionFormTouched((prev) => ({ ...prev, schoolId: true }));
+                      setSubscriptionFormErrors((prev) => ({
+                        ...prev,
+                        schoolId: validateSubscriptionForm().schoolId,
+                      }));
+                    }}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
                     required
                   >
@@ -1481,6 +1656,9 @@ const AdminDashboard = () => {
                       </option>
                     ))}
                   </select>
+                  {subscriptionFormTouched.schoolId && subscriptionFormErrors.schoolId ? (
+                    <p className="text-xs text-destructive">{subscriptionFormErrors.schoolId}</p>
+                  ) : null}
                 </div>
 
                 <div className="space-y-2">
@@ -1491,9 +1669,24 @@ const AdminDashboard = () => {
                     min={1}
                     step={1}
                     value={subscriptionDays}
-                    onChange={(e) => setSubscriptionDays(Number.parseInt(e.target.value || "0", 10))}
+                    onChange={(e) => {
+                      setSubscriptionDays(Number.parseInt(e.target.value || "0", 10));
+                      if (subscriptionFormErrors.days) {
+                        setSubscriptionFormErrors((prev) => ({ ...prev, days: undefined }));
+                      }
+                    }}
+                    onBlur={() => {
+                      setSubscriptionFormTouched((prev) => ({ ...prev, days: true }));
+                      setSubscriptionFormErrors((prev) => ({
+                        ...prev,
+                        days: validateSubscriptionForm().days,
+                      }));
+                    }}
                     required
                   />
+                  {subscriptionFormTouched.days && subscriptionFormErrors.days ? (
+                    <p className="text-xs text-destructive">{subscriptionFormErrors.days}</p>
+                  ) : null}
                 </div>
 
                 <Button
@@ -1997,6 +2190,8 @@ const AdminDashboard = () => {
                               setConfirmEditPassword("");
                               setShowEditPassword(false);
                               setShowEditPasswordConfirm(false);
+                              setUserPasswordTouched({ editPassword: false, confirmEditPassword: false });
+                              setUserPasswordSubmitted(false);
                             }
                           }}
                           className="h-5 w-5 cursor-pointer rounded border-muted-foreground/40 accent-teal-700"
@@ -2013,6 +2208,12 @@ const AdminDashboard = () => {
                           type={showEditPassword ? "text" : "password"}
                           value={editPassword}
                           onChange={(e) => setEditPassword(e.target.value)}
+                          onBlur={() =>
+                            setUserPasswordTouched((prev) => ({
+                              ...prev,
+                              editPassword: true,
+                            }))
+                          }
                           placeholder="********"
                           className="pl-10 pr-10"
                           disabled={!changePasswordEnabled}
@@ -2026,6 +2227,11 @@ const AdminDashboard = () => {
                           {showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
+                      {changePasswordEnabled &&
+                      (userPasswordSubmitted || userPasswordTouched.editPassword) &&
+                      !editPassword.trim() ? (
+                        <p className="text-xs text-destructive">{ad("users.edit.newPasswordRequired")}</p>
+                      ) : null}
                     </div>
 
                     <div className="space-y-2">
@@ -2037,6 +2243,12 @@ const AdminDashboard = () => {
                           type={showEditPasswordConfirm ? "text" : "password"}
                           value={confirmEditPassword}
                           onChange={(e) => setConfirmEditPassword(e.target.value)}
+                          onBlur={() =>
+                            setUserPasswordTouched((prev) => ({
+                              ...prev,
+                              confirmEditPassword: true,
+                            }))
+                          }
                           placeholder="********"
                           className="pl-10 pr-10"
                           disabled={!changePasswordEnabled}
@@ -2050,6 +2262,13 @@ const AdminDashboard = () => {
                           {showEditPasswordConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
+                      {changePasswordEnabled &&
+                      (userPasswordSubmitted || userPasswordTouched.confirmEditPassword) &&
+                      editPassword.trim() &&
+                      confirmEditPassword &&
+                      editPassword !== confirmEditPassword ? (
+                        <p className="text-xs text-destructive">{ad("users.edit.passwordMismatch")}</p>
+                      ) : null}
                     </div>
                   </div>
                 </div>

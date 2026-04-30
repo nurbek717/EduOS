@@ -170,6 +170,12 @@
       "validation": {
         "required": "Direktor ism, email va parolini kiriting."
       }
+    },
+    "validation": {
+      "nameRequired": "Maktab nomini kiriting.",
+      "directorInfoIncomplete": "Direktor ma'lumotlarini to'liq kiriting (ism, email, parol).",
+      "directorEmailInvalid": "Direktor email manzili noto'g'ri.",
+      "directorPasswordMin": "Direktor paroli kamida 6 ta belgidan iborat bo'lishi kerak."
     }
   },
   "subscriptions": {
