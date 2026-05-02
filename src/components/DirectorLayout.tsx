@@ -187,7 +187,6 @@ const DirectorLayout = ({
     window.dispatchEvent(new CustomEvent("subscription:blocked"));
   };
 
-
   return (
     <SidebarProvider>
       <Sidebar side="left" collapsible="icon" className="border-r [&_[data-sidebar=sidebar]]:bg-[#1d61a5]">
@@ -292,7 +291,7 @@ const DirectorLayout = ({
                                     }`}
                                   />
                                 </span>
-                                O&apos;quvchilar ro&apos;yxati
+                                {t("director.studentsList")}
                               </button>
                               <button
                                 type="button"
@@ -320,7 +319,7 @@ const DirectorLayout = ({
                                     }`}
                                   />
                                 </span>
-                                O&apos;quvchini biriktirish
+                                {t("director.attachStudent")}
                               </button>
                             </div>
                           )}
@@ -399,10 +398,10 @@ const DirectorLayout = ({
               compactHeader
               subscriptionLabel={
                 resolvedSubscriptionInfo?.status === "expired"
-                  ? "Muddat tugagan"
+                  ? t("subscription.expired", { defaultValue: "Muddat tugagan" })
                   : typeof resolvedSubscriptionInfo?.daysLeft === "number"
-                    ? `${Math.max(0, resolvedSubscriptionInfo.daysLeft)} kun qoldi`
-                    : "Faol"
+                    ? t("director.subscriptionDaysLeft", { count: Math.max(0, resolvedSubscriptionInfo.daysLeft) })
+                    : t("subscription.active", { defaultValue: "Faol" })
               }
               subscriptionInfo={resolvedSubscriptionInfo}
             />
@@ -431,7 +430,7 @@ const DirectorLayout = ({
               <a
                 href="tel:+998931330120"
                 className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-orange-200 bg-white shadow-lg"
-                aria-label="Telefon orqali murojaat"
+                aria-label={t("director.support.callAria")}
               >
                 <span className="support-phone-shell inline-flex h-12 w-12 items-center justify-center rounded-full bg-orange-500 text-white">
                   <PhoneCall className="support-phone-icon h-5 w-5" />
@@ -444,8 +443,8 @@ const DirectorLayout = ({
                     <PhoneCall className="support-phone-icon h-5 w-5" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="font-sans text-base font-bold text-slate-800">Murojaat uchun</h3>
-                    <p className="text-sm leading-snug text-slate-600">Telefon orqali murojaat qiling.</p>
+                    <h3 className="font-sans text-base font-bold text-slate-800">{t("director.support.title")}</h3>
+                    <p className="text-sm leading-snug text-slate-600">{t("director.support.callDescription")}</p>
                   </div>
                 </div>
               </div>
@@ -457,7 +456,7 @@ const DirectorLayout = ({
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-orange-200 bg-white shadow-lg"
-                aria-label="Telegram orqali murojaat"
+                aria-label={t("director.support.telegramAria")}
               >
                 <span className="support-phone-shell inline-flex h-12 w-12 items-center justify-center rounded-full bg-orange-500 text-white">
                   <Send className="h-5 w-5" />
@@ -470,8 +469,8 @@ const DirectorLayout = ({
                     <Send className="h-5 w-5" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="font-sans text-base font-bold text-slate-800">Murojaat uchun</h3>
-                    <p className="text-sm leading-snug text-slate-600">Telegram orqali murojaat qiling.</p>
+                    <h3 className="font-sans text-base font-bold text-slate-800">{t("director.support.title")}</h3>
+                    <p className="text-sm leading-snug text-slate-600">{t("director.support.telegramDescription")}</p>
                   </div>
                 </div>
               </div>

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, LogOut, Monitor, Moon, Search, Settings, Sun, User, MapPin, Heart, Plane, Clock3, ChevronDown, Scan, UserCircle, Tag, CalendarDays, Hash, ShieldCheck, Copy } from "lucide-react";
+import { Bell, LogOut, Monitor, Moon, Search, Settings, Sun, User, MapPin, Heart, Plane, Clock3, ChevronDown, Scan, UserCircle, Tag, CalendarDays, Hash, ShieldCheck, Copy, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAppLanguage } from "@/context/LanguageContext";
-import { APP_LANGUAGES } from "@/lib/translations";
+import { APP_LANGUAGES, getLocaleByLanguage } from "@/lib/translations";
 import { useTranslation } from "react-i18next";
 import {
   DropdownMenu,
@@ -254,14 +254,14 @@ const HeaderActions = <T extends string>({
       .slice(0, 2) || initialsFallback;
 
   const displayedNotifications = hasExternalNotifications ? externalNotifications : localNotifications;
-  const languageFlag = language === "ru" ? "🇷🇺" : language === "en" ? "🇺🇸" : "🇺🇿";
-  const languageOptions: Array<{ code: (typeof APP_LANGUAGES)[number]; label: string; flag: string }> = [
-    { code: "uz", label: "Uzbek", flag: "🇺🇿" },
-    { code: "ru", label: "Russian", flag: "🇷🇺" },
-    { code: "en", label: "English", flag: "🇺🇸" },
+  const effectiveLocationLabel = locationLabel || t("user.defaultLocation");
+  const languageOptions: Array<{ code: (typeof APP_LANGUAGES)[number]; label: string }> = [
+    { code: "uz", label: t("preferences.languageUz") },
+    { code: "ru", label: t("preferences.languageRu") },
+    { code: "en", label: t("preferences.languageEn") },
   ];
   const resolvedSubscription: SubscriptionInfo = subscriptionInfo || {
-    planName: "Obuna",
+    planName: t("subscription.currentPlan"),
     startDate: null,
     endDate: null,
     contractNumber: "-",
@@ -276,7 +276,7 @@ const HeaderActions = <T extends string>({
     if (!value) return "-";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "-";
-    return date.toLocaleDateString("uz-UZ");
+    return date.toLocaleDateString(getLocaleByLanguage(language));
   };
 
   const handleToggleFullscreen = async () => {
@@ -330,7 +330,7 @@ const HeaderActions = <T extends string>({
                   >
                     <span className="text-sm text-slate-800">{item.title}</span>
                     <span className="text-xs text-slate-500">
-                      ID: {item.id}
+                      {t("search.idLabel")}: {item.id}
                       {item.subtitle ? ` • ${item.subtitle}` : ""}
                     </span>
                   </button>
@@ -347,7 +347,7 @@ const HeaderActions = <T extends string>({
                   onClick={() => jumpToSection(item.section)}
                 >
                   <span>{item.label}</span>
-                  <span className="text-xs text-slate-400">Enter</span>
+                  <span className="text-xs text-slate-400">{t("search.enterHint")}</span>
                 </button>
               ))
             ) : filteredDataItems.length === 0 ? (
@@ -388,11 +388,11 @@ const HeaderActions = <T extends string>({
               {hasSubscriptionList ? (
                 <div className="relative max-h-[420px] w-full overflow-auto bg-white border border-1">
                   <div className="sticky top-0 z-10 grid grid-cols-[1.2fr_0.8fr_0.8fr_0.7fr_0.7fr] gap-2 border-b bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-600">
-                    <span>Maktab</span>
-                    <span>Boshlanish</span>
-                    <span>Tugash</span>
-                    <span>Qoldi</span>
-                    <span className="text-right">Holati</span>
+                    <span>{t("subscription.currentPlan")}</span>
+                    <span>{t("subscription.startDate")}</span>
+                    <span>{t("subscription.endDate")}</span>
+                    <span>{t("subscription.daysLeft", { count: "" }).trim()}</span>
+                    <span className="text-right">{t("subscription.status")}</span>
                   </div>
                   {subscriptionItems.map((item) => (
                     <div
@@ -407,15 +407,15 @@ const HeaderActions = <T extends string>({
                       <span className="font-medium text-slate-700">{formatDate(item.endDate)}</span>
                       <span className="font-semibold text-slate-900">
                         {item.status === "expired"
-                          ? "Tugagan"
+                          ? t("subscription.expired")
                           : typeof item.daysLeft === "number"
-                            ? `${Math.max(0, item.daysLeft)} kun`
+                            ? t("subscription.daysLeft", { count: Math.max(0, item.daysLeft) })
                             : "-"}
                       </span>
                       <span className={`justify-self-end rounded-full px-3 py-1 font-semibold ${
                         item.status === "expired" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"
                       }`}>
-                        {item.status === "expired" ? "Nofaol" : "Faol"}
+                        {item.status === "expired" ? t("subscription.expired") : t("subscription.active")}
                       </span>
                     </div>
                   ))}
@@ -427,19 +427,19 @@ const HeaderActions = <T extends string>({
                     className="pointer-events-none absolute right-1 top-8 h-[273px] w-[37.59px] rounded-md"
                   />
                   <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
-                    <div className="flex items-center gap-2 text-slate-600"><Tag className="h-4 w-4 text-teal-600" /> Joriy tarif</div>
+                    <div className="flex items-center gap-2 text-slate-600"><Tag className="h-4 w-4 text-teal-600" /> {t("subscription.currentPlan")}</div>
                     <div className="font-semibold text-slate-900">{resolvedSubscription.planName || "-"}</div>
                   </div>
                   <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
-                    <div className="flex items-center gap-2 text-slate-600"><CalendarDays className="h-4 w-4 text-teal-600" /> Boshlanish sanasi</div>
+                    <div className="flex items-center gap-2 text-slate-600"><CalendarDays className="h-4 w-4 text-teal-600" /> {t("subscription.startDate")}</div>
                     <div className="font-semibold text-slate-900">{formatDate(resolvedSubscription.startDate)}</div>
                   </div>
                   <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
-                    <div className="flex items-center gap-2 text-slate-600"><CalendarDays className="h-4 w-4 text-teal-600" /> Tugash sanasi</div>
+                    <div className="flex items-center gap-2 text-slate-600"><CalendarDays className="h-4 w-4 text-teal-600" /> {t("subscription.endDate")}</div>
                     <div className="font-semibold text-slate-900">{formatDate(resolvedSubscription.endDate)}</div>
                   </div>
                   <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
-                    <div className="flex items-center gap-2 text-slate-600"><Hash className="h-4 w-4 text-teal-600" /> Shartnoma raqami</div>
+                    <div className="flex items-center gap-2 text-slate-600"><Hash className="h-4 w-4 text-teal-600" /> {t("subscription.contractNumber")}</div>
                     <div className="flex items-center gap-2 font-semibold text-slate-900">
                       <span>{resolvedSubscription.contractNumber || "-"}</span>
                       <button
@@ -457,9 +457,9 @@ const HeaderActions = <T extends string>({
                     </div>
                   </div>
                   <div className="grid grid-cols-[1fr_auto] items-center px-2 py-2 text-xs">
-                    <div className="flex items-center gap-2 text-slate-600"><ShieldCheck className="h-4 w-4 text-teal-600" /> Holati</div>
+                    <div className="flex items-center gap-2 text-slate-600"><ShieldCheck className="h-4 w-4 text-teal-600" /> {t("subscription.status")}</div>
                     <div className={`rounded-full px-3 py-1 font-semibold ${resolvedSubscription.status === "expired" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
-                      {resolvedSubscription.status === "expired" ? "Nofaol" : "Faol"}
+                      {resolvedSubscription.status === "expired" ? t("subscription.expired") : t("subscription.active")}
                     </div>
                   </div>
                 </div>
@@ -510,7 +510,7 @@ const HeaderActions = <T extends string>({
                 title={t("preferences.language")}
                 aria-label={t("preferences.language")}
               >
-                <span>{languageFlag}</span>
+                <Languages className="h-4 w-4 text-slate-700" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
@@ -518,9 +518,8 @@ const HeaderActions = <T extends string>({
                 <DropdownMenuItem
                   key={option.code}
                   onSelect={() => setLanguage(option.code)}
-                  className="flex cursor-pointer items-center gap-3 py-2 text-base text-slate-700 hover:bg-transparent focus:bg-transparent data-[highlighted]:bg-transparent hover:text-[#F47C20] focus:text-[#F47C20] data-[highlighted]:text-[#F47C20]"
+                  className="flex cursor-pointer items-center py-2 text-base text-slate-700 hover:bg-transparent focus:bg-transparent data-[highlighted]:bg-transparent hover:text-[#F47C20] focus:text-[#F47C20] data-[highlighted]:text-[#F47C20]"
                 >
-                  <span className="text-2xl leading-none">{option.flag}</span>
                   <span>{option.label}</span>
                 </DropdownMenuItem>
               ))}
@@ -531,8 +530,8 @@ const HeaderActions = <T extends string>({
             type="button"
             onClick={() => void handleToggleFullscreen()}
             className="inline-flex h-8 w-8 items-center justify-center rounded-[5px] bg-slate-100"
-            title="Fullscreen"
-            aria-label="Fullscreen"
+            title={t("preferences.fullscreen")}
+            aria-label={t("preferences.fullscreen")}
           >
             <Scan className="h-4 w-4 text-slate-700" />
           </button>
@@ -574,6 +573,32 @@ const HeaderActions = <T extends string>({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      )}
+
+      {!compactHeader && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-[5px] bg-slate-100 text-base"
+              title={t("preferences.language")}
+              aria-label={t("preferences.language")}
+            >
+              <Languages className="h-4 w-4 text-slate-700" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52">
+            {languageOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.code}
+                onSelect={() => setLanguage(option.code)}
+                className="flex cursor-pointer items-center py-2 text-base text-slate-700 hover:bg-transparent focus:bg-transparent data-[highlighted]:bg-transparent hover:text-[#F47C20] focus:text-[#F47C20] data-[highlighted]:text-[#F47C20]"
+              >
+                <span>{option.label}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
 
       <DropdownMenu>
@@ -630,7 +655,7 @@ const HeaderActions = <T extends string>({
                   className="mt-1 truncate text-[14px] text-slate-600"
                   style={{ fontFamily: "Inter, sans-serif" }}
                 >
-                  {locationLabel}
+                  {effectiveLocationLabel}
                 </div>
               </div>
             </div>
