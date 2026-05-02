@@ -35,7 +35,6 @@ const NS_COMMON_PREFIXES = [
   "navigation.",
   "auth.",
   "user.",
-  "subscription.",
 ];
 
 const NS_LAYOUT_PREFIXES = [

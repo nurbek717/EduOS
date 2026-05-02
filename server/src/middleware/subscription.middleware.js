@@ -34,8 +34,6 @@ const checkSubscription = async (req, res, next) => {
     }
 
     const now = new Date();
-    const gracePeriodDays = 3;
-    const totalLockDays = 10; // 7 kun o'rniga 10 kun qildim, ko'proq imkoniyat uchun
 
     // 2. Obuna mavjudligini tekshirish
     if (!subscription) {
@@ -51,30 +49,13 @@ const checkSubscription = async (req, res, next) => {
     }
 
     const endAt = new Date(subscription.endAt);
-    const graceDeadline = new Date(endAt.getTime() + gracePeriodDays * 24 * 60 * 60 * 1000);
-    const lockDeadline = new Date(endAt.getTime() + totalLockDays * 24 * 60 * 60 * 1000);
     const isExpired = endAt.getTime() < now.getTime();
 
+    // 3. Muddat tugagan bo'lsa — darhol cheklov
+    // - Faqat bosh panel uchun kerakli GET endpointlarga ruxsat
+    // - Qolgan hamma so'rovlar bloklanadi (frontend modal/redirect chiqaradi)
     if (isExpired) {
       const isAllowedGet = req.method === "GET" && ALLOWED_EXPIRED_GET_PATHS.has(req.path);
-      if (isAllowedGet) {
-        return next();
-      }
-
-      // 3 kunlik imtiyozli davrda mavjud ish jarayonlari to'liq ishlaydi.
-      if (now <= graceDeadline) {
-        return next();
-      }
-
-      if (now > lockDeadline) {
-        return res.status(402).json({
-          message: "Obuna muddati butunlay tugagan. Tizim bloklangan. Davom etish uchun to'lov qiling.",
-          subscriptionExpired: true,
-          isLocked: true,
-          endAt: subscription.endAt || null,
-        });
-      }
-
       if (!isAllowedGet) {
         return res.status(402).json({
           message: "Tarif davringiz yakunlangan. Tizimdan to'liq foydalanishni davom ettirish uchun to'lovni amalga oshiring.",

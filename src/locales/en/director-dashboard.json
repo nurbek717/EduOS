@@ -65,14 +65,10 @@
   "deleted": "Deleted",
   "phone": "Phone",
   "password": "Password",
-  "currencySuffix": "UZS",
   "form": {
-    "name": "Name",
     "email": "Email",
     "phoneExampleSpaced": "+998 90 123 45 67",
-    "passwordMin": "At least 6 characters",
-    "enterDate": "Enter date",
-    "enter": "Enter"
+    "passwordMin": "At least 6 characters"
   },
   "parents": {
     "createLoginTitle": "Create parent login",
@@ -124,14 +120,7 @@
     "taxId": "TAX ID",
     "requiredFields": "First Name and Email are required.",
     "locationFallback": "Tashkent, Uzbekistan",
-    "locationDisplay": "Uzbekistan/Tashkent",
-    "newPasswordRequired": "Enter a new password.",
-    "passwordMismatch": "Password confirmation does not match.",
-    "userRole": "User role",
-    "passportSeriesNumber": "Passport series and number",
-    "username": "Username",
-    "changePassword": "Change password",
-    "confirmPassword": "Confirm password"
+    "locationDisplay": "Uzbekistan/Tashkent"
   },
   "studentPhoto": {
     "title": "Student photo: {{name}}",
@@ -227,65 +216,5 @@
     "studentSubjectsDesc": "Shows this student's results by subject.",
     "bestGrade": "Highest",
     "lastGrade": "Last grade"
-  },
-  "ui": {
-    "financeActivity": "FINANCIAL ACTIVITY",
-    "noAnalysisForClass": "No analysis found for the selected class.",
-    "questionText": "Question text",
-    "questionTextPlaceholder": "Enter question text",
-    "questionType": "Question type",
-    "points": "Points",
-    "correctAnswer": "Correct answer",
-    "optionA": "Option A",
-    "optionB": "Option B",
-    "optionC": "Option C",
-    "optionD": "Option D",
-    "schoolAdminsTitle": "School admins",
-    "addNewAdmin": "Add new admin",
-    "createSchoolAdminTitle": "Create new school admin",
-    "teachersTitle": "Teachers",
-    "addNewTeacher": "Add new teacher",
-    "search": "Search",
-    "searchByClassCode": "Search by class code",
-    "searchStudentByNameIdPlaceholder": "Student full name and ID",
-    "studentsListTitle": "Student list",
-    "studentsListHint": "This section is for search only.",
-    "classType": "Class type",
-    "classUpper": "CLASS",
-    "classTypeUpper": "CLASS TYPE",
-    "shiftUpper": "SHIFT",
-    "educationLanguage": "Education language",
-    "status": "Status",
-    "academicYear": "Academic year",
-    "shift": "Shift",
-    "clear": "Clear",
-    "fullName": "Full name",
-    "passportOrCertificate": "PASSPORT / CERTIFICATE",
-    "birthDate": "BIRTH DATE",
-    "parentOrGuardian": "PARENT / GUARDIAN",
-    "admission": "ADMISSION",
-    "admissionOrderDate": "Admission order date",
-    "studentClassAdmissionDate": "Student admission date to class",
-    "attach": "Attach",
-    "pinfl": "PINFL",
-    "targetClass": "Target class",
-    "searchResultsPlaceholder": "Search results will appear here.",
-    "attachStudentTitle": "Attach student",
-    "attachStudentHint": "Enter details to attach a student to class."
-  },
-  "alertsMessages": {
-    "noClasses": "No classes have been created yet. First add a class in the 'Classes and Subjects' section.",
-    "noTeachers": "No teachers are registered at school yet. You can add them in the 'Users' section.",
-    "noParentAccounts": "Parent accounts have not been created for students yet. They will be needed for notifications.",
-    "noSchoolAdmin": "School admin has not been created yet. Adding a school_admin is recommended for daily operations.",
-    "classPerformanceDown": "Performance has dropped in class {{className}}.",
-    "attendanceIssue": "Attendance needs attention in class {{className}}: {{absentCount}} absences, {{lateCount}} late arrivals.",
-    "noClassData": "There is not enough grade or attendance data for class {{className}} yet.",
-    "debtorStudents": "{{count}} students have outstanding debt. Highest debt: {{studentName}}."
-  },
-  "recentActivityMessages": {
-    "teacherAdded": "New teacher added",
-    "studentRegistered": "New student registered",
-    "parentAccountCreated": "New parent account created"
   }
 }

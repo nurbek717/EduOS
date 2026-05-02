@@ -235,21 +235,6 @@ const AdminDashboard = () => {
   const [directorName, setDirectorName] = useState("");
   const [directorEmail, setDirectorEmail] = useState("");
   const [directorPassword, setDirectorPassword] = useState("");
-  const [schoolFormErrors, setSchoolFormErrors] = useState<{
-    schoolName?: string;
-    directorInfo?: string;
-    directorEmail?: string;
-    directorPassword?: string;
-  }>({});
-  const [schoolFormTouched, setSchoolFormTouched] = useState<{
-    schoolName: boolean;
-    directorEmail: boolean;
-    directorPassword: boolean;
-  }>({
-    schoolName: false,
-    directorEmail: false,
-    directorPassword: false,
-  });
   const [assignDirectorName, setAssignDirectorName] = useState("");
   const [assignDirectorEmail, setAssignDirectorEmail] = useState("");
   const [assignDirectorPassword, setAssignDirectorPassword] = useState("");
@@ -263,11 +248,6 @@ const AdminDashboard = () => {
   const [changePasswordEnabled, setChangePasswordEnabled] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [showEditPasswordConfirm, setShowEditPasswordConfirm] = useState(false);
-  const [userPasswordTouched, setUserPasswordTouched] = useState<{
-    editPassword: boolean;
-    confirmEditPassword: boolean;
-  }>({ editPassword: false, confirmEditPassword: false });
-  const [userPasswordSubmitted, setUserPasswordSubmitted] = useState(false);
   const [showDirectorPassword, setShowDirectorPassword] = useState(false);
   const usersRequestIdRef = useRef(0);
 
@@ -565,8 +545,6 @@ const AdminDashboard = () => {
 
       setSubscriptionSchoolId("");
       setSubscriptionDays(30);
-      setSubscriptionFormErrors({});
-      setSubscriptionFormTouched({ schoolId: false, days: false });
       await fetchSubscriptions();
       // "Umumiy ko'rinish" dagi kartalarda ham obuna tugash kunlari yangilanishi uchun
       await fetchStats(weekOffset);
@@ -689,12 +667,6 @@ const AdminDashboard = () => {
       setDirectorName("");
       setDirectorEmail("");
       setDirectorPassword("");
-      setSchoolFormErrors({});
-      setSchoolFormTouched({
-        schoolName: false,
-        directorEmail: false,
-        directorPassword: false,
-      });
 
       await fetchSchools();
       await fetchStats(weekOffset);
@@ -733,8 +705,6 @@ const AdminDashboard = () => {
       setChangePasswordEnabled(false);
       setShowEditPassword(false);
       setShowEditPasswordConfirm(false);
-      setUserPasswordTouched({ editPassword: false, confirmEditPassword: false });
-      setUserPasswordSubmitted(false);
       setUserDialogOpen(true);
     } catch (err: unknown) {
       toast({
@@ -791,8 +761,6 @@ const AdminDashboard = () => {
       setEditPassword("");
       setConfirmEditPassword("");
       setChangePasswordEnabled(false);
-      setUserPasswordTouched({ editPassword: false, confirmEditPassword: false });
-      setUserPasswordSubmitted(false);
       await fetchSchools();
       await fetchUsers();
     } catch (err: unknown) {
@@ -938,26 +906,6 @@ const AdminDashboard = () => {
     return 0;
   };
 
-  const attentionItems = useMemo(() => {
-    if (!stats) return [];
-    const items: string[] = [];
-    const withoutDirector = stats.platformOverview?.schoolsWithoutDirector ?? 0;
-    const withoutSchoolAdmin = stats.platformOverview?.schoolsWithoutSchoolAdmin ?? 0;
-    const lowActivity = Math.max((stats.totalSchools || 0) - (stats.schoolsByStatus?.active || 0), 0);
-
-    if (withoutDirector > 0) {
-      items.push(ad("overview.attention.items.withoutDirector", { count: withoutDirector }));
-    }
-    if (withoutSchoolAdmin > 0) {
-      items.push(ad("overview.attention.items.withoutSchoolAdmin", { count: withoutSchoolAdmin }));
-    }
-    if (lowActivity > 0) {
-      items.push(ad("overview.attention.items.lowActivity", { count: lowActivity }));
-    }
-
-    return items;
-  }, [ad, stats]);
-
   const headerNotifications = useMemo<AdminHeaderNotification[]>(() => {
     const next: AdminHeaderNotification[] = [];
     const ts = new Date(nowMs).toLocaleString(locale, {
@@ -1016,7 +964,7 @@ const AdminDashboard = () => {
     }
 
     return next.slice(0, 8);
-  }, [ad, attentionItems, locale, nowMs, stats, subscriptionsForOverviewUI]);
+  }, [ad, locale, nowMs, stats, subscriptionsForOverviewUI]);
 
   const searchItems = [
     ...schools.map((s) => ({
@@ -1393,9 +1341,6 @@ const AdminDashboard = () => {
                           {showDirectorPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
-                      {(schoolFormTouched.directorPassword && schoolFormErrors.directorPassword) || schoolFormErrors.directorInfo ? (
-                        <p className="text-xs text-destructive">{schoolFormErrors.directorPassword || schoolFormErrors.directorInfo}</p>
-                      ) : null}
                     </div>
                   </div>
 
@@ -1618,9 +1563,6 @@ const AdminDashboard = () => {
                       </option>
                     ))}
                   </select>
-                  {subscriptionFormTouched.schoolId && subscriptionFormErrors.schoolId ? (
-                    <p className="text-xs text-destructive">{subscriptionFormErrors.schoolId}</p>
-                  ) : null}
                 </div>
 
                 <div className="space-y-2">
@@ -2159,8 +2101,6 @@ const AdminDashboard = () => {
                               setConfirmEditPassword("");
                               setShowEditPassword(false);
                               setShowEditPasswordConfirm(false);
-                              setUserPasswordTouched({ editPassword: false, confirmEditPassword: false });
-                              setUserPasswordSubmitted(false);
                             }
                           }}
                           className="h-5 w-5 cursor-pointer rounded border-muted-foreground/40 accent-teal-700"
@@ -2177,12 +2117,6 @@ const AdminDashboard = () => {
                           type={showEditPassword ? "text" : "password"}
                           value={editPassword}
                           onChange={(e) => setEditPassword(e.target.value)}
-                          onBlur={() =>
-                            setUserPasswordTouched((prev) => ({
-                              ...prev,
-                              editPassword: true,
-                            }))
-                          }
                           placeholder="********"
                           className="pl-10 pr-10"
                           disabled={!changePasswordEnabled}
@@ -2207,12 +2141,6 @@ const AdminDashboard = () => {
                           type={showEditPasswordConfirm ? "text" : "password"}
                           value={confirmEditPassword}
                           onChange={(e) => setConfirmEditPassword(e.target.value)}
-                          onBlur={() =>
-                            setUserPasswordTouched((prev) => ({
-                              ...prev,
-                              confirmEditPassword: true,
-                            }))
-                          }
                           placeholder="********"
                           className="pl-10 pr-10"
                           disabled={!changePasswordEnabled}
@@ -2226,13 +2154,6 @@ const AdminDashboard = () => {
                           {showEditPasswordConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
-                      {changePasswordEnabled &&
-                      (userPasswordSubmitted || userPasswordTouched.confirmEditPassword) &&
-                      editPassword.trim() &&
-                      confirmEditPassword &&
-                      editPassword !== confirmEditPassword ? (
-                        <p className="text-xs text-destructive">{ad("users.edit.passwordMismatch")}</p>
-                      ) : null}
                     </div>
                   </div>
                 </div>

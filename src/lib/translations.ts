@@ -18,18 +18,12 @@ export const isAppLanguage = (value: unknown): value is AppLanguage =>
 export type TranslationKey =
 	| "search.placeholder"
 	| "search.notFound"
-	| "search.idLabel"
-	| "search.enterHint"
 	| "notifications.title"
 	| "notifications.empty"
 	| "notifications.sectionOpened"
 	| "preferences.title"
 	| "preferences.theme"
 	| "preferences.language"
-	| "preferences.languageUz"
-	| "preferences.languageRu"
-	| "preferences.languageEn"
-	| "preferences.fullscreen"
 	| "account.title"
 	| "account.profile"
 	| "account.settings"
@@ -38,15 +32,6 @@ export type TranslationKey =
 	| "navigation.favorites"
 	| "auth.logout"
 	| "user.fallback"
-	| "user.defaultLocation"
-	| "subscription.currentPlan"
-	| "subscription.startDate"
-	| "subscription.endDate"
-	| "subscription.contractNumber"
-	| "subscription.status"
-	| "subscription.active"
-	| "subscription.expired"
-	| "subscription.daysLeft"
 	| "common.sections"
 	| "parent.badge"
 	| "parent.panel"
@@ -98,14 +83,6 @@ export type TranslationKey =
 	| "director.nav.exams"
 	| "director.nav.support"
 	| "director.nav.settings"
-	| "director.studentsList"
-	| "director.attachStudent"
-	| "director.subscriptionDaysLeft"
-	| "director.support.title"
-	| "director.support.callAria"
-	| "director.support.callDescription"
-	| "director.support.telegramAria"
-	| "director.support.telegramDescription"
 	| "schoolAdmin.badge"
 	| "schoolAdmin.fallbackName"
 	| "schoolAdmin.layoutTitle"
@@ -118,7 +95,6 @@ export type TranslationKey =
 	| "admin.nav.users"
 	| "admin.nav.subscriptions"
 	| "admin.nav.exams"
-	| "admin.subscriptionDaysLeft"
 	| "dashboard.parent.title"
 	| "dashboard.parent.subtitleWithChild"
 	| "dashboard.parent.subtitleWithSchool"
@@ -136,18 +112,12 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 	uz: {
 		"search.placeholder": "ID, ism yoki bo'lim qidirish",
 		"search.notFound": "Mos bo'lim topilmadi",
-		"search.idLabel": "ID",
-		"search.enterHint": "Enter",
 		"notifications.title": "Bildirishnomalar",
 		"notifications.empty": "Hozircha bildirishnoma yo'q",
 		"notifications.sectionOpened": "{{section}} bo'limi ochildi",
 		"preferences.title": "Sozlamalar",
 		"preferences.theme": "Mavzu",
 		"preferences.language": "Til",
-		"preferences.languageUz": "O'zbek",
-		"preferences.languageRu": "Ruscha",
-		"preferences.languageEn": "Inglizcha",
-		"preferences.fullscreen": "To'liq ekran",
 		"account.title": "Akkaunt",
 		"account.profile": "Profil",
 		"account.settings": "Sozlamalar",
@@ -156,15 +126,6 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 		"navigation.favorites": "Sevimlilar",
 		"auth.logout": "Chiqish",
 		"user.fallback": "Foydalanuvchi",
-		"user.defaultLocation": "Toshkent, O'zbekiston",
-		"subscription.currentPlan": "Joriy tarif",
-		"subscription.startDate": "Boshlanish sanasi",
-		"subscription.endDate": "Tugash sanasi",
-		"subscription.contractNumber": "Shartnoma raqami",
-		"subscription.status": "Holati",
-		"subscription.active": "Faol",
-		"subscription.expired": "Nofaol",
-		"subscription.daysLeft": "{{count}} kun qoldi",
 		"common.sections": "Bo'limlar",
 		"parent.badge": "OTA-ONA",
 		"parent.panel": "Farzand nazorati paneli",
@@ -216,14 +177,6 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 		"director.nav.exams": "Imtihonlar",
 		"director.nav.support": "Murojaatlar",
 		"director.nav.settings": "Sozlamalar",
-		"director.studentsList": "O'quvchilar ro'yxati",
-		"director.attachStudent": "O'quvchini biriktirish",
-		"director.subscriptionDaysLeft": "{{count}} kun qoldi",
-		"director.support.title": "Murojaat uchun",
-		"director.support.callAria": "Telefon orqali murojaat",
-		"director.support.callDescription": "Telefon orqali murojaat qiling.",
-		"director.support.telegramAria": "Telegram orqali murojaat",
-		"director.support.telegramDescription": "Telegram orqali murojaat qiling.",
 		"schoolAdmin.badge": "MAKTAB ADMINI",
 		"schoolAdmin.fallbackName": "Maktab administratori",
 		"schoolAdmin.layoutTitle": "Maktab administratori kabineti",
@@ -236,7 +189,6 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 		"admin.nav.users": "Foydalanuvchilar",
 		"admin.nav.subscriptions": "Obunalar",
 		"admin.nav.exams": "Imtihonlar",
-		"admin.subscriptionDaysLeft": "{{count}} kun qoldi",
 		"dashboard.parent.title": "Ota-ona kabineti",
 		"dashboard.parent.subtitleWithChild": "{{child}} ning otasi",
 		"dashboard.parent.subtitleWithSchool": "{{school}} • Farzand nazorati",
@@ -251,18 +203,12 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 	ru: {
 		"search.placeholder": "Поиск по ID, имени или разделу",
 		"search.notFound": "Подходящий раздел не найден",
-		"search.idLabel": "ID",
-		"search.enterHint": "Enter",
 		"notifications.title": "Уведомления",
 		"notifications.empty": "Пока уведомлений нет",
 		"notifications.sectionOpened": "Открыт раздел: {{section}}",
 		"preferences.title": "Настройки",
 		"preferences.theme": "Тема",
 		"preferences.language": "Язык",
-		"preferences.languageUz": "Узбекский",
-		"preferences.languageRu": "Русский",
-		"preferences.languageEn": "Английский",
-		"preferences.fullscreen": "Полный экран",
 		"account.title": "Аккаунт",
 		"account.profile": "Профиль",
 		"account.settings": "Настройки",
@@ -271,15 +217,6 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 		"navigation.favorites": "Избранное",
 		"auth.logout": "Выйти",
 		"user.fallback": "Пользователь",
-		"user.defaultLocation": "Ташкент, Узбекистан",
-		"subscription.currentPlan": "Текущий тариф",
-		"subscription.startDate": "Дата начала",
-		"subscription.endDate": "Дата окончания",
-		"subscription.contractNumber": "Номер договора",
-		"subscription.status": "Статус",
-		"subscription.active": "Активен",
-		"subscription.expired": "Неактивен",
-		"subscription.daysLeft": "Осталось {{count}} дн.",
 		"common.sections": "Разделы",
 		"parent.badge": "РОДИТЕЛЬ",
 		"parent.panel": "Панель контроля ребенка",
@@ -331,14 +268,6 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 		"director.nav.exams": "Экзамены",
 		"director.nav.support": "Обращения",
 		"director.nav.settings": "Настройки",
-		"director.studentsList": "Список учеников",
-		"director.attachStudent": "Прикрепить ученика",
-		"director.subscriptionDaysLeft": "Осталось {{count}} дн.",
-		"director.support.title": "Для обращения",
-		"director.support.callAria": "Обратиться по телефону",
-		"director.support.callDescription": "Свяжитесь по телефону.",
-		"director.support.telegramAria": "Обратиться через Telegram",
-		"director.support.telegramDescription": "Свяжитесь через Telegram.",
 		"schoolAdmin.badge": "АДМИН ШКОЛЫ",
 		"schoolAdmin.fallbackName": "Администратор школы",
 		"schoolAdmin.layoutTitle": "Кабинет администратора школы",
@@ -351,7 +280,6 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 		"admin.nav.users": "Пользователи",
 		"admin.nav.subscriptions": "Подписки",
 		"admin.nav.exams": "Экзамены",
-		"admin.subscriptionDaysLeft": "Осталось {{count}} дн.",
 		"dashboard.parent.title": "Кабинет родителя",
 		"dashboard.parent.subtitleWithChild": "Родитель: {{child}}",
 		"dashboard.parent.subtitleWithSchool": "{{school}} • Контроль ребенка",
@@ -366,18 +294,12 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 	en: {
 		"search.placeholder": "Search by ID, name, or section",
 		"search.notFound": "No matching section found",
-		"search.idLabel": "ID",
-		"search.enterHint": "Enter",
 		"notifications.title": "Notifications",
 		"notifications.empty": "No notifications yet",
 		"notifications.sectionOpened": "Opened section: {{section}}",
 		"preferences.title": "Preferences",
 		"preferences.theme": "Theme",
 		"preferences.language": "Language",
-		"preferences.languageUz": "Uzbek",
-		"preferences.languageRu": "Russian",
-		"preferences.languageEn": "English",
-		"preferences.fullscreen": "Fullscreen",
 		"account.title": "Account",
 		"account.profile": "Profile",
 		"account.settings": "Settings",
@@ -386,15 +308,6 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 		"navigation.favorites": "Favorites",
 		"auth.logout": "Logout",
 		"user.fallback": "User",
-		"user.defaultLocation": "Tashkent, Uzbekistan",
-		"subscription.currentPlan": "Current plan",
-		"subscription.startDate": "Start date",
-		"subscription.endDate": "End date",
-		"subscription.contractNumber": "Contract number",
-		"subscription.status": "Status",
-		"subscription.active": "Active",
-		"subscription.expired": "Expired",
-		"subscription.daysLeft": "{{count}} days left",
 		"common.sections": "Sections",
 		"parent.badge": "PARENT",
 		"parent.panel": "Child monitoring panel",
@@ -446,14 +359,6 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 		"director.nav.exams": "Exams",
 		"director.nav.support": "Support",
 		"director.nav.settings": "Settings",
-		"director.studentsList": "Student list",
-		"director.attachStudent": "Attach student",
-		"director.subscriptionDaysLeft": "{{count}} days left",
-		"director.support.title": "Need help",
-		"director.support.callAria": "Contact by phone",
-		"director.support.callDescription": "Contact via phone.",
-		"director.support.telegramAria": "Contact via Telegram",
-		"director.support.telegramDescription": "Contact via Telegram.",
 		"schoolAdmin.badge": "SCHOOL ADMIN",
 		"schoolAdmin.fallbackName": "School Administrator",
 		"schoolAdmin.layoutTitle": "School Admin Dashboard",
@@ -466,7 +371,6 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 		"admin.nav.users": "Users",
 		"admin.nav.subscriptions": "Subscriptions",
 		"admin.nav.exams": "Exams",
-		"admin.subscriptionDaysLeft": "{{count}} days left",
 		"dashboard.parent.title": "Parent Dashboard",
 		"dashboard.parent.subtitleWithChild": "Parent of {{child}}",
 		"dashboard.parent.subtitleWithSchool": "{{school}} • Child monitoring",
