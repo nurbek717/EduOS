@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, LogOut, Monitor, Moon, Search, Settings, Sun, User, MapPin, Heart, Plane, Clock3, ChevronDown, Scan, UserCircle, Tag, CalendarDays, Hash, ShieldCheck, Copy, Languages } from "lucide-react";
+import { Bell, LogOut, Monitor, Moon, Search, Settings, Sun, User, MapPin, Heart, Plane, Clock3, ChevronDown, Scan, UserCircle, Tag, CalendarDays, Hash, ShieldCheck, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -255,10 +255,11 @@ const HeaderActions = <T extends string>({
 
   const displayedNotifications = hasExternalNotifications ? externalNotifications : localNotifications;
   const effectiveLocationLabel = locationLabel || t("user.defaultLocation");
-  const languageOptions: Array<{ code: (typeof APP_LANGUAGES)[number]; label: string }> = [
-    { code: "uz", label: t("preferences.languageUz") },
-    { code: "ru", label: t("preferences.languageRu") },
-    { code: "en", label: t("preferences.languageEn") },
+  const languageFlag = language === "ru" ? "🇷🇺" : language === "en" ? "🇺🇸" : "🇺🇿";
+  const languageOptions: Array<{ code: (typeof APP_LANGUAGES)[number]; label: string; flag: string }> = [
+    { code: "uz", label: t("preferences.languageUz"), flag: "🇺🇿" },
+    { code: "ru", label: t("preferences.languageRu"), flag: "🇷🇺" },
+    { code: "en", label: t("preferences.languageEn"), flag: "🇺🇸" },
   ];
   const resolvedSubscription: SubscriptionInfo = subscriptionInfo || {
     planName: t("subscription.currentPlan"),
@@ -510,7 +511,7 @@ const HeaderActions = <T extends string>({
                 title={t("preferences.language")}
                 aria-label={t("preferences.language")}
               >
-                <Languages className="h-4 w-4 text-slate-700" />
+                <span className="text-lg leading-none">{languageFlag}</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
@@ -518,8 +519,9 @@ const HeaderActions = <T extends string>({
                 <DropdownMenuItem
                   key={option.code}
                   onSelect={() => setLanguage(option.code)}
-                  className="flex cursor-pointer items-center py-2 text-base text-slate-700 hover:bg-transparent focus:bg-transparent data-[highlighted]:bg-transparent hover:text-[#F47C20] focus:text-[#F47C20] data-[highlighted]:text-[#F47C20]"
+                  className="flex cursor-pointer items-center gap-3 py-2 text-base text-slate-700 hover:bg-transparent focus:bg-transparent data-[highlighted]:bg-transparent hover:text-[#F47C20] focus:text-[#F47C20] data-[highlighted]:text-[#F47C20]"
                 >
+                  <span className="text-2xl leading-none">{option.flag}</span>
                   <span>{option.label}</span>
                 </DropdownMenuItem>
               ))}
@@ -584,7 +586,7 @@ const HeaderActions = <T extends string>({
               title={t("preferences.language")}
               aria-label={t("preferences.language")}
             >
-              <Languages className="h-4 w-4 text-slate-700" />
+              <span className="text-lg leading-none">{languageFlag}</span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
@@ -592,13 +594,26 @@ const HeaderActions = <T extends string>({
               <DropdownMenuItem
                 key={option.code}
                 onSelect={() => setLanguage(option.code)}
-                className="flex cursor-pointer items-center py-2 text-base text-slate-700 hover:bg-transparent focus:bg-transparent data-[highlighted]:bg-transparent hover:text-[#F47C20] focus:text-[#F47C20] data-[highlighted]:text-[#F47C20]"
+                className="flex cursor-pointer items-center gap-3 py-2 text-base text-slate-700 hover:bg-transparent focus:bg-transparent data-[highlighted]:bg-transparent hover:text-[#F47C20] focus:text-[#F47C20] data-[highlighted]:text-[#F47C20]"
               >
+                <span className="text-2xl leading-none">{option.flag}</span>
                 <span>{option.label}</span>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+      )}
+
+      {!compactHeader && (
+        <button
+          type="button"
+          onClick={() => void handleToggleFullscreen()}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-[5px] bg-slate-100"
+          title={t("preferences.fullscreen")}
+          aria-label={t("preferences.fullscreen")}
+        >
+          <Scan className="h-4 w-4 text-slate-700" />
+        </button>
       )}
 
       <DropdownMenu>
