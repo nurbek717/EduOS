@@ -296,184 +296,254 @@ const HeaderActions = <T extends string>({
   return (
     <>
       <div className="flex items-center gap-2">
-      {!compactHeader && (
-      <div className="relative hidden md:block">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (filteredDataItems.length > 0) {
-              jumpToSection(filteredDataItems[0].section);
-              return;
-            }
-            if (filteredNavItems.length > 0) {
-              jumpToSection(filteredNavItems[0].section);
-            }
-          }}
-        >
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
-          <Input
-            placeholder={t("search.placeholder")}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="h-9 w-[300px] rounded-lg border border-slate-200 bg-slate-50 pl-8 text-sm font-medium text-slate-600 placeholder:text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0"
-          />
-        </form>
-        {normalizedQuery && (
-          <div className="absolute right-0 top-11 z-50 w-[300px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
-            {filteredDataItems.length > 0 && (
-              <>
-                {filteredDataItems.map((item) => (
-                  <button
-                    key={`data-${item.id}-${item.section}`}
-                    type="button"
-                    className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-slate-50"
-                    onClick={() => jumpToSection(item.section)}
-                  >
-                    <span className="text-sm text-slate-800">{item.title}</span>
-                    <span className="text-xs text-slate-500">
-                      {t("search.idLabel")}: {item.id}
-                      {item.subtitle ? ` • ${item.subtitle}` : ""}
-                    </span>
-                  </button>
-                ))}
-                <DropdownMenuSeparator />
-              </>
+        {!compactHeader && (
+          <div className="relative hidden md:block">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (filteredDataItems.length > 0) {
+                  jumpToSection(filteredDataItems[0].section);
+                  return;
+                }
+                if (filteredNavItems.length > 0) {
+                  jumpToSection(filteredNavItems[0].section);
+                }
+              }}
+            >
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+              <Input
+                placeholder={t("search.placeholder")}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="h-9 w-[300px] rounded-lg border border-slate-200 bg-slate-50 pl-8 text-sm font-medium text-slate-600 placeholder:text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+            </form>
+            {normalizedQuery && (
+              <div className="absolute right-0 top-11 z-50 w-[300px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+                {filteredDataItems.length > 0 && (
+                  <>
+                    {filteredDataItems.map((item) => (
+                      <button
+                        key={`data-${item.id}-${item.section}`}
+                        type="button"
+                        className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-slate-50"
+                        onClick={() => jumpToSection(item.section)}
+                      >
+                        <span className="text-sm text-slate-800">{item.title}</span>
+                        <span className="text-xs text-slate-500">
+                          {t("search.idLabel")}: {item.id}
+                          {item.subtitle ? ` • ${item.subtitle}` : ""}
+                        </span>
+                      </button>
+                    ))}
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                {filteredNavItems.length > 0 ? (
+                  filteredNavItems.map((item) => (
+                    <button
+                      key={item.section}
+                      type="button"
+                      className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      onClick={() => jumpToSection(item.section)}
+                    >
+                      <span>{item.label}</span>
+                      <span className="text-xs text-slate-400">{t("search.enterHint")}</span>
+                    </button>
+                  ))
+                ) : filteredDataItems.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-slate-500">{t("search.notFound")}</div>
+                ) : null}
+              </div>
             )}
-            {filteredNavItems.length > 0 ? (
-              filteredNavItems.map((item) => (
-                <button
-                  key={item.section}
-                  type="button"
-                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                  onClick={() => jumpToSection(item.section)}
-                >
-                  <span>{item.label}</span>
-                  <span className="text-xs text-slate-400">{t("search.enterHint")}</span>
-                </button>
-              ))
-            ) : filteredDataItems.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-slate-500">{t("search.notFound")}</div>
-            ) : null}
           </div>
         )}
-      </div>
-      )}
 
-      {compactHeader && (
-        <>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className={`hidden h-8 min-w-[168px] items-center justify-between gap-2 rounded-[5px] border px-2.5 text-sm font-semibold md:inline-flex ${
-                  isSubscriptionExpired
+        {compactHeader && (
+          <>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className={`hidden h-8 min-w-[168px] items-center justify-between gap-2 rounded-[5px] border px-2.5 text-sm font-semibold md:inline-flex ${isSubscriptionExpired
                     ? "border-rose-200 bg-rose-50 text-rose-700"
                     : "border-[#c7ddd5] bg-[#eef6f3] text-amber-700"
-                }`}
-              >
-                <Clock3 className={`h-4 w-4 ${isSubscriptionExpired ? "text-rose-600" : "text-amber-600"}`} />
-                <span className="whitespace-nowrap leading-none">{subscriptionLabel}</span>
-                <ChevronDown className="h-4 w-4 text-slate-500" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              sideOffset={10}
-              className={`relative border-none rounded-none bg-white p-0 overflow-hidden ${
-                hasSubscriptionList
+                    }`}
+                >
+                  <Clock3 className={`h-4 w-4 ${isSubscriptionExpired ? "text-rose-600" : "text-amber-600"}`} />
+                  <span className="whitespace-nowrap leading-none">{subscriptionLabel}</span>
+                  <ChevronDown className="h-4 w-4 text-slate-500" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                sideOffset={10}
+                className={`relative border-none rounded-none bg-white p-0 overflow-hidden ${hasSubscriptionList
                   ? "!w-[520px] !px-3.5 !py-2.5"
                   : "!min-w-400 !w-400 !h-[199px] !px-3.5 !py-2.5"
-              }`}
-            >
-              <div className="absolute -top-[7px] right-7 h-3.5 w-3.5 rotate-45 border-l border-t border-slate-200 bg-white" />
-              {hasSubscriptionList ? (
-                <div className="relative max-h-[420px] w-full overflow-auto bg-white border border-1">
-                  <div className="sticky top-0 z-10 grid grid-cols-[1.2fr_0.8fr_0.8fr_0.7fr_0.7fr] gap-2 border-b bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-600">
-                    <span>{t("subscription.currentPlan")}</span>
-                    <span>{t("subscription.startDate")}</span>
-                    <span>{t("subscription.endDate")}</span>
-                    <span>{t("subscription.daysLeft", { count: "" }).trim()}</span>
-                    <span className="text-right">{t("subscription.status")}</span>
-                  </div>
-                  {subscriptionItems.map((item) => (
-                    <div
-                      key={`${item.schoolId || item.planName}-${item.endDate || ""}`}
-                      className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.7fr_0.7fr] items-center gap-2 border-b px-3 py-2 text-xs last:border-b-0"
-                    >
-                      <div className="min-w-0">
-                        <div className="truncate font-semibold text-slate-900">{item.planName || "-"}</div>
-                        <div className="truncate text-[10px] text-slate-500">{item.contractNumber || "-"}</div>
-                      </div>
-                      <span className="font-medium text-slate-700">{formatDate(item.startDate)}</span>
-                      <span className="font-medium text-slate-700">{formatDate(item.endDate)}</span>
-                      <span className="font-semibold text-slate-900">
-                        {item.status === "expired"
-                          ? t("subscription.expired")
-                          : typeof item.daysLeft === "number"
-                            ? t("subscription.daysLeft", { count: Math.max(0, item.daysLeft) })
-                            : "-"}
-                      </span>
-                      <span className={`justify-self-end rounded-full px-3 py-1 font-semibold ${
-                        item.status === "expired" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"
-                      }`}>
-                        {item.status === "expired" ? t("subscription.expired") : t("subscription.active")}
-                      </span>
+                  }`}
+              >
+                <div className="absolute -top-[7px] right-7 h-3.5 w-3.5 rotate-45 border-l border-t border-slate-200 bg-white" />
+                {hasSubscriptionList ? (
+                  <div className="relative max-h-[420px] w-full overflow-auto bg-white border border-1">
+                    <div className="sticky top-0 z-10 grid grid-cols-[1.2fr_0.8fr_0.8fr_0.7fr_0.7fr] gap-2 border-b bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-600">
+                      <span>{t("subscription.currentPlan")}</span>
+                      <span>{t("subscription.startDate")}</span>
+                      <span>{t("subscription.endDate")}</span>
+                      <span>{t("subscription.daysLeft", { count: 0 }).replace("0", "").trim()}</span>
+                      <span className="text-right">{t("subscription.status")}</span>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="relative h-[179px] w-[311px] overflow-auto  bg-white border border-1">
-                  <div
-                    style={{ height: "273px", width: "37.59px" }}
-                    className="pointer-events-none absolute right-1 top-8 h-[273px] w-[37.59px] rounded-md"
-                  />
-                  <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
-                    <div className="flex items-center gap-2 text-slate-600"><Tag className="h-4 w-4 text-teal-600" /> {t("subscription.currentPlan")}</div>
-                    <div className="font-semibold text-slate-900">{resolvedSubscription.planName || "-"}</div>
-                  </div>
-                  <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
-                    <div className="flex items-center gap-2 text-slate-600"><CalendarDays className="h-4 w-4 text-teal-600" /> {t("subscription.startDate")}</div>
-                    <div className="font-semibold text-slate-900">{formatDate(resolvedSubscription.startDate)}</div>
-                  </div>
-                  <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
-                    <div className="flex items-center gap-2 text-slate-600"><CalendarDays className="h-4 w-4 text-teal-600" /> {t("subscription.endDate")}</div>
-                    <div className="font-semibold text-slate-900">{formatDate(resolvedSubscription.endDate)}</div>
-                  </div>
-                  <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
-                    <div className="flex items-center gap-2 text-slate-600"><Hash className="h-4 w-4 text-teal-600" /> {t("subscription.contractNumber")}</div>
-                    <div className="flex items-center gap-2 font-semibold text-slate-900">
-                      <span>{resolvedSubscription.contractNumber || "-"}</span>
-                      <button
-                        type="button"
-                        className="text-slate-400 hover:text-slate-600"
-                        onClick={() => {
-                          const value = resolvedSubscription.contractNumber || "";
-                          if (value && typeof navigator !== "undefined" && navigator.clipboard) {
-                            void navigator.clipboard.writeText(value);
-                          }
-                        }}
+                    {subscriptionItems.map((item) => (
+                      <div
+                        key={`${item.schoolId || item.planName}-${item.endDate || ""}`}
+                        className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.7fr_0.7fr] items-center gap-2 border-b px-3 py-2 text-xs last:border-b-0"
                       >
-                        <Copy className="h-4 w-4" />
-                      </button>
+                        <div className="min-w-0">
+                          <div className="truncate font-semibold text-slate-900">{item.planName || "-"}</div>
+                          <div className="truncate text-[10px] text-slate-500">{item.contractNumber || "-"}</div>
+                        </div>
+                        <span className="font-medium text-slate-700">{formatDate(item.startDate)}</span>
+                        <span className="font-medium text-slate-700">{formatDate(item.endDate)}</span>
+                        <span className="font-semibold text-slate-900">
+                          {item.status === "expired"
+                            ? t("subscription.expired")
+                            : typeof item.daysLeft === "number"
+                              ? t("subscription.daysLeft", { count: Math.max(0, item.daysLeft) })
+                              : "-"}
+                        </span>
+                        <span className={`justify-self-end rounded-full px-3 py-1 font-semibold ${item.status === "expired" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"
+                          }`}>
+                          {item.status === "expired" ? t("subscription.expired") : t("subscription.active")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="relative h-[179px] w-[311px] overflow-auto  bg-white border border-1">
+                    <div
+                      style={{ height: "273px", width: "37.59px" }}
+                      className="pointer-events-none absolute right-1 top-8 h-[273px] w-[37.59px] rounded-md"
+                    />
+                    <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
+                      <div className="flex items-center gap-2 text-slate-600"><Tag className="h-4 w-4 text-teal-600" /> {t("subscription.currentPlan")}</div>
+                      <div className="font-semibold text-slate-900">{resolvedSubscription.planName || "-"}</div>
+                    </div>
+                    <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
+                      <div className="flex items-center gap-2 text-slate-600"><CalendarDays className="h-4 w-4 text-teal-600" /> {t("subscription.startDate")}</div>
+                      <div className="font-semibold text-slate-900">{formatDate(resolvedSubscription.startDate)}</div>
+                    </div>
+                    <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
+                      <div className="flex items-center gap-2 text-slate-600"><CalendarDays className="h-4 w-4 text-teal-600" /> {t("subscription.endDate")}</div>
+                      <div className="font-semibold text-slate-900">{formatDate(resolvedSubscription.endDate)}</div>
+                    </div>
+                    <div className="grid grid-cols-[1fr_auto] items-center border-b px-2 py-2 text-xs">
+                      <div className="flex items-center gap-2 text-slate-600"><Hash className="h-4 w-4 text-teal-600" /> {t("subscription.contractNumber")}</div>
+                      <div className="flex items-center gap-2 font-semibold text-slate-900">
+                        <span>{resolvedSubscription.contractNumber || "-"}</span>
+                        <button
+                          type="button"
+                          className="text-slate-400 hover:text-slate-600"
+                          onClick={() => {
+                            const value = resolvedSubscription.contractNumber || "";
+                            if (value && typeof navigator !== "undefined" && navigator.clipboard) {
+                              void navigator.clipboard.writeText(value);
+                            }
+                          }}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-[1fr_auto] items-center px-2 py-2 text-xs">
+                      <div className="flex items-center gap-2 text-slate-600"><ShieldCheck className="h-4 w-4 text-teal-600" /> {t("subscription.status")}</div>
+                      <div className={`rounded-full px-3 py-1 font-semibold ${resolvedSubscription.status === "expired" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
+                        {resolvedSubscription.status === "expired" ? t("subscription.expired") : t("subscription.active")}
+                      </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-[1fr_auto] items-center px-2 py-2 text-xs">
-                    <div className="flex items-center gap-2 text-slate-600"><ShieldCheck className="h-4 w-4 text-teal-600" /> {t("subscription.status")}</div>
-                    <div className={`rounded-full px-3 py-1 font-semibold ${resolvedSubscription.status === "expired" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
-                      {resolvedSubscription.status === "expired" ? t("subscription.expired") : t("subscription.active")}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
+            <DropdownMenu onOpenChange={markAllRead}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative h-8 w-8 rounded-[5px] bg-slate-100 border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                >
+                  <Bell className="h-4 w-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel>{t("notifications.title")}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {displayedNotifications.length > 0 ? (
+                  displayedNotifications.map((item) => (
+                    <DropdownMenuItem
+                      key={item.id}
+                      className="flex cursor-pointer flex-col items-start gap-1 py-2"
+                      onClick={() => jumpToSection(item.section as T)}
+                    >
+                      <span className="text-sm text-slate-800">{item.text}</span>
+                      <span className="text-xs text-slate-500">{item.at}</span>
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <div className="px-2 py-3 text-sm text-slate-500">{t("notifications.empty")}</div>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-[5px] bg-slate-100 text-base"
+                  title={t("preferences.language")}
+                  aria-label={t("preferences.language")}
+                >
+                  <span className="text-lg leading-none">{languageFlag}</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                {languageOptions.map((option) => (
+                  <DropdownMenuItem
+                    key={option.code}
+                    onSelect={() => setLanguage(option.code)}
+                    className="flex cursor-pointer items-center gap-3 py-2 text-base text-slate-700 hover:bg-transparent focus:bg-transparent data-[highlighted]:bg-transparent hover:text-[#F47C20] focus:text-[#F47C20] data-[highlighted]:text-[#F47C20]"
+                  >
+                    <span className="text-2xl leading-none">{option.flag}</span>
+                    <span>{option.label}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <button
+              type="button"
+              onClick={() => void handleToggleFullscreen()}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-[5px] bg-slate-100"
+              title={t("preferences.fullscreen")}
+              aria-label={t("preferences.fullscreen")}
+            >
+              <Scan className="h-4 w-4 text-slate-700" />
+            </button>
+          </>
+        )}
+
+        {!compactHeader && (
           <DropdownMenu onOpenChange={markAllRead}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative h-8 w-8 rounded-[5px] bg-slate-100 border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                className="relative h-8 w-8 border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700 rounded-full"
               >
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
@@ -502,7 +572,9 @@ const HeaderActions = <T extends string>({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+        )}
 
+        {!compactHeader && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -527,7 +599,9 @@ const HeaderActions = <T extends string>({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+        )}
 
+        {!compactHeader && (
           <button
             type="button"
             onClick={() => void handleToggleFullscreen()}
@@ -537,185 +611,108 @@ const HeaderActions = <T extends string>({
           >
             <Scan className="h-4 w-4 text-slate-700" />
           </button>
-        </>
-      )}
+        )}
 
-      {!compactHeader && (
-      <DropdownMenu onOpenChange={markAllRead}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative h-8 w-8 border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700 rounded-full"
-          >
-            <Bell className="h-4 w-4" />
-            {unreadCount > 0 && (
-              <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-80">
-          <DropdownMenuLabel>{t("notifications.title")}</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {displayedNotifications.length > 0 ? (
-            displayedNotifications.map((item) => (
-              <DropdownMenuItem
-                key={item.id}
-                className="flex cursor-pointer flex-col items-start gap-1 py-2"
-                onClick={() => jumpToSection(item.section as T)}
-              >
-                <span className="text-sm text-slate-800">{item.text}</span>
-                <span className="text-xs text-slate-500">{item.at}</span>
-              </DropdownMenuItem>
-            ))
-          ) : (
-            <div className="px-2 py-3 text-sm text-slate-500">{t("notifications.empty")}</div>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-      )}
-
-      {!compactHeader && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-[5px] bg-slate-100 text-base"
-              title={t("preferences.language")}
-              aria-label={t("preferences.language")}
-            >
-              <span className="text-lg leading-none">{languageFlag}</span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            {languageOptions.map((option) => (
-              <DropdownMenuItem
-                key={option.code}
-                onSelect={() => setLanguage(option.code)}
-                className="flex cursor-pointer items-center gap-3 py-2 text-base text-slate-700 hover:bg-transparent focus:bg-transparent data-[highlighted]:bg-transparent hover:text-[#F47C20] focus:text-[#F47C20] data-[highlighted]:text-[#F47C20]"
+            {compactHeader ? (
+              <button
+                type="button"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-[5px] bg-slate-100"
+                aria-label={t("account.profile")}
+                title={t("account.profile")}
               >
-                <span className="text-2xl leading-none">{option.flag}</span>
-                <span>{option.label}</span>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+                {currentUserPhotoUrl ? (
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={currentUserPhotoUrl || undefined} alt={currentUserName || "User"} />
+                    <AvatarFallback className="bg-slate-200 text-xs font-semibold text-slate-600">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                ) : (
+                  <UserCircle className="h-6 w-6 text-slate-600" />
+                )}
+              </button>
+            ) : (
+              <Avatar className="h-8 w-8 cursor-pointer">
+                <AvatarImage src={currentUserPhotoUrl || undefined} alt={currentUserName || "User"} />
+                <AvatarFallback className="bg-slate-200 text-xs font-semibold text-slate-600">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            )}
+          </DropdownMenuTrigger>
 
-      {!compactHeader && (
-        <button
-          type="button"
-          onClick={() => void handleToggleFullscreen()}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-[5px] bg-slate-100"
-          title={t("preferences.fullscreen")}
-          aria-label={t("preferences.fullscreen")}
-        >
-          <Scan className="h-4 w-4 text-slate-700" />
-        </button>
-      )}
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          {compactHeader ? (
-            <button
-              type="button"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-[5px] bg-slate-100"
-              aria-label={t("account.profile")}
-              title={t("account.profile")}
-            >
-              {currentUserPhotoUrl ? (
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={currentUserPhotoUrl || undefined} alt={currentUserName || "User"} />
-                  <AvatarFallback className="bg-slate-200 text-xs font-semibold text-slate-600">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-              ) : (
-                <UserCircle className="h-6 w-6 text-slate-600" />
-              )}
-            </button>
-          ) : (
-            <Avatar className="h-8 w-8 cursor-pointer">
-              <AvatarImage src={currentUserPhotoUrl || undefined} alt={currentUserName || "User"} />
-              <AvatarFallback className="bg-slate-200 text-xs font-semibold text-slate-600">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          )}
-        </DropdownMenuTrigger>
-
-        <DropdownMenuContent align="end" className="w-[300px] rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
-          <div className="rounded-xl bg-slate-50 p-4">
-            <div className="flex items-center gap-4">
-              {currentUserPhotoUrl ? (
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={currentUserPhotoUrl || undefined} alt={currentUserName || "User"} />
-                  <AvatarFallback className="bg-slate-200 text-xl font-semibold text-slate-600">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-              ) : (
-                <UserCircle className="h-12 w-12 text-slate-500" />
-              )}
-              <div className="min-w-0">
-                <div
-                  className="truncate text-[14px] font-semibold leading-none text-slate-800"
-                  style={{ fontFamily: "Inter, sans-serif" }}
-                >
-                  {currentUserName || t("user.fallback")}
-                </div>
-                <div
-                  className="mt-1 truncate text-[14px] text-slate-600"
-                  style={{ fontFamily: "Inter, sans-serif" }}
-                >
-                  {effectiveLocationLabel}
+          <DropdownMenuContent align="end" className="w-[300px] rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+            <div className="rounded-xl bg-slate-50 p-4">
+              <div className="flex items-center gap-4">
+                {currentUserPhotoUrl ? (
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={currentUserPhotoUrl || undefined} alt={currentUserName || "User"} />
+                    <AvatarFallback className="bg-slate-200 text-xl font-semibold text-slate-600">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                ) : (
+                  <UserCircle className="h-12 w-12 text-slate-500" />
+                )}
+                <div className="min-w-0">
+                  <div
+                    className="truncate text-[14px] font-semibold leading-none text-slate-800"
+                    style={{ fontFamily: "Inter, sans-serif" }}
+                  >
+                    {currentUserName || t("user.fallback")}
+                  </div>
+                  <div
+                    className="mt-1 truncate text-[14px] text-slate-600"
+                    style={{ fontFamily: "Inter, sans-serif" }}
+                  >
+                    {effectiveLocationLabel}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="space-y-1">
-          <DropdownMenuItem
-            className="cursor-pointer rounded-lg px-3 py-2 text-base text-slate-700 hover:bg-orange-50 hover:text-[#F47C20] focus:bg-orange-50 focus:text-[#F47C20] data-[highlighted]:bg-orange-50 data-[highlighted]:text-[#F47C20]"
-            onSelect={() => {
-              if (profileTargetSection) {
-                jumpToSection(profileTargetSection);
-              }
-            }}
-          >
-            <User className="mr-2 h-4 w-4" />
-            {t("account.profile")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="cursor-pointer !mt-0 rounded-lg px-3 py-2 text-base text-slate-700 hover:bg-orange-50 hover:text-[#F47C20] focus:bg-orange-50 focus:text-[#F47C20] data-[highlighted]:bg-orange-50 data-[highlighted]:text-[#F47C20]"
-            onSelect={() => {
-              if (settingsTargetSection) {
-                jumpToSection(settingsTargetSection);
-              }
-            }}
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            {t("account.settings")}
-          </DropdownMenuItem>
-          </div>
+            <div className="space-y-1">
+              <DropdownMenuItem
+                className="cursor-pointer rounded-lg px-3 py-2 text-base text-slate-700 hover:bg-orange-50 hover:text-[#F47C20] focus:bg-orange-50 focus:text-[#F47C20] data-[highlighted]:bg-orange-50 data-[highlighted]:text-[#F47C20]"
+                onSelect={() => {
+                  if (profileTargetSection) {
+                    jumpToSection(profileTargetSection);
+                  }
+                }}
+              >
+                <User className="mr-2 h-4 w-4" />
+                {t("account.profile")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer !mt-0 rounded-lg px-3 py-2 text-base text-slate-700 hover:bg-orange-50 hover:text-[#F47C20] focus:bg-orange-50 focus:text-[#F47C20] data-[highlighted]:bg-orange-50 data-[highlighted]:text-[#F47C20]"
+                onSelect={() => {
+                  if (settingsTargetSection) {
+                    jumpToSection(settingsTargetSection);
+                  }
+                }}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                {t("account.settings")}
+              </DropdownMenuItem>
+            </div>
 
-          <DropdownMenuSeparator className="mt-1" />
+            <DropdownMenuSeparator className="mt-1" />
 
-          <DropdownMenuItem
-            className="cursor-pointer rounded-lg px-3 py-3 text-base text-red-600 hover:bg-orange-50 hover:text-red-700 focus:bg-orange-50 focus:text-red-700 data-[highlighted]:bg-orange-50 data-[highlighted]:text-red-700"
-            onSelect={(e) => {
-              e.preventDefault();
-              onLogout?.();
-            }}
-            disabled={!onLogout}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            {t("auth.logout")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <DropdownMenuItem
+              className="cursor-pointer rounded-lg px-3 py-3 text-base text-red-600 hover:bg-orange-50 hover:text-red-700 focus:bg-orange-50 focus:text-red-700 data-[highlighted]:bg-orange-50 data-[highlighted]:text-red-700"
+              onSelect={(e) => {
+                e.preventDefault();
+                onLogout?.();
+              }}
+              disabled={!onLogout}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              {t("auth.logout")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </>
   );
