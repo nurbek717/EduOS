@@ -44,10 +44,11 @@ const validators = require("../validation/request.validation");
 
 const router = express.Router();
 
+router.get("/subscription/status", authRequired, requireRoles("director", "school_admin", "teacher"), getSubscriptionStatus);
+
 router.use(authRequired, requireRoles("director", "school_admin"), checkSubscription);
 
 router.get("/overview", getOverview);
-router.get("/subscription/status", getSubscriptionStatus);
 router.post("/school-admin", requireRoles("director"), validators.directorCreateSchoolAdmin, createSchoolAdminForDirector);
 router.get("/users", validators.directorUsersQuery, listUsersForDirector);
 router.get("/users/:id", validators.idParam, getUserForDirector);

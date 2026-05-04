@@ -103,23 +103,23 @@ const ParentLayout = ({
 
   return (
     <SidebarProvider>
-      <Sidebar side="left" collapsible="icon" className="border-r">
+      <Sidebar side="left" collapsible="icon" className="border-r [&_[data-sidebar=sidebar]]:bg-[#1d61a5]">
         <SidebarHeader className="border-b border-sidebar-border p-4 group-data-[collapsible=icon]:px-2">
           <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Users className="h-5 w-5" />
             </div>
             <div className="flex flex-col gap-0.5 overflow-hidden group-data-[collapsible=icon]:hidden">
-              <span className="truncate text-sm font-semibold text-sidebar-foreground">OTA-ONA</span>
-              <span className="truncate text-sm font-semibold text-sidebar-foreground">{t("parent.badge")}</span>
-              <span className="truncate text-xs text-sidebar-foreground/70">{t("parent.panel")}</span>
+              <span className="truncate text-sm font-semibold text-white">OTA-ONA</span>
+              <span className="truncate text-sm font-semibold text-white">{t("parent.badge")}</span>
+              <span className="truncate text-xs text-white">{t("parent.panel")}</span>
             </div>
           </div>
         </SidebarHeader>
 
         <SidebarContent>
           <SidebarGroup className="group-data-[collapsible=icon]:px-1">
-            <SidebarGroupLabel>{t("common.sections")}</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-white">{t("common.sections")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
               {navItems.map((item) => {
@@ -128,7 +128,7 @@ const ParentLayout = ({
                   <SidebarMenuItem key={item.label}>
                     <SidebarMenuButton
                       isActive={isActive}
-                      className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:justify-center"
+                      className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:justify-center text-white hover:bg-white/10 hover:text-white data-[active=true]:bg-white/15 data-[active=true]:text-accent"
                       onClick={() => onSectionChange?.(item.section)}
                     >
                       <item.icon className="h-4 w-4" />
@@ -145,16 +145,16 @@ const ParentLayout = ({
         <SidebarFooter className="border-t border-sidebar-border p-2">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2 rounded-md px-2 py-2 text-sm group-data-[collapsible=icon]:justify-center">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+              <Avatar className="h-8 w-8 bg-white/10 ring-1 ring-white/25">
+                <AvatarFallback className="bg-white/15 text-white text-xs">
                   {displayName ? getInitials(displayName) : "PR"}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-1 flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-medium text-sidebar-foreground">
+                <span className="truncate font-medium text-white">
                   {displayName || t("parent.fallbackName")}
                 </span>
-                <span className="truncate text-xs text-sidebar-foreground/70">{currentUser?.email}</span>
+                <span className="truncate text-xs text-white/70">{currentUser?.email}</span>
               </div>
             </div>
           </div>

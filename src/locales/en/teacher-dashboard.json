@@ -35,6 +35,12 @@
     "invalidScore": "Invalid score",
     "deleted": "Deleted"
   },
+  "subscription": {
+    "expiredTitle": "Subscription expired",
+    "expiredBody": "The school subscription has expired. Please contact the school administrator or director to continue full access.",
+    "blockedBody": "This section is temporarily blocked because the subscription has expired.",
+    "blockedSections": "Grades, homework, exams, and schedule are closed until the subscription is renewed."
+  },
   "errors": {
     "generic": "An error occurred",
     "fetchClasses": "Failed to load class list.",

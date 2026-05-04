@@ -351,11 +351,11 @@ const DirectorLayout = ({
         <SidebarFooter className="border-t border-sidebar-border p-2">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2 rounded-md px-2 py-2 text-sm group-data-[collapsible=icon]:justify-center">
-              <Avatar className="h-8 w-8">
+              <Avatar className="h-8 w-8 bg-white/10 ring-1 ring-white/25">
                 {currentUser?.photoUrl ? (
                   <AvatarImage src={currentUser.photoUrl} alt="" className="object-cover" />
                 ) : null}
-                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                <AvatarFallback className="bg-white/15 text-white text-xs">
                   {currentUser?.name ? getInitials(currentUser.name) : isSchoolAdmin ? "SA" : "DR"}
                 </AvatarFallback>
               </Avatar>

@@ -35,6 +35,12 @@
     "invalidScore": "Noto'g'ri ball",
     "deleted": "O'chirildi"
   },
+  "subscription": {
+    "expiredTitle": "Obuna muddati tugagan",
+    "expiredBody": "Maktab obunasi muddati tugagan. To'liq foydalanishni davom ettirish uchun maktab administratori yoki direktor bilan bog'laning.",
+    "blockedBody": "Obuna muddati tugaganligi sababli bu bo'lim vaqtincha bloklangan.",
+    "blockedSections": "Baholar, uy vazifalari, imtihonlar va dars jadvali bo'limlari obuna yangilanguncha yopiq."
+  },
   "errors": {
     "generic": "Xatolik yuz berdi",
     "fetchClasses": "Sinflar ro'yxatini yuklashda xatolik yuz berdi.",

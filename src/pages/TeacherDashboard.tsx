@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Users, BookOpen, ClipboardList, Clock, CheckSquare, Pencil, Trash2, Eye, EyeOff, Upload, UserCircle, MapPin, Camera } from "lucide-react";
+import { AlertTriangle, Users, BookOpen, ClipboardList, Clock, CheckSquare, Pencil, Trash2, Eye, EyeOff, Upload, UserCircle, MapPin, Camera } from "lucide-react";
 import TeacherLayout from "@/components/TeacherLayout";
 import SectionTitle from "@/components/SectionTitle";
 import UnifiedProfileSection from "@/components/dashboard/UnifiedProfileSection";
@@ -19,6 +19,7 @@ type TeacherSection = "overview" | "students" | "classes" | "grades" | "homework
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const RENDER_LEGACY_PROFILE = Boolean(import.meta.env.VITE_RENDER_LEGACY_PROFILE);
+const SUBSCRIPTION_BLOCKED_SECTIONS = new Set<TeacherSection>(["grades", "homework", "exams", "schedule"]);
 
 const timetableDays = [
   { value: 1, labelKey: "days.monday" },
@@ -158,6 +159,13 @@ type TeacherHeaderNotification = {
   section: TeacherSection;
 };
 
+type TeacherSubscriptionStatus = {
+  startAt?: string | null;
+  endAt?: string | null;
+  daysLeft?: number | null;
+  isExpired?: boolean;
+};
+
 type TeacherChatThread = {
   id: string;
   targetType: "class_teacher" | "subject_teacher";
@@ -198,6 +206,7 @@ const TeacherDashboard = () => {
   const { toast } = useToast();
   const [isTeacher, setIsTeacher] = useState(false);
   const [section, setSection] = useState<TeacherSection>("overview");
+  const [teacherSubscription, setTeacherSubscription] = useState<TeacherSubscriptionStatus | null>(null);
 
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [students, setStudents] = useState<StudentRow[]>([]);
@@ -361,6 +370,24 @@ const TeacherDashboard = () => {
   });
   const todayDay = new Date().getDay();
   const uiLocale = i18n.language === "ru" ? "ru-RU" : i18n.language === "en" ? "en-US" : "uz-UZ";
+  const isSubscriptionExpired = Boolean(teacherSubscription?.isExpired);
+
+  const notifySubscriptionBlocked = React.useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("subscription:blocked"));
+    }
+  }, []);
+
+  const handleSectionChange = React.useCallback(
+    (nextSection: TeacherSection) => {
+      if (isSubscriptionExpired && SUBSCRIPTION_BLOCKED_SECTIONS.has(nextSection)) {
+        notifySubscriptionBlocked();
+        return;
+      }
+      setSection(nextSection);
+    },
+    [isSubscriptionExpired, notifySubscriptionBlocked],
+  );
 
   useEffect(() => {
     const data = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
@@ -370,6 +397,41 @@ const TeacherDashboard = () => {
       setIsTeacher(true);
     }
   }, []);
+
+  const fetchTeacherSubscriptionStatus = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/director/subscription/status`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as { subscription?: TeacherSubscriptionStatus | null };
+      setTeacherSubscription(data.subscription || null);
+    } catch {
+      // Teacher only needs a best-effort warning; keep dashboard usable on transient failures.
+    }
+  };
+
+  useEffect(() => {
+    if (!isTeacher || !token) return;
+    void fetchTeacherSubscriptionStatus();
+    const intervalId = window.setInterval(() => {
+      void fetchTeacherSubscriptionStatus();
+    }, 30000);
+    return () => window.clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTeacher, token]);
+
+  useEffect(() => {
+    if (!isSubscriptionExpired) return;
+    if (!SUBSCRIPTION_BLOCKED_SECTIONS.has(section)) return;
+    setSection("overview");
+    notifySubscriptionBlocked();
+  }, [isSubscriptionExpired, notifySubscriptionBlocked, section]);
 
   const hydrateTeacherProfileFromStorage = () => {
     const raw = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
@@ -1141,6 +1203,10 @@ const TeacherDashboard = () => {
     }
 
     const loadSectionData = async () => {
+      if (isSubscriptionExpired && SUBSCRIPTION_BLOCKED_SECTIONS.has(section)) {
+        return;
+      }
+
       if (section === "overview") {
         if (!loadedTeacherDataRef.current.classes) {
           await fetchClasses();
@@ -1210,7 +1276,7 @@ const TeacherDashboard = () => {
 
     void loadSectionData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section, isTeacher]);
+  }, [section, isTeacher, isSubscriptionExpired]);
 
   useEffect(() => {
     if (section !== "support" || !chatSelectedThreadId || !token) return;
@@ -1297,6 +1363,15 @@ const TeacherDashboard = () => {
 
     const next: TeacherHeaderNotification[] = [];
 
+    if (isSubscriptionExpired) {
+      next.push({
+        id: "teacher:subscription-expired",
+        text: td("subscription.expiredBody"),
+        at: ts,
+        section: "overview",
+      });
+    }
+
     if (classes.length === 0) {
       next.push({
         id: "teacher:no-classes",
@@ -1378,7 +1453,7 @@ const TeacherDashboard = () => {
     });
 
     return next.slice(0, 8);
-  }, [classes, students, todayLessons, recentGradesForOverview, chatThreads]);
+  }, [classes, students, todayLessons, recentGradesForOverview, chatThreads, isSubscriptionExpired, td, uiLocale]);
 
   const searchItems = React.useMemo(
     () => [
@@ -1781,11 +1856,24 @@ const TeacherDashboard = () => {
   return (
     <TeacherLayout
       currentSection={section}
-      onSectionChange={setSection}
+      onSectionChange={handleSectionChange}
       headerNotifications={headerNotifications}
       searchItems={searchItems}
     >
       <div className="space-y-10">
+        {isSubscriptionExpired && (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-800">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+              <div className="space-y-1">
+                <p className="text-sm font-semibold">{td("subscription.expiredTitle")}</p>
+                <p className="text-sm leading-relaxed">{td("subscription.expiredBody")}</p>
+                <p className="text-xs text-rose-700">{td("subscription.blockedSections")}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {section === "overview" && (
           <>
             <div className="flex flex-wrap items-start justify-between gap-3">
