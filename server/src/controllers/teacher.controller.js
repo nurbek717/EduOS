@@ -53,10 +53,23 @@ const listStudents = async (req, res) => {
     const teacher = await getTeacherForUser(req.user);
     const { classId } = req.query;
 
-    const query = { school: teacher.school._id };
+    // Some legacy student records might be missing the `school` field.
+    // To avoid "empty list" bugs, we also allow matching by class -> school.
+    const schoolId = teacher.school._id;
+
     if (classId) {
-      query.class = classId;
+      const cls = await ClassModel.findOne({ _id: classId, school: schoolId }).select("_id").lean();
+      if (!cls) {
+        return res.status(400).json({ message: "Class not found in this school" });
+      }
     }
+
+    const schoolClasses = await ClassModel.find({ school: schoolId }).select("_id").lean();
+    const classIds = schoolClasses.map((c) => c._id);
+
+    const query = classId
+      ? { class: classId, $or: [{ school: schoolId }, { school: { $exists: false } }, { school: null }] }
+      : { $or: [{ school: schoolId }, { class: { $in: classIds } }] };
 
     const students = await Student.find(query)
       .populate("user", "name email photoUrl")

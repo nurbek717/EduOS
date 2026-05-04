@@ -159,7 +159,7 @@ const TeacherLayout = ({
                 <span className="truncate font-medium text-white">
                   {currentUser?.name || t("teacher.fallbackName")}
                 </span>
-                <span className="truncate text-xs text-white/70">
+                <span className="truncate text-xs text-white/90">
                   {currentUser?.email}
                 </span>
               </div>

@@ -1972,7 +1972,7 @@ const TeacherDashboard = () => {
                             </div>
                             <div className="flex-1 space-y-1">
                               <div className="flex flex-wrap items-center gap-2">
-                                <Badge className="bg-primary text-primary-foreground">{lesson.className}</Badge>
+                                  <Badge className="bg-primary text-primary-foreground whitespace-nowrap">{lesson.className}</Badge>
                                 <span className="font-medium text-foreground">{lesson.subjectName}</span>
                               </div>
                               <p className="text-xs text-muted-foreground">
@@ -2066,7 +2066,7 @@ const TeacherDashboard = () => {
                               <tr key={g.id} className="border-b last:border-0">
                                 <td className="p-4 text-foreground">{g.studentName}</td>
                                 <td className="p-4">
-                                  <Badge variant="outline">{g.className}</Badge>
+                                  <Badge variant="outline" className="whitespace-nowrap">{g.className}</Badge>
                                 </td>
                                 <td className="p-4 text-muted-foreground">{g.subjectName}</td>
                                 <td className="p-4 text-center">
@@ -2274,7 +2274,7 @@ const TeacherDashboard = () => {
                           <td className="p-3 text-foreground text-xs">{s.parentPhone || "—"}</td>
                           <td className="p-3 text-foreground text-xs">{s.address || "—"}</td>
                           <td className="p-3 text-center">
-                            <Badge variant="outline">{s.className || "—"}</Badge>
+                            <Badge variant="outline" className="whitespace-nowrap">{s.className || "—"}</Badge>
                           </td>
                           <td className="p-3">
                             <div className="flex items-center justify-end gap-2">
@@ -2486,7 +2486,7 @@ const TeacherDashboard = () => {
                         <tr key={g.id} className="border-b last:border-0">
                           <td className="p-3 text-foreground">{g.studentName}</td>
                           <td className="p-3 text-center">
-                            <Badge variant="outline">{g.className}</Badge>
+                            <Badge variant="outline" className="whitespace-nowrap">{g.className}</Badge>
                           </td>
                           <td className="p-3 text-center text-xs text-muted-foreground">{g.subjectName}</td>
                           <td className="p-3 text-center">

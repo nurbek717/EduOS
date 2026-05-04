@@ -174,7 +174,7 @@ const AdminLayout = ({
                 <span className="truncate font-medium text-white">
                   {currentUser?.name || t("admin.fallbackName")}
                 </span>
-                <span className="truncate text-xs text-white/70">
+                <span className="truncate text-xs text-white/90">
                   {currentUser?.email}
                 </span>
               </div>

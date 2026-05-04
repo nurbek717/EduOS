@@ -154,7 +154,7 @@ const ParentLayout = ({
                 <span className="truncate font-medium text-white">
                   {displayName || t("parent.fallbackName")}
                 </span>
-                <span className="truncate text-xs text-white/70">{currentUser?.email}</span>
+                <span className="truncate text-xs text-white/90">{currentUser?.email}</span>
               </div>
             </div>
           </div>

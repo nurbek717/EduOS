@@ -348,7 +348,7 @@ const DirectorLayout = ({
                 <span className="truncate font-medium text-white">
                   {currentUser?.name || dashboardLabel}
                 </span>
-                <span className="truncate text-xs text-white">
+                <span className="truncate text-xs text-white/90">
                   {currentUser?.email}
                 </span>
               </div>
