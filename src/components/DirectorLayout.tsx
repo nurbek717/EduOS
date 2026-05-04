@@ -222,10 +222,7 @@ const DirectorLayout = ({
                             isActive={isActive}
                             className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:justify-center text-white hover:bg-white/10 hover:text-white data-[active=true]:bg-white/15 data-[active=true]:text-accent"
                             onClick={() => {
-                              if (subscriptionExpired) {
-                                notifyBlocked();
-                                return;
-                              }
+                              if (subscriptionExpired) notifyBlocked();
                               onSectionChange?.("students");
                               setStudentsDropdownOpen((prev) => !prev);
                             }}
@@ -240,10 +237,7 @@ const DirectorLayout = ({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (subscriptionExpired) {
-                                    notifyBlocked();
-                                    return;
-                                  }
+                                  if (subscriptionExpired) notifyBlocked();
                                   onSectionChange?.("students");
                                   onStudentsViewChange?.("base");
                                 }}
@@ -268,10 +262,7 @@ const DirectorLayout = ({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (subscriptionExpired) {
-                                    notifyBlocked();
-                                    return;
-                                  }
+                                  if (subscriptionExpired) notifyBlocked();
                                   onSectionChange?.("students");
                                   onStudentsViewChange?.("list");
                                 }}
@@ -296,10 +287,7 @@ const DirectorLayout = ({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (subscriptionExpired) {
-                                    notifyBlocked();
-                                    return;
-                                  }
+                                  if (subscriptionExpired) notifyBlocked();
                                   onSectionChange?.("students");
                                   onStudentsViewChange?.("attach");
                                 }}
@@ -329,10 +317,7 @@ const DirectorLayout = ({
                           isActive={isActive}
                           className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:justify-center text-white hover:bg-white/10 hover:text-white data-[active=true]:bg-white/15 data-[active=true]:text-accent"
                           onClick={() => {
-                            if (subscriptionExpired) {
-                              notifyBlocked();
-                              return;
-                            }
+                            if (subscriptionExpired) notifyBlocked();
                             onSectionChange?.(item.section);
                           }}
                         >

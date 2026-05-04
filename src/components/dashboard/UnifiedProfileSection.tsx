@@ -255,14 +255,14 @@ export default function UnifiedProfileSection({
       const dataUrl = reader.result as string;
       setSavingPhoto(true);
       try {
-        const faceDescriptor = await (await loadFaceApiModule()).getDescriptorFromImage(dataUrl);
+        // 1) Save photo first (fast) to avoid UI "freezing" while Face API models load.
         const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ photoUrl: dataUrl, faceDescriptor: faceDescriptor ?? undefined }),
+          body: JSON.stringify({ photoUrl: dataUrl }),
         });
         const data = await res.json();
         if (!res.ok) {
@@ -273,7 +273,31 @@ export default function UnifiedProfileSection({
         setPhotoUrl(nextPhoto);
         updateAuthUserInStorage({ photoUrl: nextPhoto });
         onUserUpdated?.({ photoUrl: nextPhoto });
-        toast({ title: "Rasm saqlandi" });
+        toast({ title: "Rasm saqlandi", duration: 5000 });
+
+        // 2) Best-effort FaceID descriptor update (non-blocking).
+        // Face API models are loaded from a CDN; if network is slow/blocked, we must not block the UX.
+        void (async () => {
+          try {
+            const { getDescriptorFromImage } = await loadFaceApiModule();
+            const descriptor = await Promise.race<number[] | null>([
+              getDescriptorFromImage(dataUrl),
+              new Promise((resolve) => window.setTimeout(() => resolve(null), 4000)),
+            ]);
+
+            if (!descriptor) return;
+            await fetch(`${API_BASE_URL}/api/auth/profile`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ faceDescriptor: descriptor }),
+            });
+          } catch {
+            // Best-effort only; ignore failures/timeouts.
+          }
+        })();
       } catch (err) {
         toast({
           title: "Xatolik",
