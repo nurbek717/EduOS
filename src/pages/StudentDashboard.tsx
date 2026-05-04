@@ -1803,6 +1803,8 @@ const StudentDashboard = () => {
             user={user}
             storageKey="student_profile_meta"
             roleLabel="O'quvchi"
+            variant="student"
+            onQuickNavigate={(target) => setSection(target as StudentSection)}
             allowPhotoUpload={false}
             onUserUpdated={(patch) => setUser((prev) => (prev ? { ...prev, ...patch } : prev))}
           />

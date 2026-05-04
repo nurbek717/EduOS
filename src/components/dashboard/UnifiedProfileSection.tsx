@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Camera, Eye, EyeOff, MapPin, Pencil, UserCircle } from "lucide-react";
+import { Award, BookOpen, CalendarDays, Camera, Eye, EyeOff, MapPin, Pencil, ScrollText, UserCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,7 @@ type AuthUserLike = {
   photoUrl?: string | null;
   schoolName?: string | null;
   schoolAddress?: string | null;
+  className?: string | null;
   role?: string;
 };
 
@@ -77,6 +78,8 @@ type UnifiedProfileSectionProps = {
   user?: AuthUserLike | null;
   storageKey: string;
   roleLabel: string;
+  variant?: "default" | "student";
+  onQuickNavigate?: (section: string) => void;
   allowPasswordChange?: boolean;
   allowPhotoUpload?: boolean;
   onUserUpdated?: (patch: Partial<AuthUserLike>) => void;
@@ -87,6 +90,8 @@ export default function UnifiedProfileSection({
   user,
   storageKey,
   roleLabel,
+  variant = "default",
+  onQuickNavigate,
   allowPasswordChange = true,
   allowPhotoUpload = true,
   onUserUpdated,
@@ -282,7 +287,7 @@ export default function UnifiedProfileSection({
             const { getDescriptorFromImage } = await loadFaceApiModule();
             const descriptor = await Promise.race<number[] | null>([
               getDescriptorFromImage(dataUrl),
-              new Promise((resolve) => window.setTimeout(() => resolve(null), 4000)),
+              new Promise<number[] | null>((resolve) => window.setTimeout(() => resolve(null), 4000)),
             ]);
 
             if (!descriptor) return;
@@ -312,10 +317,37 @@ export default function UnifiedProfileSection({
   };
 
   const readOnlyValue = (value: string) => (editMode ? value : value || "-");
+  const readOnlyInputClass = editMode
+    ? ""
+    : "bg-slate-50/80 border-slate-200 text-slate-900 focus-visible:ring-0 focus-visible:ring-offset-0";
+  const profileLabelClass = "text-sm font-bold tracking-wide text-[#FE9F43]";
+
+  const studentExtras = useMemo(() => {
+    if (variant !== "student") return null;
+    const className = (sourceUser.className || "").toString().trim() || null;
+    const schoolName = (sourceUser.schoolName || "").toString().trim() || null;
+
+    const subscription = (() => {
+      if (typeof window === "undefined") return null;
+      const raw = localStorage.getItem("dashboard:student:subscriptionInfo");
+      if (!raw) return null;
+      try {
+        const parsed = JSON.parse(raw) as { status?: "active" | "expired"; endDate?: string | null };
+        if (parsed?.status === "expired") return "expired";
+        if (parsed?.status === "active") return "active";
+        if (parsed?.endDate) return new Date(parsed.endDate).getTime() < Date.now() ? "expired" : "active";
+        return null;
+      } catch {
+        return null;
+      }
+    })();
+
+    return { className, schoolName, subscription };
+  }, [sourceUser.className, sourceUser.schoolName, variant]);
 
   return (
-    <Card className="border-slate-200 bg-slate-50/40">
-      <CardHeader className="pb-3">
+    <Card className="border-slate-200/80 bg-gradient-to-b from-slate-50/70 to-white">
+      <CardHeader className="pb-4">
         <div className="flex items-start justify-between gap-3">
           <CardTitle className="text-xl font-semibold">Profil ma'lumotlari</CardTitle>
           {editMode ? (
@@ -344,7 +376,7 @@ export default function UnifiedProfileSection({
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-6 rounded-2xl border bg-background p-5">
+      <CardContent className="space-y-8 rounded-2xl border bg-white/70 p-5 backdrop-blur sm:p-6">
         <input
           ref={photoInputRef}
           type="file"
@@ -356,13 +388,13 @@ export default function UnifiedProfileSection({
           }}
         />
 
-        <div className="grid gap-6 lg:grid-cols-[300px_1fr] lg:items-center">
+        <div className="grid gap-6 lg:grid-cols-[220px_1fr] lg:items-start">
           <div className="flex items-start justify-center lg:justify-start">
-            <div className="group relative h-[260px] w-[260px]">
-              <Avatar className="h-[260px] w-[260px] border-4 border-teal-600/90 bg-background">
+            <div className="group relative h-32 w-32 sm:h-40 sm:w-40 lg:h-44 lg:w-44">
+              <Avatar className="h-full w-full border-4 border-teal-600/80 bg-background shadow-sm">
                 {photoUrl ? <AvatarImage src={photoUrl} alt="" className="object-cover" /> : null}
                 <AvatarFallback className="bg-slate-100 text-muted-foreground">
-                  <UserCircle className="h-40 w-40" />
+                  <UserCircle className="h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24" />
                 </AvatarFallback>
               </Avatar>
               {allowPhotoUpload && (
@@ -380,131 +412,90 @@ export default function UnifiedProfileSection({
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>FISH</Label>
-              <Input
-                value={`${form.firstName} ${form.lastName}`.trim()}
-                onChange={(e) => {
-                  const parts = e.target.value.split(" ").filter(Boolean);
-                  setField("firstName", parts[0] || "");
-                  setField("lastName", parts.slice(1).join(" "));
-                }}
-                readOnly={!editMode}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>JSHSHIR</Label>
-              <Input value={readOnlyValue(form.taxId)} onChange={(e) => setField("taxId", e.target.value)} readOnly={!editMode} placeholder="Kiriting" />
-            </div>
-            <div className="space-y-2">
-              <Label>Foydalanuvchi roli</Label>
-              <Input value={roleLabel} readOnly />
-            </div>
-            <div className="space-y-2">
-              <Label>Passport seriyasi va raqami</Label>
-              <Input value={readOnlyValue(form.nationalId)} onChange={(e) => setField("nationalId", e.target.value)} readOnly={!editMode} placeholder="Kiriting" />
-            </div>
-            <div className="space-y-2">
-              <Label>Foydalanuvchi nomi</Label>
-              <Input value={(form.email || "user").split("@")[0]} readOnly />
-            </div>
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input value={readOnlyValue(form.email)} onChange={(e) => setField("email", e.target.value)} readOnly={!editMode} />
-            </div>
-            <div className="space-y-2">
-              <Label>Telefon</Label>
-              <Input value={readOnlyValue(form.phone)} onChange={(e) => setField("phone", e.target.value)} readOnly={!editMode} />
-            </div>
-            <div className="space-y-2">
-              <Label>Bio</Label>
-              <Input value={readOnlyValue(form.bio)} onChange={(e) => setField("bio", e.target.value)} readOnly={!editMode} />
-            </div>
-            <div className="space-y-2">
-              <Label>Jinsi</Label>
-              <Input value={readOnlyValue(form.gender)} onChange={(e) => setField("gender", e.target.value)} readOnly={!editMode} />
-            </div>
-            <div className="space-y-2">
-              <Label>Tug'ilgan sana</Label>
-              <Input value={readOnlyValue(form.dateOfBirth)} onChange={(e) => setField("dateOfBirth", e.target.value)} readOnly={!editMode} />
-            </div>
-            <div className="space-y-2">
-              <Label>Davlat</Label>
-              <Input value={readOnlyValue(form.country)} onChange={(e) => setField("country", e.target.value)} readOnly={!editMode} />
-            </div>
-            <div className="space-y-2">
-              <Label>Shahar / viloyat</Label>
-              <Input value={editMode ? form.cityState : form.cityState || locationLabel} onChange={(e) => setField("cityState", e.target.value)} readOnly={!editMode} />
-            </div>
-            <div className="space-y-2">
-              <Label>Pochta indeksi</Label>
-              <Input value={readOnlyValue(form.postalCode)} onChange={(e) => setField("postalCode", e.target.value)} readOnly={!editMode} />
-            </div>
-            {allowPasswordChange && (
-              <>
-                <div className="space-y-2">
-                  <div className="mb-2 flex items-center gap-3">
-                    <Label htmlFor={`${storageKey}-change-password`} className="mb-0">Parolni o'zgartirish</Label>
-                    <input
-                      id={`${storageKey}-change-password`}
-                      type="checkbox"
-                      checked={changePasswordEnabled}
-                      onChange={(e) => {
-                        const enabled = e.target.checked;
-                        setChangePasswordEnabled(enabled);
-                        if (!enabled) {
-                          setNewPassword("");
-                          setConfirmPassword("");
-                          setShowPassword(false);
-                          setShowPasswordConfirm(false);
-                        }
-                      }}
-                      disabled={!editMode}
-                      className="h-5 w-5 cursor-pointer rounded border-muted-foreground/40 accent-teal-700"
-                    />
+          <div className="space-y-5">
+            {!editMode ? (
+              <div className="grid gap-6 lg:grid-cols-[1fr_200px] lg:items-start">
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <p className={profileLabelClass}>Ism familiya</p>
+                    <p className="text-base font-semibold text-foreground">{displayName || "-"}</p>
+                    <p className="text-xs text-muted-foreground">{form.email || "-"}</p>
                   </div>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="********"
-                      className="pr-10"
-                      disabled={!editMode || !changePasswordEnabled}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                      disabled={!editMode || !changePasswordEnabled}
-                    >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
+                  <div className="space-y-1.5">
+                    <p className={profileLabelClass}>Telefon raqam</p>
+                    <p className="text-sm font-medium text-foreground">{form.phone || "-"}</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <p className={profileLabelClass}>Bio</p>
+                    <p className="max-w-[350px] text-sm leading-relaxed text-foreground break-words">
+                      {form.bio || "-"}
+                    </p>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Parolni tasdiqlash</Label>
-                  <div className="relative">
-                    <Input
-                      type={showPasswordConfirm ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="********"
-                      className="pr-10"
-                      disabled={!editMode || !changePasswordEnabled}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswordConfirm((prev) => !prev)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                      disabled={!editMode || !changePasswordEnabled}
-                    >
-                      {showPasswordConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
+
+                {studentExtras && (
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <p className={profileLabelClass}>Sinf</p>
+                      <p className="text-sm font-medium text-foreground">{studentExtras.className || "-"}</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className={profileLabelClass}>Maktab</p>
+                      <p className="text-sm font-medium text-foreground">{studentExtras.schoolName || "-"}</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className={profileLabelClass}>Obuna holati</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {studentExtras.subscription === "expired"
+                          ? "Tugagan"
+                          : studentExtras.subscription === "active"
+                            ? "Faol"
+                            : "-"}
+                      </p>
+                    </div>
                   </div>
+                )}
+
+                {variant === "student" && typeof onQuickNavigate === "function" && (
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => onQuickNavigate("schedule")}>
+                      <CalendarDays className="h-4 w-4 text-sky-600" />
+                      Dars jadvali
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => onQuickNavigate("grades")}>
+                      <Award className="h-4 w-4 text-amber-600" />
+                      Baholar
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => onQuickNavigate("homework")}>
+                      <BookOpen className="h-4 w-4 text-emerald-600" />
+                      Uy vazifa
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => onQuickNavigate("exams")}>
+                      <ScrollText className="h-4 w-4 text-violet-600" />
+                      Imtihonlar
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Ism</Label>
+                  <Input value={form.firstName} onChange={(e) => setField("firstName", e.target.value)} className={readOnlyInputClass} />
                 </div>
-              </>
+                <div className="space-y-2">
+                  <Label>Familiya</Label>
+                  <Input value={form.lastName} onChange={(e) => setField("lastName", e.target.value)} className={readOnlyInputClass} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Telefon raqam</Label>
+                  <Input value={readOnlyValue(form.phone)} onChange={(e) => setField("phone", e.target.value)} className={readOnlyInputClass} />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Bio</Label>
+                  <Input value={readOnlyValue(form.bio)} onChange={(e) => setField("bio", e.target.value)} className={readOnlyInputClass} />
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -519,14 +510,6 @@ export default function UnifiedProfileSection({
             <MapPin className="h-4 w-4" />
             {locationLabel}
           </a>
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={resetDraft} disabled={!canSave} className="px-7">
-              Bekor qilish
-            </Button>
-            <Button type="button" onClick={() => void handleSaveDetails()} disabled={!canSave} className="px-7">
-              {savingDetails ? "Saqlanmoqda..." : "Saqlash"}
-            </Button>
-          </div>
         </div>
       </CardContent>
     </Card>
