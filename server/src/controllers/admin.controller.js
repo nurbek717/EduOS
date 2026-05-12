@@ -55,8 +55,8 @@ const listUsers = async (req, res) => {
 
 const getStats = async (req, res) => {
   try {
-    const rawWeekOffset = Number.parseInt(req.query.weekOffset ?? "0", 10);
-    const weekOffset = Number.isNaN(rawWeekOffset) || rawWeekOffset < 0 ? 0 : Math.min(rawWeekOffset, 52);
+    const rawMonthOffset = Number.parseInt(req.query.monthOffset ?? "0", 10);
+    const monthOffset = Number.isNaN(rawMonthOffset) || rawMonthOffset < 0 ? 0 : Math.min(rawMonthOffset, 36);
 
     const formatDay = (date) => {
       const d = new Date(date);
@@ -86,21 +86,21 @@ const getStats = async (req, res) => {
     const schoolsWithSchoolAdmin = new Set(schoolAdminSchoolIds.map((schoolId) => String(schoolId))).size;
     const schoolsWithoutSchoolAdmin = Math.max(totalSchools - schoolsWithSchoolAdmin, 0);
 
-    // Tanlangan hafta oralig'i bo'yicha yangi maktablar (mahalliy kunlar bo'yicha)
-    // end: tanlangan haftaning oxirgi kuni (bugungi kun - 7 * weekOffset)
-    const end = new Date();
-    end.setHours(23, 59, 59, 999);
-    end.setDate(end.getDate() - weekOffset * 7);
+    // So'nggi 6 oy (oxirgi oy = joriy oy - monthOffset); «oldingi / keyingi» tugmalari oyma-oy siljitadi
+    const endAnchor = new Date();
+    endAnchor.setDate(1);
+    endAnchor.setHours(0, 0, 0, 0);
+    endAnchor.setMonth(endAnchor.getMonth() - monthOffset);
 
-    // start: shu haftaning boshidan (7 kun orqaga, shu jumladan end kuni)
-    const start = new Date(end);
-    start.setDate(end.getDate() - 6);
-    start.setHours(0, 0, 0, 0);
+    const startAnchor = new Date(endAnchor);
+    startAnchor.setMonth(startAnchor.getMonth() - 5);
 
-    const startDay = formatDay(start); // YYYY-MM-DD
-    const endDay = formatDay(end);
+    const startDay = formatDay(startAnchor);
+    const endMonthLast = new Date(endAnchor.getFullYear(), endAnchor.getMonth() + 1, 0);
+    endMonthLast.setHours(23, 59, 59, 999);
+    const endDay = formatDay(endMonthLast);
 
-    const rawLast7Days = await School.aggregate([
+    const rawByMonth = await School.aggregate([
       {
         $match: {
           created_day_local: {
@@ -110,33 +110,42 @@ const getStats = async (req, res) => {
         },
       },
       {
+        $project: {
+          ym: { $substrCP: [{ $ifNull: ["$created_day_local", ""] }, 0, 7] },
+        },
+      },
+      {
+        $match: {
+          ym: { $regex: "^[0-9]{4}-[0-9]{2}$" },
+        },
+      },
+      {
         $group: {
-          _id: "$created_day_local",
+          _id: "$ym",
           count: { $sum: 1 },
         },
       },
       { $sort: { _id: 1 } },
     ]);
 
-    const countsByDate = rawLast7Days.reduce((acc, item) => {
+    const countsByYearMonth = rawByMonth.reduce((acc, item) => {
       return {
         ...acc,
         [item._id]: item.count,
       };
     }, {});
 
-    const schoolsLast7Days = [];
-    for (let i = 0; i < 7; i += 1) {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      const key = formatDay(d); // YYYY-MM-DD
-      schoolsLast7Days.push({
-        date: key,
-        count: countsByDate[key] || 0,
+    const schoolsLast6Months = [];
+    for (let i = 0; i < 6; i += 1) {
+      const d = new Date(startAnchor.getFullYear(), startAnchor.getMonth() + i, 1);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      schoolsLast6Months.push({
+        yearMonth: ym,
+        count: countsByYearMonth[ym] || 0,
       });
     }
 
-    const newSchoolsLast7Days = schoolsLast7Days.reduce((total, item) => total + item.count, 0);
+    const newSchoolsLast6Months = schoolsLast6Months.reduce((total, item) => total + item.count, 0);
     const attentionItems = [];
 
     if (schoolsWithoutDirector > 0) {
@@ -198,14 +207,14 @@ const getStats = async (req, res) => {
         schoolsWithoutDirector,
         schoolsWithoutDirectorSubscriptions,
         schoolsWithoutSchoolAdmin,
-        newSchoolsLast7Days,
+        newSchoolsLast6Months,
         attentionItems,
       },
-      schoolsLast7Days,
+      schoolsLast6Months,
       range: {
         start: startDay,
         end: endDay,
-        weekOffset,
+        monthOffset,
       },
     });
   } catch (err) {

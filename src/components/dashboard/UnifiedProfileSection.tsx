@@ -71,6 +71,7 @@ const updateAuthUserInStorage = (patch: Partial<AuthUserLike>) => {
   const current = readAuthUser();
   const next = { ...(current || {}), ...patch };
   localStorage.setItem("auth_user", JSON.stringify(next));
+  window.dispatchEvent(new CustomEvent("auth_user_updated"));
 };
 
 type UnifiedProfileSectionProps = {

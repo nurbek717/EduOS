@@ -75,17 +75,17 @@ type Stats = {
       endAt: string;
     }>;
     schoolsWithoutSchoolAdmin: number;
-    newSchoolsLast7Days: number;
+    newSchoolsLast6Months: number;
     attentionItems: string[];
   };
-  schoolsLast7Days?: {
-    date: string;
+  schoolsLast6Months?: {
+    yearMonth: string;
     count: number;
   }[];
   range?: {
     start: string;
     end: string;
-    weekOffset: number;
+    monthOffset: number;
   };
 };
 
@@ -190,12 +190,12 @@ const overviewStatCards = [
     descriptionKey: "overview.cards.totalUsers.description",
   },
   {
-    titleKey: "overview.cards.newSchoolsLast7Days.title",
-    key: "newSchoolsLast7Days" as const,
+    titleKey: "overview.cards.newSchoolsLast6Months.title",
+    key: "newSchoolsLast6Months" as const,
     icon: TrendingUp,
     color: "text-cyan-600",
     bgColor: "bg-cyan-500/10",
-    descriptionKey: "overview.cards.newSchoolsLast7Days.description",
+    descriptionKey: "overview.cards.newSchoolsLast6Months.description",
   },
 ];
 
@@ -209,7 +209,7 @@ const AdminDashboard = () => {
   const [schools, setSchools] = useState<School[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [section, setSection] = useState<"overview" | "schools" | "users" | "subscriptions" | "exams" | "profile">("schools");
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [monthOffset, setMonthOffset] = useState(0);
   const [examsLoading, setExamsLoading] = useState(false);
   const [exams, setExams] = useState<AdminExam[]>([]);
   const [examResultsLoading, setExamResultsLoading] = useState(false);
@@ -312,7 +312,7 @@ const AdminDashboard = () => {
   const fetchStats = async (offset: number) => {
     if (!token) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/stats?weekOffset=${offset}`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/stats?monthOffset=${offset}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(ad("errors.fetchStats"));
@@ -443,9 +443,9 @@ const AdminDashboard = () => {
   }, []);
 
   useEffect(() => {
-    fetchStats(weekOffset);
+    fetchStats(monthOffset);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekOffset]);
+  }, [monthOffset]);
 
   useEffect(() => {
     if (section !== "users") return;
@@ -484,8 +484,8 @@ const AdminDashboard = () => {
     return () => window.clearInterval(intervalId);
   }, []);
 
-  const handleChangeWeek = (direction: "prev" | "next") => {
-    setWeekOffset((current) => {
+  const handleChangeMonth = (direction: "prev" | "next") => {
+    setMonthOffset((current) => {
       const next = direction === "prev" ? current + 1 : Math.max(0, current - 1);
       return next;
     });
@@ -547,7 +547,7 @@ const AdminDashboard = () => {
       setSubscriptionDays(30);
       await fetchSubscriptions();
       // "Umumiy ko'rinish" dagi kartalarda ham obuna tugash kunlari yangilanishi uchun
-      await fetchStats(weekOffset);
+      await fetchStats(monthOffset);
     } catch (err: unknown) {
       toast({
         title: ad("toasts.error"),
@@ -611,7 +611,7 @@ const AdminDashboard = () => {
       setSubscriptionEditOpen(false);
       setSubscriptionEditTarget(null);
       await fetchSubscriptions();
-      await fetchStats(weekOffset);
+      await fetchStats(monthOffset);
     } catch (err: unknown) {
       toast({
         title: ad("toasts.error"),
@@ -669,7 +669,7 @@ const AdminDashboard = () => {
       setDirectorPassword("");
 
       await fetchSchools();
-      await fetchStats(weekOffset);
+      await fetchStats(monthOffset);
     } catch (err: unknown) {
       toast({
         title: ad("toasts.error"),
@@ -789,7 +789,7 @@ const AdminDashboard = () => {
       });
       setUserDialogOpen(false);
       await fetchSchools();
-      await fetchStats(weekOffset);
+      await fetchStats(monthOffset);
       await fetchUsers();
     } catch (err: unknown) {
       toast({
@@ -844,7 +844,7 @@ const AdminDashboard = () => {
       setAssignDirectorDialogOpen(false);
       setTargetSchoolForDirector(null);
       await fetchSchools();
-      await fetchStats(weekOffset);
+      await fetchStats(monthOffset);
       if (section === "users") {
         await fetchUsers();
       }
@@ -880,7 +880,7 @@ const AdminDashboard = () => {
       });
 
       await fetchSchools();
-      await fetchStats(weekOffset);
+      await fetchStats(monthOffset);
       if (section === "users") {
         await fetchUsers();
       }
@@ -902,7 +902,7 @@ const AdminDashboard = () => {
     if (key === "schoolsWithoutDirector") return stats.platformOverview?.schoolsWithoutDirector ?? 0;
     if (key === "schoolsWithoutSchoolAdmin") return stats.platformOverview?.schoolsWithoutSchoolAdmin ?? 0;
     if (key === "users") return stats.totalUsers;
-    if (key === "newSchoolsLast7Days") return stats.platformOverview?.newSchoolsLast7Days ?? 0;
+    if (key === "newSchoolsLast6Months") return stats.platformOverview?.newSchoolsLast6Months ?? 0;
     return 0;
   };
 
@@ -1178,9 +1178,9 @@ const AdminDashboard = () => {
                       </span>
                     </li>
                     <li>
-                      {ad("overview.newSchoolsLast7Days")}:{" "}
+                      {ad("overview.newSchoolsLast6Months")}:{" "}
                       <span className="font-semibold text-cyan-600">
-                        {stats.platformOverview.newSchoolsLast7Days}
+                        {stats.platformOverview.newSchoolsLast6Months}
                       </span>
                     </li>
                     <li>
@@ -1202,10 +1202,9 @@ const AdminDashboard = () => {
 
               <Suspense fallback={<ChartSkeleton height={256} />}>
                 <AdminSchoolsChart
-                  data={stats?.schoolsLast7Days || []}
-                  range={stats?.range}
-                  weekOffset={weekOffset}
-                  onChangeWeek={handleChangeWeek}
+                  data={stats?.schoolsLast6Months || []}
+                  monthOffset={monthOffset}
+                  onChangeMonth={handleChangeMonth}
                 />
               </Suspense>
             </div>

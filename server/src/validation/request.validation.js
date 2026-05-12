@@ -487,7 +487,7 @@ const validators = {
   }),
   adminStatsQuery: validateRequest({
     query: {
-      weekOffset: { type: "integerString", min: 0, max: 52 },
+      monthOffset: { type: "integerString", min: 0, max: 36 },
     },
   }),
   adminUsersQuery: validateRequest({

@@ -69,7 +69,7 @@
     "goToSubscriptions": "Obunalar bo'limiga o'tish",
     "subscriptionCount": "Obuna qolgan",
     "withoutAdminSchools": "Adminsiz maktablar",
-    "newSchoolsLast7Days": "So'nggi 7 kunda qo'shilgan maktablar",
+    "newSchoolsLast6Months": "So'nggi 6 oyda qo'shilgan maktablar",
     "totalSchools": "Jami maktablar",
     "totalUsers": "Jami foydalanuvchilar",
     "totalDirectors": "Jami direktorlar",
@@ -86,13 +86,46 @@
       }
     },
     "chart": {
-      "title": "So'nggi 7 kunda qo'shilgan maktablar",
-      "description": "Kunlar bo'yicha yangi yaratilgan maktablar soni.",
+      "title": "So'nggi 6 oyda qo'shilgan maktablar",
+      "description": "Har oy bo'yicha yangi yaratilgan maktablar soni (radar diagramma).",
       "range": "Oraliq",
+      "prevPeriod": "Oldingi 6 oy",
+      "nextPeriod": "Yaqinroq davr",
       "tooltipSchools": "Yangi maktablar",
       "tooltipCount": "{{count}} ta maktab",
-      "tooltipDate": "Sana: {{date}}",
-      "empty": "Hozircha so'nggi 7 kunda yaratilgan maktablar statistikasi mavjud emas."
+      "tooltipDate": "Oy: {{date}}",
+      "radarSeriesLabel": "Yangi maktablar",
+      "footerTotal": "Tanlangan davrda jami {{count}} ta yangi maktab",
+      "footerPeriodRange": "{{start}} – {{end}}",
+      "empty": "Bu davr uchun maktab statistikasi hozircha mavjud emas.",
+      "monthNamesShort": {
+        "1": "yan",
+        "2": "fev",
+        "3": "mart",
+        "4": "apr",
+        "5": "may",
+        "6": "iyun",
+        "7": "iyul",
+        "8": "avg",
+        "9": "sen",
+        "10": "okt",
+        "11": "noy",
+        "12": "dek"
+      },
+      "monthNamesFull": {
+        "1": "Yanvar",
+        "2": "Fevral",
+        "3": "Mart",
+        "4": "Aprel",
+        "5": "May",
+        "6": "Iyun",
+        "7": "Iyul",
+        "8": "Avgust",
+        "9": "Sentabr",
+        "10": "Oktyabr",
+        "11": "Noyabr",
+        "12": "Dekabr"
+      }
     },
     "cards": {
       "totalSchools": {
@@ -115,9 +148,9 @@
         "title": "Jami foydalanuvchilar",
         "description": "Tizimdagi barcha foydalanuvchilar"
       },
-      "newSchoolsLast7Days": {
-        "title": "So'nggi 7 kunda maktablar",
-        "description": "Yaqinda qo'shilgan maktablar soni"
+      "newSchoolsLast6Months": {
+        "title": "So'nggi 6 oyda maktablar",
+        "description": "Oxirgi 6 oyda qo'shilgan maktablar soni"
       }
     }
   },

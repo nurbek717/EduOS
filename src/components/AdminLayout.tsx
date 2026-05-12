@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -69,8 +69,39 @@ const AdminLayout = ({
 }: AdminLayoutProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation("layout");
-  const rawUser = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
-  const currentUser = rawUser ? JSON.parse(rawUser) : null;
+
+  const [currentUser, setCurrentUser] = useState<{
+    name?: string;
+    email?: string;
+    photoUrl?: string | null;
+  } | null>(() => {
+    if (typeof window === "undefined") return null;
+    const raw = localStorage.getItem("auth_user");
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as { name?: string; email?: string; photoUrl?: string | null };
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    const sync = () => {
+      const raw = localStorage.getItem("auth_user");
+      if (!raw) {
+        setCurrentUser(null);
+        return;
+      }
+      try {
+        setCurrentUser(JSON.parse(raw) as { name?: string; email?: string; photoUrl?: string | null });
+      } catch {
+        setCurrentUser(null);
+      }
+    };
+    sync();
+    window.addEventListener("auth_user_updated", sync);
+    return () => window.removeEventListener("auth_user_updated", sync);
+  }, []);
 
   const navItems: { label: string; section: Exclude<AdminSection, "profile">; icon: typeof LayoutDashboard }[] = [
     { label: t("admin.nav.overview"), section: "overview", icon: LayoutDashboard },
@@ -166,6 +197,9 @@ const AdminLayout = ({
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2 rounded-md px-2 py-2 text-sm group-data-[collapsible=icon]:justify-center">
               <Avatar className="h-8 w-8 bg-white/10 ring-1 ring-white/25">
+                {currentUser?.photoUrl ? (
+                  <AvatarImage src={currentUser.photoUrl} alt="" className="object-cover" />
+                ) : null}
                 <AvatarFallback className="bg-white/15 text-white text-xs">
                   {currentUser?.name ? getInitials(currentUser.name) : "SA"}
                 </AvatarFallback>

@@ -69,7 +69,7 @@
     "goToSubscriptions": "Go to subscriptions",
     "subscriptionCount": "Subscriptions remaining",
     "withoutAdminSchools": "Schools without school admin",
-    "newSchoolsLast7Days": "New schools in last 7 days",
+    "newSchoolsLast6Months": "New schools in the last 6 months",
     "totalSchools": "Total schools",
     "totalUsers": "Total users",
     "totalDirectors": "Total directors",
@@ -86,13 +86,46 @@
       }
     },
     "chart": {
-      "title": "Schools added in the last 7 days",
-      "description": "Daily count of newly created schools.",
+      "title": "Schools added in the last 6 months",
+      "description": "New schools per month (radar chart).",
       "range": "Range",
+      "prevPeriod": "Previous 6 months",
+      "nextPeriod": "More recent period",
       "tooltipSchools": "New schools",
       "tooltipCount": "{{count}} schools",
-      "tooltipDate": "Date: {{date}}",
-      "empty": "No school creation statistics available for the last 7 days yet."
+      "tooltipDate": "Month: {{date}}",
+      "radarSeriesLabel": "New schools",
+      "footerTotal": "{{count}} new schools in the selected period",
+      "footerPeriodRange": "{{start}} – {{end}}",
+      "empty": "No school statistics for this period yet.",
+      "monthNamesShort": {
+        "1": "Jan",
+        "2": "Feb",
+        "3": "Mar",
+        "4": "Apr",
+        "5": "May",
+        "6": "Jun",
+        "7": "Jul",
+        "8": "Aug",
+        "9": "Sep",
+        "10": "Oct",
+        "11": "Nov",
+        "12": "Dec"
+      },
+      "monthNamesFull": {
+        "1": "January",
+        "2": "February",
+        "3": "March",
+        "4": "April",
+        "5": "May",
+        "6": "June",
+        "7": "July",
+        "8": "August",
+        "9": "September",
+        "10": "October",
+        "11": "November",
+        "12": "December"
+      }
     },
     "cards": {
       "totalSchools": {
@@ -115,9 +148,9 @@
         "title": "Total users",
         "description": "All users in the system"
       },
-      "newSchoolsLast7Days": {
-        "title": "Schools in last 7 days",
-        "description": "Recently added schools"
+      "newSchoolsLast6Months": {
+        "title": "Schools in last 6 months",
+        "description": "Schools added in the rolling 6-month window"
       }
     }
   },
