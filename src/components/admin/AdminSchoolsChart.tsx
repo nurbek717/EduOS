@@ -79,12 +79,8 @@ const AdminSchoolsChart = ({ data, monthOffset, onChangeMonth }: Props) => {
   const dataMaxCount = useMemo(() => chartData.reduce((m, row) => Math.max(m, row.count), 0), [chartData]);
   const radiusDomainMax = Math.max(1, dataMaxCount);
 
-  const RADIAL_RING_COUNT = 4;
-  const radiusTicks = useMemo(
-    () =>
-      Array.from({ length: RADIAL_RING_COUNT }, (_, i) => ((i + 1) / RADIAL_RING_COUNT) * radiusDomainMax),
-    [radiusDomainMax],
-  );
+  /** Recharts `ticks` must be `TickItem[]` ({ value, coordinate, ... }); `tickCount` lets the chart compute rings. */
+  const radiusTickCount = 5;
 
   const hasRows = chartData.length > 0;
 
@@ -148,7 +144,7 @@ const AdminSchoolsChart = ({ data, monthOffset, onChangeMonth }: Props) => {
               <PolarRadiusAxis
                 angle={90}
                 domain={[0, radiusDomainMax]}
-                ticks={radiusTicks}
+                tickCount={radiusTickCount}
                 tick={false}
               />
               <Radar
