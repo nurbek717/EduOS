@@ -25,9 +25,32 @@ const studentSchema = new mongoose.Schema(
     admissionOrderNumber: { type: String },
     admissionOrderDate: { type: Date },
     classAdmissionDate: { type: Date },
+    /** `inactive` / `graduated` ga o'tganda avtomatik to'ldiriladi (chiqish statistikasi). */
+    leftAt: { type: Date, default: null },
   },
   { timestamps: true },
 );
+
+const LEFT_STATUSES = ["inactive", "graduated"];
+
+studentSchema.pre("save", async function () {
+  if (this.isNew) {
+    if (LEFT_STATUSES.includes(this.status)) {
+      this.leftAt = new Date();
+    }
+    return;
+  }
+  if (!this.isModified("status")) return;
+  const prevDoc = await this.constructor.findOne({ _id: this._id }).select("status").lean();
+  const prevStatus = prevDoc?.status || "";
+  const nowLeft = LEFT_STATUSES.includes(this.status);
+  const wasLeft = LEFT_STATUSES.includes(prevStatus);
+  if (nowLeft && !wasLeft) {
+    this.leftAt = new Date();
+  } else if (!nowLeft) {
+    this.leftAt = null;
+  }
+});
 
 studentSchema.index({ school: 1 });
 studentSchema.index({ class: 1 });

@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import DirectorLayout from "@/components/DirectorLayout";
 import DirectorFinanceSection from "@/components/director/DirectorFinanceSection";
+import { DirectorDashboardAreaChart } from "@/components/director/DirectorDashboardAreaChart";
+import { DirectorDashboardAlertsPie } from "@/components/director/DirectorDashboardAlertsPie";
+import { DirectorOverviewFinancePie } from "@/components/director/DirectorOverviewFinancePie";
 import TicketSystem from "@/components/director/TicketSystem";
 import UnifiedProfileSection from "@/components/dashboard/UnifiedProfileSection";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ListSkeleton, StatsCardsSkeleton, TableSkeleton } from "@/components/ui/skeletons";
 import { useRef } from "react";
-import { BookOpen, Users, GraduationCap, UserCircle, Mail, Lock, Eye, EyeOff, Pencil, Trash2, Upload, Plus, Wallet, TrendingUp, TrendingDown, AlertTriangle, Info, ShieldAlert, Phone, MapPin, Camera, Calendar, Search, Eraser, ChevronLeft, ChevronRight, ChevronUp, RotateCcw, FileSpreadsheet, FileText } from "lucide-react";
+import { BookOpen, Users, GraduationCap, UserCircle, Mail, Lock, Eye, EyeOff, Pencil, Trash2, Upload, Plus, Wallet, AlertTriangle, Info, ShieldAlert, Phone, MapPin, Camera, Calendar, Search, Eraser, ChevronLeft, ChevronRight, ChevronUp, RotateCcw, FileSpreadsheet, FileText } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -82,6 +85,8 @@ type DirectorOverview = {
     level: "info" | "warning";
     message: string;
   }[];
+  /** `date` ISO `YYYY-MM-DD` (UTC): kunlik qabul (`admitted`) va chiqish (`departed`). */
+  admissionTimeline?: { date: string; admitted: number; departed: number }[];
   subscription?: {
     startAt: string | null;
     endAt: string | null;
@@ -89,6 +94,91 @@ type DirectorOverview = {
     isExpired: boolean;
   } | null;
 };
+
+/**
+ * Demo ogohlantirishlar (pie chart / ro‘yxatni ko‘rish uchun).
+ * Faqat `npm run dev` yoki `.env` da VITE_APPEND_DEMO_ALERTS=true bo‘lganda
+ * serverdan kelgan `alerts` ro‘yxati oxiriga qo‘shiladi (API dagi + bu 3 ta).
+ */
+const DIRECTOR_DEMO_OVERVIEW_ALERTS: DirectorOverview["alerts"] = [
+  {
+    level: "info",
+    message:
+      "1-A sinfi uchun hali yetarli baho yoki davomat ma'lumoti yo'q — sinf rahbari bilan tekshiring.",
+  },
+  {
+    level: "warning",
+    message: "Obuna tugashiga 15 kundan kam vaqt qoldi; uzaytirishni rejalashtiring.",
+  },
+  {
+    level: "info",
+    message: "Bu haftada 3 ta yangi o'qituvchi tizimga qo'shildi.",
+  },
+];
+
+const DEMO_ADMISSION_TIMELINE_DAYS = 400;
+
+/**
+ * Kirish/chiqish grafigini ko‘rish uchun namuna (backend bo‘sh yoki nol bo‘lsa).
+ * — `npm run dev` yoki `VITE_APPEND_DEMO_ADMISSION_TIMELINE=true`
+ * — majburiy: `VITE_FORCE_DEMO_ADMISSION_TIMELINE=true` (haqiqiy seriya bo‘lsa ham demo)
+ * Joriy UTC oyda 3 ta kunga chiqish (+1) — shu oy va shu chorak yig‘masida ko‘rinadi.
+ */
+function buildDirectorDemoAdmissionTimeline(): NonNullable<DirectorOverview["admissionTimeline"]> {
+  const rows: NonNullable<DirectorOverview["admissionTimeline"]> = [];
+  const now = new Date();
+  const cursor = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  cursor.setUTCDate(cursor.getUTCDate() - (DEMO_ADMISSION_TIMELINE_DAYS - 1));
+  for (let i = 0; i < DEMO_ADMISSION_TIMELINE_DAYS; i++) {
+    const key = cursor.toISOString().slice(0, 10);
+    const admitted = Math.max(
+      0,
+      Math.min(
+        9,
+        Math.round(2 + Math.sin(i / 18) * 2.2 + ((i * 17) % 5) * 0.6 + (i % 11 === 0 ? 2 : 0)),
+      ),
+    );
+    const departed = Math.max(
+      0,
+      Math.min(
+        6,
+        Math.round(0.8 + Math.sin(i / 26 + 0.9) * 1.4 + ((i * 11) % 4) * 0.45 + (i % 17 === 0 ? 1 : 0)),
+      ),
+    );
+    rows.push({ date: key, admitted, departed });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  const y = now.getUTCFullYear();
+  const m = now.getUTCMonth();
+  const monthPrefix = `${y}-${String(m + 1).padStart(2, "0")}`;
+  const inCurrentMonth = rows
+    .map((row, idx) => ({ row, idx }))
+    .filter(({ row }) => row.date.startsWith(monthPrefix));
+  const n = inCurrentMonth.length;
+  if (n > 0) {
+    const preferred = [0, Math.floor(n / 2), n - 1].filter((p) => p >= 0 && p < n);
+    const idxs: number[] = [];
+    for (const p of preferred) {
+      idxs.push(inCurrentMonth[p]!.idx);
+    }
+    while (idxs.length < 3) {
+      idxs.push(inCurrentMonth[n - 1]!.idx);
+    }
+    for (const idx of idxs.slice(0, 3)) {
+      rows[idx].departed += 1;
+    }
+  }
+
+  return rows;
+}
+
+function isAdmissionTimelineVisuallyEmpty(
+  timeline: DirectorOverview["admissionTimeline"] | undefined,
+): boolean {
+  if (!Array.isArray(timeline) || timeline.length === 0) return true;
+  return timeline.every((d) => (d.admitted ?? 0) === 0 && (d.departed ?? 0) === 0);
+}
 
 type Subject = {
   _id: string;
@@ -743,14 +833,31 @@ const DirectorDashboard = () => {
         throw new Error(errData?.message || t("errors.overviewLoad"));
       }
       const data = await res.json();
-      setOverview(data);
+      const appendDemoAlerts =
+        import.meta.env.DEV || import.meta.env.VITE_APPEND_DEMO_ALERTS === "true";
+      const mergedAlerts = appendDemoAlerts
+        ? [...(Array.isArray(data.alerts) ? data.alerts : []), ...DIRECTOR_DEMO_OVERVIEW_ALERTS]
+        : Array.isArray(data.alerts)
+          ? data.alerts
+          : [];
+      const allowDemoTimeline =
+        import.meta.env.DEV || import.meta.env.VITE_APPEND_DEMO_ADMISSION_TIMELINE === "true";
+      const forceDemoTimeline = import.meta.env.VITE_FORCE_DEMO_ADMISSION_TIMELINE === "true";
+      const apiTimeline = Array.isArray(data.admissionTimeline) ? data.admissionTimeline : [];
+      const admissionTimeline =
+        allowDemoTimeline &&
+        (forceDemoTimeline || isAdmissionTimelineVisuallyEmpty(apiTimeline))
+          ? buildDirectorDemoAdmissionTimeline()
+          : apiTimeline;
+      const nextOverview: DirectorOverview = { ...data, alerts: mergedAlerts, admissionTimeline };
+      setOverview(nextOverview);
       const timestamp = new Date().toLocaleString(locale, {
         hour: "2-digit",
         minute: "2-digit",
         day: "2-digit",
         month: "2-digit",
       });
-      const mappedAlerts: DirectorHeaderNotification[] = (data?.alerts || []).map(
+      const mappedAlerts: DirectorHeaderNotification[] = (nextOverview.alerts || []).map(
         (alert: { level: "info" | "warning"; message: string }) => ({
           id: `overview:${alert.level}:${alert.message}`,
           text: alert.message,
@@ -2646,7 +2753,7 @@ const DirectorDashboard = () => {
 
             {!overview ? (
               <>
-                <StatsCardsSkeleton count={6} className="md:grid-cols-2 lg:grid-cols-4" />
+                <StatsCardsSkeleton count={5} className="md:grid-cols-2 lg:grid-cols-4" />
                 <div className="grid gap-4 lg:grid-cols-2">
                   <Card>
                     <CardHeader>
@@ -2736,45 +2843,27 @@ const DirectorDashboard = () => {
                     <p className=" text-gray-500 text-sm font-semibold text-foreground"> MOLIYAVIY FAOLLIK</p>
                   </div>
 
-                  <Card
-                    className="cursor-pointer transition hover:ring-2 hover:ring-primary/30 lg:col-span-2"
-                    onClick={() => setSection("payments")}
-                  >
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("monthIncome")}</CardTitle>
-                      <div className="rounded-lg bg-emerald-500/10 p-2">
-                        <TrendingUp className="h-4 w-4 text-emerald-600" />
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{formatMoney(overview.finance?.monthIncome || 0)}</div>
-                      <p className="mt-1 text-xs text-muted-foreground">{tStats("monthIncomeDesc")}</p>
-                    </CardContent>
-                  </Card>
-
-                  <Card
-                    className="cursor-pointer transition hover:ring-2 hover:ring-primary/30 lg:col-span-2"
-                    onClick={() => setSection("payments")}
-                  >
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">{tStats("monthExpense")}</CardTitle>
-                      <div className="rounded-lg bg-rose-500/10 p-2">
-                        <TrendingDown className="h-4 w-4 text-rose-600" />
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{formatMoney(overview.finance?.monthExpense || 0)}</div>
-                      <p className="mt-1 text-xs text-muted-foreground">{tStats("monthExpenseDesc")}</p>
-                    </CardContent>
-                  </Card>
+                  <DirectorOverviewFinancePie
+                    monthIncome={overview.finance?.monthIncome ?? 0}
+                    monthExpense={overview.finance?.monthExpense ?? 0}
+                    formatMoney={formatMoney}
+                    title={tStats("monthFinancePieTitle")}
+                    description={tStats("monthFinancePieDesc")}
+                    incomeLabel={tStats("monthIncome")}
+                    expenseLabel={tStats("monthExpense")}
+                    emptyMessage={tStats("monthFinancePieEmpty")}
+                    netLabel={tStats("monthFinanceNetLabel")}
+                    footerHint={tStats("monthFinancePieFooterHint")}
+                    onOpenPayments={() => setSection("payments")}
+                  />
                 </div>
 
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>{t("recentActivity")}</CardTitle>
+                <div className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
+                  <Card className="flex h-[400px] flex-col overflow-hidden">
+                    <CardHeader className="shrink-0 py-4">
+                      <CardTitle className="text-base">{t("recentActivity")}</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3 text-sm">
+                    <CardContent className="min-h-0 flex-1 space-y-3 overflow-y-auto text-sm">
                       {overview.recentActivities.length > 0 ? (
                         overview.recentActivities.map((item, idx) => (
                         <div
@@ -2820,30 +2909,10 @@ const DirectorDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>{t("alertsTitle")}</CardTitle>
-                      <CardDescription>{t("alertsDesc")}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2 text-sm">
-                      {overview.alerts.length > 0 ? (
-                        overview.alerts.map((alert, idx) => (
-                          <div
-                            key={`${alert.level}-${idx}`}
-                            className={`rounded-md border px-3 py-2 text-xs ${alert.level === "warning"
-                              ? "border-amber-300 bg-amber-50 text-amber-900"
-                              : "border-sky-200 bg-sky-50 text-sky-900"
-                              }`}
-                          >
-                            {alert.message}
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-xs text-muted-foreground">{t("alertsEmpty")}</p>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <DirectorDashboardAlertsPie alerts={overview.alerts} />
                 </div>
+
+                <DirectorDashboardAreaChart series={overview.admissionTimeline} />
               </>
             )}
           </>

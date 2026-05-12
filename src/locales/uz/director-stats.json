@@ -11,6 +11,11 @@
   "monthIncomeDesc": "Moliyaviy bo'limdagi joriy oy jami kirim summasi.",
   "monthExpense": "Shu oy chiqim",
   "monthExpenseDesc": "Moliyaviy bo'limdagi joriy oy jami chiqim summasi.",
+  "monthFinancePieTitle": "Joriy oy kirim va chiqim",
+  "monthFinancePieDesc": "Moliyaviy bo'limdagi joriy oy kirim va chiqim summalari nisbati.",
+  "monthFinancePieEmpty": "Joriy oyda kirim yoki chiqim hali qayd etilmagan.",
+  "monthFinanceNetLabel": "Oy yakuni (kirim − chiqim)",
+  "monthFinancePieFooterHint": "Batafsil ko‘rish uchun moliyaviy bo‘limni oching.",
   "typeTeacher": "O'qituvchi",
   "typeStudent": "O'quvchi",
   "typeParent": "Ota-ona"

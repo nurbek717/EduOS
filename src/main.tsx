@@ -3,4 +3,13 @@ import App from "./App.tsx";
 import "./index.css";
 import "@/lib/i18n";
 
+if (typeof document !== "undefined") {
+  document.documentElement.classList.remove("dark");
+  try {
+    localStorage.removeItem("theme");
+  } catch {
+    /* ignore */
+  }
+}
+
 createRoot(document.getElementById("root")!).render(<App />);

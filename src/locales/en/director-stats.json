@@ -11,6 +11,11 @@
   "monthIncomeDesc": "Total income for current month.",
   "monthExpense": "This month expense",
   "monthExpenseDesc": "Total expense for current month.",
+  "monthFinancePieTitle": "This month income and expense",
+  "monthFinancePieDesc": "Share of current-month income vs expense in finance.",
+  "monthFinancePieEmpty": "No income or expense recorded for this month yet.",
+  "monthFinanceNetLabel": "Month balance (income − expense)",
+  "monthFinancePieFooterHint": "Open the finance section for details.",
   "typeTeacher": "Teacher",
   "typeStudent": "Student",
   "typeParent": "Parent"

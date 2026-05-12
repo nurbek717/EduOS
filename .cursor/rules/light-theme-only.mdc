@@ -1,0 +1,14 @@
+---
+description: CampusOS UI is light theme only; do not add dark mode or toggle html.dark
+alwaysApply: true
+---
+
+# Light theme only
+
+This app must always use the light (white) UI. Do not:
+
+- Add `dark` class to `document.documentElement` or rely on `prefers-color-scheme` for app chrome
+- Reintroduce theme switchers (`light` / `dark` / `system`) for the main layout
+- Use `next-themes` or similar for global appearance unless it is locked to light only
+
+`src/index.css` `:root` tokens define the canonical palette; `body` uses `bg-background` from those variables.

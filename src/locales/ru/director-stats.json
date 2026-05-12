@@ -11,6 +11,11 @@
   "monthIncomeDesc": "Общий доход за текущий месяц.",
   "monthExpense": "Расход за месяц",
   "monthExpenseDesc": "Общий расход за текущий месяц.",
+  "monthFinancePieTitle": "Доход и расход за текущий месяц",
+  "monthFinancePieDesc": "Соотношение доходов и расходов за текущий месяц.",
+  "monthFinancePieEmpty": "За текущий месяц доходы или расходы ещё не внесены.",
+  "monthFinanceNetLabel": "Итог месяца (доход − расход)",
+  "monthFinancePieFooterHint": "Нажмите, чтобы открыть раздел финансов.",
   "typeTeacher": "Учитель",
   "typeStudent": "Ученик",
   "typeParent": "Родитель"

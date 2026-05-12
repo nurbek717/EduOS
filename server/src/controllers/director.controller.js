@@ -10,6 +10,7 @@ const Attendance = require("../models/Attendance");
 const FinanceTransaction = require("../models/FinanceTransaction");
 const Grade = require("../models/Grade");
 const Subscription = require("../models/Subscription");
+const StudentDepartureAudit = require("../models/StudentDepartureAudit");
 
 const ensureSchoolManagementUser = async (user) => {
   if (!user.schoolId) {
@@ -36,6 +37,52 @@ const countMonthsInclusive = (fromDate, toDate) => {
   }
 
   return (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) + 1;
+};
+
+/**
+ * Kunlik qabul: `Student.createdAt`.
+ * Kunlik chiqish: `leftAt` (yoki eski yozuvlar uchun `updatedAt`) + faol o'quvchini o'chirish `StudentDepartureAudit`.
+ * UTC kun bo'yicha.
+ */
+/** Frontend 1 yil oralig'ini filtrlashi uchun (kabisa + zaxira). */
+const ADMISSION_TIMELINE_DAY_COUNT = 400;
+
+const buildAdmissionTimeline = (
+  admissionRangeStartUtc,
+  recentAdmissionDocs,
+  departedStudentDocs,
+  departureAuditDocs,
+) => {
+  const admittedByDay = new Map();
+  recentAdmissionDocs.forEach((doc) => {
+    const key = new Date(doc.createdAt).toISOString().slice(0, 10);
+    admittedByDay.set(key, (admittedByDay.get(key) || 0) + 1);
+  });
+
+  const departedByDay = new Map();
+  departedStudentDocs.forEach((doc) => {
+    const at = doc.leftAt || doc.updatedAt;
+    if (!at) return;
+    const key = new Date(at).toISOString().slice(0, 10);
+    departedByDay.set(key, (departedByDay.get(key) || 0) + 1);
+  });
+  departureAuditDocs.forEach((doc) => {
+    const key = new Date(doc.occurredAt).toISOString().slice(0, 10);
+    departedByDay.set(key, (departedByDay.get(key) || 0) + 1);
+  });
+
+  const admissionTimeline = [];
+  const cursor = new Date(admissionRangeStartUtc);
+  for (let i = 0; i < ADMISSION_TIMELINE_DAY_COUNT; i++) {
+    const key = cursor.toISOString().slice(0, 10);
+    admissionTimeline.push({
+      date: key,
+      admitted: admittedByDay.get(key) || 0,
+      departed: departedByDay.get(key) || 0,
+    });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return admissionTimeline;
 };
 
 const buildClassSummaries = async (schoolId, classes) => {
@@ -668,6 +715,13 @@ const deleteUserForDirector = async (req, res) => {
     if (user.role === "student") {
       const student = await Student.findOne({ user: user._id, school: school._id });
       if (student) {
+        const leftStatuses = ["inactive", "graduated"];
+        if (!leftStatuses.includes(student.status)) {
+          await StudentDepartureAudit.create({
+            school: school._id,
+            occurredAt: new Date(),
+          });
+        }
         const linkedParents = await ParentModel.find({ student: student._id, school: school._id }).select("user").lean().exec();
         const linkedParentUserIds = linkedParents.map((parent) => parent.user).filter(Boolean);
 
@@ -704,6 +758,9 @@ const getOverview = async (req, res) => {
     const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfYear = new Date(now.getFullYear(), 0, 1);
 
+    const admissionRangeStartUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    admissionRangeStartUtc.setUTCDate(admissionRangeStartUtc.getUTCDate() - (ADMISSION_TIMELINE_DAY_COUNT - 1));
+
     const [classCount, subjectCount, teacherCount, studentCount, parentCount, schoolAdminCount] = await Promise.all([
       ClassModel.countDocuments({ school: school._id }),
       Subject.countDocuments({ school: school._id }),
@@ -723,7 +780,20 @@ const getOverview = async (req, res) => {
         Teacher.countDocuments({ school: school._id, createdAt: { $gte: startOfMonth } }),
       ]);
 
-    const [recentTeachers, recentStudents, recentParents, monthIncome, monthExpense, classesWithTeachers, studentsWithFees, studentFeeTransactions, subscriptionDoc] = await Promise.all([
+    const [
+      recentTeachers,
+      recentStudents,
+      recentParents,
+      monthIncome,
+      monthExpense,
+      classesWithTeachers,
+      studentsWithFees,
+      studentFeeTransactions,
+      subscriptionDoc,
+      recentAdmissionsForTimeline,
+      departedStudentsForTimeline,
+      departureAuditsForTimeline,
+    ] = await Promise.all([
       Teacher.find({ school: school._id }).populate("user", "name").sort({ createdAt: -1 }).limit(5).exec(),
       Student.find({ school: school._id }).populate("user", "name").sort({ createdAt: -1 }).limit(5).exec(),
       ParentModel.find({ school: school._id }).populate("user", "name").sort({ createdAt: -1 }).limit(5).exec(),
@@ -778,7 +848,38 @@ const getOverview = async (req, res) => {
         .lean()
         .exec(),
       Subscription.findOne({ school: school._id }).lean().exec(),
+      Student.find(
+        { school: school._id, createdAt: { $gte: admissionRangeStartUtc } },
+        { createdAt: 1 },
+      )
+        .lean()
+        .exec(),
+      Student.find({
+        school: school._id,
+        status: { $in: ["inactive", "graduated"] },
+        $or: [
+          { leftAt: { $gte: admissionRangeStartUtc } },
+          { leftAt: null, updatedAt: { $gte: admissionRangeStartUtc } },
+        ],
+      })
+        .select("leftAt updatedAt")
+        .lean()
+        .exec(),
+      StudentDepartureAudit.find({
+        school: school._id,
+        occurredAt: { $gte: admissionRangeStartUtc },
+      })
+        .select("occurredAt")
+        .lean()
+        .exec(),
     ]);
+
+    const admissionTimeline = buildAdmissionTimeline(
+      admissionRangeStartUtc,
+      recentAdmissionsForTimeline,
+      departedStudentsForTimeline,
+      departureAuditsForTimeline,
+    );
 
     const recentActivities = [
       ...recentTeachers.map((t) => ({
@@ -923,6 +1024,7 @@ const getOverview = async (req, res) => {
       } : null,
       recentActivities,
       alerts: alerts.slice(0, 6),
+      admissionTimeline,
     });
   } catch (err) {
     console.error("Error in director.getOverview:", err);

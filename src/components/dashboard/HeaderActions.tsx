@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, LogOut, Monitor, Moon, Search, Settings, Sun, User, MapPin, Heart, Plane, Clock3, ChevronDown, Scan, UserCircle, Tag, CalendarDays, Hash, ShieldCheck, Copy } from "lucide-react";
+import { Bell, LogOut, Search, Settings, User, MapPin, Heart, Plane, Clock3, ChevronDown, Scan, UserCircle, Tag, CalendarDays, Hash, ShieldCheck, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -115,12 +115,6 @@ const HeaderActions = <T extends string>({
   const externalNotifications =
     (notifications as ExternalNotification<T>[] | undefined)
     ?? (EMPTY_EXTERNAL_NOTIFICATIONS as unknown as ExternalNotification<T>[]);
-  const [themeMode, setThemeMode] = useState<"light" | "dark" | "system">(() => {
-    if (typeof window === "undefined") return "system";
-    const saved = localStorage.getItem("theme");
-    if (saved === "dark" || saved === "light" || saved === "system") return saved;
-    return "system";
-  });
   const { language, setLanguage } = useAppLanguage();
   const { t } = useTranslation("common");
   const hasExternalNotifications = externalNotifications.length > 0;
@@ -205,26 +199,6 @@ const HeaderActions = <T extends string>({
       return next;
     });
   }, [currentSection, hasExternalNotifications, navItems, notificationStorageKey, t]);
-
-  const applyTheme = (mode: "light" | "dark" | "system") => {
-    const prefersDark =
-      typeof window !== "undefined" && window.matchMedia
-        ? window.matchMedia("(prefers-color-scheme: dark)").matches
-        : false;
-    const isDark = mode === "dark" ? true : mode === "light" ? false : prefersDark;
-    document.documentElement.classList.toggle("dark", isDark);
-  };
-
-  useEffect(() => {
-    applyTheme(themeMode);
-    localStorage.setItem("theme", themeMode);
-
-    if (themeMode !== "system" || !window.matchMedia) return;
-    const mql = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => applyTheme("system");
-    mql.addEventListener?.("change", onChange);
-    return () => mql.removeEventListener?.("change", onChange);
-  }, [themeMode]);
 
   const markAllRead = (open: boolean) => {
     if (!open) return;
