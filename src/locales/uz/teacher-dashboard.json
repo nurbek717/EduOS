@@ -66,7 +66,9 @@
     "deleteHomework": "Uy vazifani o'chirishda xatolik yuz berdi.",
     "gradeHomework": "Topshiriqni baholashda xatolik yuz berdi.",
     "createStudent": "O'quvchi yaratishda xatolik yuz berdi.",
-    "updateStudent": "O'quvchini yangilashda xatolik yuz berdi."
+    "updateStudent": "O'quvchini yangilashda xatolik yuz berdi.",
+    "fetchAttendanceStats": "Davomat statistikasini yuklashda xatolik yuz berdi.",
+    "saveAttendance": "Davomatni saqlashda xatolik yuz berdi."
   },
   "fallback": {
     "student": "O'quvchi",
@@ -111,7 +113,18 @@
     "nextLessonMissing": "Keyingi dars jadvalga kiritilmagan",
     "noClasses": "Sizga hali sinf biriktirilmagan.",
     "latestGradesTitle": "So'nggi baholar",
-    "latestGradesDesc": "Oxirgi qo'yilgan baholar kengaytirilgan jadval ko'rinishida."
+    "latestGradesDesc": "Oxirgi qo'yilgan baholar kengaytirilgan jadval ko'rinishida.",
+    "attendanceChart": {
+      "title": "O'quvchilar davomati",
+      "description": "Maktab bo'yicha keldi / kelmadi dinamikasi (so'nggi davr).",
+      "ariaRange": "Vaqt oralig'ini tanlang",
+      "range1d": "1 kun",
+      "range1w": "1 hafta",
+      "range1m": "1 oy",
+      "seriesPresent": "Keldi (va kechikkan)",
+      "seriesAbsent": "Kelmadi",
+      "empty": "Tanlangan davr uchun davomat yozuvlari yo'q."
+    }
   },
   "table": {
     "student": "O'quvchi",
@@ -140,6 +153,7 @@
       "validation": {
         "required": "Ism, email, parol va sinf tanlash majburiy."
       },
+      "homeroomOnlyCreate": "Yangi o'quvchi faqat sinf rahbari bo'lgan sinfingizga qo'shiladi. Boshqa sinfni tanladingiz — davomat uchun ishlatishingiz mumkin.",
       "created": "Yangi o'quvchi yaratildi."
     },
     "table": {
@@ -152,6 +166,18 @@
     },
     "actions": {
       "edit": "Tahrirlash"
+    },
+    "attendance": {
+      "title": "Kunlik davomat",
+      "hint": "Har bir o'quvchi uchun holatni tanlang va saqlang. Ma'lumotlar boshqaruv panelidagi grafikda ko'rinadi.",
+      "dateLabel": "Sana",
+      "present": "Keldi",
+      "absent": "Kelmadi",
+      "late": "Kech",
+      "save": "Davomatni saqlash",
+      "saved": "Davomat saqlandi.",
+      "pickClass": "Avval sinfni tanlang.",
+      "noStudents": "Bu sinfda o'quvchilar ro'yxati bo'sh."
     },
     "edit": {
       "title": "O'quvchini tahrirlash",

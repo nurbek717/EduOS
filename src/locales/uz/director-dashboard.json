@@ -36,6 +36,18 @@
   "admissionsChartFooterHint": "Grafik — yig'ma sonlar (kunlik emas). Chiqish: inactive/graduated yoki faol o'quvchini o'chirish.",
   "admissionsChartPeriodAdmitted": "Qabul: {{count}}",
   "admissionsChartPeriodDeparted": "Chiqish: {{count}}",
+  "attendanceChart": {
+    "title": "O'quvchilar davomati (keldi / kelmadi)",
+    "description": "Maktab bo'yicha so'nggi davr — yuzma-yuz va boshqa davomat yozuvlari. O'qituvchi «O'quvchilar» bo'limida kunlik davomatni saqlashi kerak.",
+    "ariaRange": "Vaqt oralig'ini tanlang",
+    "range1d": "1 kun",
+    "range1w": "1 hafta",
+    "range1m": "1 oy",
+    "seriesPresent": "Keldi (jumladan kech)",
+    "seriesAbsent": "Kelmadi",
+    "empty": "Tanlangan davr uchun davomat yozuvlari yo'q."
+  },
+  "attendanceStatsLoadError": "Davomat statistikasini yuklashda xatolik yuz berdi.",
   "errorTitle": "Xatolik!",
   "successTitle": "Muvaffaqiyatli!",
   "savedTitle": "Saqlandi",

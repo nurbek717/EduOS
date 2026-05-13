@@ -83,6 +83,16 @@
         "withoutDirector": "{{count}} ta maktabda direktor biriktirilmagan.",
         "withoutSchoolAdmin": "{{count}} ta maktabda maktab admini yo'q.",
         "lowActivity": "{{count}} ta maktabda faollik past yoki boshqaruv to'liq emas."
+      },
+      "trendChart": {
+        "title": "O'sish dinamikasi",
+        "range6": "6-oy",
+        "range3": "3-oy",
+        "range12": "1-yil",
+        "seriesSchools": "Yangi maktablar",
+        "seriesUsers": "Yangi foydalanuvchilar",
+        "empty": "Bu bo'lim uchun grafik ma'lumoti hozircha yo'q.",
+        "ariaRange": "Vaqt oralig'ini tanlash"
       }
     },
     "chart": {
@@ -212,6 +222,7 @@
     }
   },
   "subscriptions": {
+    "title": "Obunani qo'shish",
     "description": "Maktab uchun obuna muddatini belgilang",
     "created": "Obuna saqlandi.",
     "expired": "Muddati tugagan",
@@ -262,9 +273,9 @@
     }
   },
   "users": {
-    "title": "Direktorlar",
-    "description": "Platformadagi direktorlarni boshqaring.",
-    "searchPlaceholder": "Direktor ismi yoki email bo'yicha qidiring",
+    "title": "Platforma administratorlari",
+    "description": "Maktablar, direktorlar va maktab adminlarini boshqarish",
+    "searchPlaceholder": "Ism yoki email bo'yicha qidiring",
     "loading": "Foydalanuvchilar yuklanmoqda...",
     "unassigned": "Biriktirilmagan",
     "updated": "Foydalanuvchi ma'lumotlari yangilandi.",

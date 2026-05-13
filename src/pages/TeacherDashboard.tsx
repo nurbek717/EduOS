@@ -6,11 +6,13 @@ import SectionTitle from "@/components/SectionTitle";
 import UnifiedProfileSection from "@/components/dashboard/UnifiedProfileSection";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChatSkeleton, ListSkeleton, StatsCardsSkeleton } from "@/components/ui/skeletons";
 import LiveDateTimeBadge from "@/components/dashboard/LiveDateTimeBadge";
+import TeacherAttendanceOverviewChart from "@/components/teacher/TeacherAttendanceOverviewChart";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -211,6 +213,11 @@ const TeacherDashboard = () => {
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [attendanceDayDate, setAttendanceDayDate] = useState(() =>
+    new Date().toLocaleDateString("en-CA"),
+  );
+  const [attendanceRowStatus, setAttendanceRowStatus] = useState<Record<string, "present" | "absent" | "late">>({});
+  const [savingClassAttendance, setSavingClassAttendance] = useState(false);
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [newStudentName, setNewStudentName] = useState("");
@@ -278,6 +285,12 @@ const TeacherDashboard = () => {
 
   const [timetable, setTimetable] = useState<TimetableRow[]>([]);
   const [loadingTimetable, setLoadingTimetable] = useState(false);
+  const [attendanceStatsRange, setAttendanceStatsRange] = useState<"1d" | "1w" | "1m">("1w");
+  const [attendanceStatsSeries, setAttendanceStatsSeries] = useState<
+    { bucket: string; presentLate: number; absent: number }[]
+  >([]);
+  const [attendanceStatsBucket, setAttendanceStatsBucket] = useState<"hour" | "day">("day");
+  const [loadingAttendanceStats, setLoadingAttendanceStats] = useState(false);
   const [homework, setHomework] = useState<HomeworkRow[]>([]);
   const [loadingHomework, setLoadingHomework] = useState(false);
   const [homeworkClassId, setHomeworkClassId] = useState<string>("");
@@ -591,6 +604,14 @@ const TeacherDashboard = () => {
     }
   };
 
+  useEffect(() => {
+    const next: Record<string, "present" | "absent" | "late"> = {};
+    for (const s of students) {
+      next[s.id] = "present";
+    }
+    setAttendanceRowStatus(next);
+  }, [students]);
+
   const fetchGrades = async (classId?: string) => {
     if (!token) return;
     setLoadingGrades(true);
@@ -675,6 +696,31 @@ const TeacherDashboard = () => {
       });
     } finally {
       setLoadingTimetable(false);
+    }
+  };
+
+  const fetchAttendanceStats = async (range: "1d" | "1w" | "1m") => {
+    if (!token) return;
+    setLoadingAttendanceStats(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/teacher/attendance/stats?range=${range}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || td("errors.fetchAttendanceStats"));
+      }
+      setAttendanceStatsSeries(Array.isArray(data.series) ? data.series : []);
+      setAttendanceStatsBucket(data.bucket === "hour" ? "hour" : "day");
+    } catch (err: unknown) {
+      toast({
+        title: td("toasts.error"),
+        description: err instanceof Error ? err.message : td("errors.fetchAttendanceStats"),
+        variant: "destructive",
+      });
+      setAttendanceStatsSeries([]);
+    } finally {
+      setLoadingAttendanceStats(false);
     }
   };
 
@@ -1291,6 +1337,12 @@ const TeacherDashboard = () => {
   }, [section, chatSelectedThreadId, token]);
 
   useEffect(() => {
+    if (!isTeacher || !token || section !== "overview") return;
+    void fetchAttendanceStats(attendanceStatsRange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTeacher, token, section, attendanceStatsRange]);
+
+  useEffect(() => {
     if (!isTeacher || !token) return;
 
     void fetchTeacherChatThreads(true);
@@ -1752,6 +1804,16 @@ const TeacherDashboard = () => {
       return;
     }
 
+    const homeroomClass = classes.find((c) => c._id === selectedClassId)?.isHomeroom;
+    if (!homeroomClass) {
+      toast({
+        title: td("toasts.insufficient"),
+        description: td("students.form.homeroomOnlyCreate"),
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE_URL}/api/teacher/students`, {
         method: "POST",
@@ -1790,6 +1852,61 @@ const TeacherDashboard = () => {
         description: err instanceof Error ? err.message : td("errors.createStudent"),
         variant: "destructive",
       });
+    }
+  };
+
+  const handleSaveClassAttendance = async () => {
+    if (!token || !selectedClassId) {
+      toast({
+        title: td("toasts.insufficient"),
+        description: td("students.attendance.pickClass"),
+        variant: "destructive",
+      });
+      return;
+    }
+    if (students.length === 0) {
+      toast({
+        title: td("toasts.insufficient"),
+        description: td("students.attendance.noStudents"),
+        variant: "destructive",
+      });
+      return;
+    }
+    setSavingClassAttendance(true);
+    try {
+      const entries = students.map((s) => ({
+        studentId: s.id,
+        status: attendanceRowStatus[s.id] ?? "present",
+      }));
+      const res = await fetch(`${API_BASE_URL}/api/teacher/attendance`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          classId: selectedClassId,
+          date: attendanceDayDate,
+          entries,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || td("errors.saveAttendance"));
+      }
+      toast({
+        title: td("toasts.success"),
+        description: td("students.attendance.saved"),
+      });
+      void fetchAttendanceStats(attendanceStatsRange);
+    } catch (err: unknown) {
+      toast({
+        title: td("toasts.error"),
+        description: err instanceof Error ? err.message : td("errors.saveAttendance"),
+        variant: "destructive",
+      });
+    } finally {
+      setSavingClassAttendance(false);
     }
   };
 
@@ -1911,6 +2028,15 @@ const TeacherDashboard = () => {
                 ))}
               </div>
             )}
+
+            <TeacherAttendanceOverviewChart
+              data={attendanceStatsSeries}
+              bucket={attendanceStatsBucket}
+              range={attendanceStatsRange}
+              onRangeChange={setAttendanceStatsRange}
+              loading={loadingAttendanceStats}
+              locale={uiLocale}
+            />
 
             {loadingClasses || loadingStudents || loadingTimetable || loadingGrades ? (
               <>
@@ -2127,13 +2253,19 @@ const TeacherDashboard = () => {
                     className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
                     <option value="">{td("students.form.classPlaceholder")}</option>
-                    {classes
-                      .filter((c) => c.isHomeroom)
+                    {[...classes]
+                      .sort((a, b) => {
+                        if (Boolean(a.isHomeroom) !== Boolean(b.isHomeroom)) {
+                          return a.isHomeroom ? -1 : 1;
+                        }
+                        return (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" });
+                      })
                       .map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name}
-                      </option>
-                    ))}
+                        <option key={c._id} value={c._id}>
+                          {c.name}
+                          {c.isHomeroom ? ` — ${td("common.classTeacher")}` : ""}
+                        </option>
+                      ))}
                   </select>
                 </div>
 
@@ -2234,6 +2366,75 @@ const TeacherDashboard = () => {
                   </Button>
                 </div>
               </form>
+
+              {selectedClassId ? (
+                <div className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground">{td("students.attendance.title")}</h4>
+                      <p className="text-xs text-muted-foreground max-w-xl">{td("students.attendance.hint")}</p>
+                    </div>
+                    <div className="flex flex-wrap items-end gap-2">
+                      <div className="space-y-1">
+                        <label className="block text-xs font-medium text-muted-foreground" htmlFor="attendance-date">
+                          {td("students.attendance.dateLabel")}
+                        </label>
+                        <input
+                          id="attendance-date"
+                          type="date"
+                          value={attendanceDayDate}
+                          onChange={(e) => setAttendanceDayDate(e.target.value)}
+                          className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={savingClassAttendance || loadingStudents || students.length === 0}
+                        onClick={() => void handleSaveClassAttendance()}
+                      >
+                        {savingClassAttendance ? td("common.saving") : td("students.attendance.save")}
+                      </Button>
+                    </div>
+                  </div>
+                  {!loadingStudents && students.length > 0 && (
+                    <div className="space-y-2 max-h-[min(420px,55vh)] overflow-y-auto pr-1">
+                      {students.map((s) => (
+                        <div
+                          key={s.id}
+                          className="flex flex-col gap-2 rounded-md border bg-background px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <span className="text-sm font-medium text-foreground">{s.name}</span>
+                          <ToggleGroup
+                            type="single"
+                            variant="outline"
+                            size="sm"
+                            className="justify-start sm:justify-end"
+                            value={attendanceRowStatus[s.id] ?? "present"}
+                            onValueChange={(v) => {
+                              if (!v) return;
+                              setAttendanceRowStatus((prev) => ({
+                                ...prev,
+                                [s.id]: v as "present" | "absent" | "late",
+                              }));
+                            }}
+                          >
+                            <ToggleGroupItem value="present" className="text-xs px-2">
+                              {td("students.attendance.present")}
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="absent" className="text-xs px-2">
+                              {td("students.attendance.absent")}
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="late" className="text-xs px-2">
+                              {td("students.attendance.late")}
+                            </ToggleGroupItem>
+                          </ToggleGroup>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : null}
 
               <div className="border rounded-md overflow-hidden">
                 <table className="w-full text-sm">

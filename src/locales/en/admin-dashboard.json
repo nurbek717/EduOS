@@ -83,6 +83,16 @@
         "withoutDirector": "{{count}} schools have no assigned director.",
         "withoutSchoolAdmin": "{{count}} schools have no school admin.",
         "lowActivity": "{{count}} schools have low activity or incomplete governance."
+      },
+      "trendChart": {
+        "title": "Growth trend",
+        "range6": "6 months",
+        "range3": "3 months",
+        "range12": "1 year",
+        "seriesSchools": "New schools",
+        "seriesUsers": "New users",
+        "empty": "No chart data for this view yet.",
+        "ariaRange": "Select time range"
       }
     },
     "chart": {
@@ -212,6 +222,7 @@
     }
   },
   "subscriptions": {
+    "title": "Add subscription",
     "description": "Set subscription period for a school",
     "created": "Subscription saved.",
     "expired": "Expired",
@@ -262,9 +273,9 @@
     }
   },
   "users": {
-    "title": "Directors",
-    "description": "Manage directors across the platform.",
-    "searchPlaceholder": "Search by director name or email",
+    "title": "Platform administrators",
+    "description": "Manage schools, directors, and school admins",
+    "searchPlaceholder": "Search by name or email",
     "loading": "Loading users...",
     "unassigned": "Unassigned",
     "updated": "User updated.",

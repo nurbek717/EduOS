@@ -36,6 +36,18 @@
   "admissionsChartFooterHint": "Области — накопленные суммы (не по дням). Выбытия: неактивен/выпускник или удаление активного ученика.",
   "admissionsChartPeriodAdmitted": "Поступления: {{count}}",
   "admissionsChartPeriodDeparted": "Выбытия: {{count}}",
+  "attendanceChart": {
+    "title": "Посещаемость учеников (присутствие / отсутствие)",
+    "description": "По школе за выбранный период. Учитель сохраняет посещаемость в разделе «Ученики»; Face ID тоже учитывается.",
+    "ariaRange": "Выберите период",
+    "range1d": "1 день",
+    "range1w": "1 неделя",
+    "range1m": "1 месяц",
+    "seriesPresent": "Присутствие (включая опоздания)",
+    "seriesAbsent": "Отсутствие",
+    "empty": "За этот период записей посещаемости нет."
+  },
+  "attendanceStatsLoadError": "Не удалось загрузить статистику посещаемости.",
   "errorTitle": "Ошибка!",
   "successTitle": "Успешно!",
   "savedTitle": "Сохранено",

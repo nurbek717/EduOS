@@ -7,6 +7,7 @@ import DirectorFinanceSection from "@/components/director/DirectorFinanceSection
 import { DirectorDashboardAreaChart } from "@/components/director/DirectorDashboardAreaChart";
 import { DirectorDashboardAlertsPie } from "@/components/director/DirectorDashboardAlertsPie";
 import { DirectorOverviewFinancePie } from "@/components/director/DirectorOverviewFinancePie";
+import TeacherAttendanceOverviewChart from "@/components/teacher/TeacherAttendanceOverviewChart";
 import TicketSystem from "@/components/director/TicketSystem";
 import UnifiedProfileSection from "@/components/dashboard/UnifiedProfileSection";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -525,6 +526,12 @@ const DirectorDashboard = () => {
   const [section, setSection] = useState<DirectorSection>("dashboard");
   const [studentsView, setStudentsView] = useState<"base" | "list" | "attach">("base");
   const [overview, setOverview] = useState<DirectorOverview | null>(null);
+  const [directorAttendanceStatsRange, setDirectorAttendanceStatsRange] = useState<"1d" | "1w" | "1m">("1w");
+  const [directorAttendanceStatsSeries, setDirectorAttendanceStatsSeries] = useState<
+    { bucket: string; presentLate: number; absent: number }[]
+  >([]);
+  const [directorAttendanceStatsBucket, setDirectorAttendanceStatsBucket] = useState<"hour" | "day">("day");
+  const [loadingDirectorAttendanceStats, setLoadingDirectorAttendanceStats] = useState(false);
   const [headerNotifications, setHeaderNotifications] = useState<DirectorHeaderNotification[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [teachers, setTeachers] = useState<TeacherRow[]>([]);
@@ -1626,6 +1633,45 @@ const DirectorDashboard = () => {
     void loadSectionData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, selectedTimetableClassId]);
+
+  useEffect(() => {
+    if (!token || section !== "dashboard") return;
+    let cancelled = false;
+    const run = async () => {
+      setLoadingDirectorAttendanceStats(true);
+      try {
+        const res = await apiFetch(`${API_BASE_URL}/api/director/attendance/stats?range=${directorAttendanceStatsRange}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || t("attendanceStatsLoadError"));
+        }
+        if (!cancelled) {
+          setDirectorAttendanceStatsSeries(Array.isArray(data.series) ? data.series : []);
+          setDirectorAttendanceStatsBucket(data.bucket === "hour" ? "hour" : "day");
+        }
+      } catch (err: unknown) {
+        if (!cancelled) {
+          toast({
+            title: t("errorTitle"),
+            description: err instanceof Error ? err.message : t("attendanceStatsLoadError"),
+            variant: "destructive",
+          });
+          setDirectorAttendanceStatsSeries([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingDirectorAttendanceStats(false);
+        }
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, section, directorAttendanceStatsRange]);
 
   useEffect(() => {
     if (section !== "teachers" && section !== "students") return;
@@ -2750,6 +2796,18 @@ const DirectorDashboard = () => {
                 </div>
               </div>
             </div>
+
+            <TeacherAttendanceOverviewChart
+              data={directorAttendanceStatsSeries}
+              bucket={directorAttendanceStatsBucket}
+              range={directorAttendanceStatsRange}
+              onRangeChange={setDirectorAttendanceStatsRange}
+              loading={loadingDirectorAttendanceStats}
+              locale={locale}
+              i18nNamespace="director-dashboard"
+              chartKeyPrefix="attendanceChart"
+              loadingTranslationKey="loading"
+            />
 
             {!overview ? (
               <>

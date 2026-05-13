@@ -7,6 +7,7 @@ const HomeworkSubmission = require("../models/HomeworkSubmission");
 const ClassModel = require("../models/Class");
 const User = require("../models/User");
 const Timetable = require("../models/Timetable");
+const { getSchoolAttendanceStats } = require("../utils/schoolAttendanceStats");
 
 const buildAttachmentUrl = (req, filename) =>
   `${req.protocol}://${req.get("host")}/uploads/homework/${filename}`;
@@ -356,7 +357,14 @@ const setAttendanceByFace = async (req, res) => {
     today.setHours(0, 0, 0, 0);
     await Attendance.findOneAndUpdate(
       { student: best.student._id, date: today, school: teacher.school._id },
-      { status: "present", school: teacher.school._id },
+      {
+        $set: {
+          status: "present",
+          school: teacher.school._id,
+          student: best.student._id,
+          date: today,
+        },
+      },
       { upsert: true, returnDocument: "after" },
     );
 
@@ -395,7 +403,14 @@ const setAttendanceForClass = async (req, res) => {
       .map((e) =>
         Attendance.findOneAndUpdate(
           { student: e.studentId, date: targetDate, school: teacher.school._id },
-          { status: e.status, school: teacher.school._id },
+          {
+            $set: {
+              status: e.status,
+              school: teacher.school._id,
+              student: e.studentId,
+              date: targetDate,
+            },
+          },
           { upsert: true, returnDocument: "after" },
         ),
       );
@@ -856,6 +871,21 @@ const deleteGradeForTeacher = async (req, res) => {
   }
 };
 
+const listAttendanceStatsForTeacher = async (req, res) => {
+  try {
+    const teacher = await getTeacherForUser(req.user);
+    const schoolId = teacher.school._id;
+    const range = (req.query.range || "1w").toString();
+    if (!["1d", "1w", "1m"].includes(range)) {
+      return res.status(400).json({ message: "range must be 1d, 1w, or 1m" });
+    }
+    const payload = await getSchoolAttendanceStats(schoolId, range);
+    return res.json(payload);
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Failed to load attendance stats" });
+  }
+};
+
 module.exports = {
   listClassesForTeacher,
   listStudents,
@@ -876,5 +906,6 @@ module.exports = {
   listTimetableForTeacher,
   createTimetableForTeacher,
   deleteTimetableForTeacher,
+  listAttendanceStatsForTeacher,
 };
 

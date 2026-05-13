@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 
 const connectDb = async () => {
+  const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/school_saas";
   try {
-    const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/school_saas";
     await mongoose.connect(uri, {
       autoIndex: true,
     });
@@ -10,7 +10,17 @@ const connectDb = async () => {
     console.log("MongoDB connected");
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error("MongoDB connection error", err);
+    console.error("MongoDB connection error:", err?.message || err);
+    // eslint-disable-next-line no-console
+    console.error(
+      [
+        "Tekshirish ro‘yxati:",
+        "- MONGODB_URI to‘g‘rimi? (server/.env)",
+        "- MongoDB Atlas bo‘lsa: Network Access da IP (0.0.0.0/0 yoki sizning IP) ochiqmi?",
+        "- Local mongod ishlayaptimi: mongodb://localhost:27017/...",
+        "- Internet / VPN ulanishi",
+      ].join("\n"),
+    );
     process.exit(1);
   }
 };

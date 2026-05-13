@@ -86,16 +86,17 @@ const getStats = async (req, res) => {
     const schoolsWithSchoolAdmin = new Set(schoolAdminSchoolIds.map((schoolId) => String(schoolId))).size;
     const schoolsWithoutSchoolAdmin = Math.max(totalSchools - schoolsWithSchoolAdmin, 0);
 
-    // So'nggi 6 oy (oxirgi oy = joriy oy - monthOffset); «oldingi / keyingi» tugmalari oyma-oy siljitadi
+    // Oxirgi oy = joriy oy - monthOffset (radar «oldingi / keyingi» bilan siljiydi).
+    // Trend grafik uchun 12 oy oralig'i; radar va newSchoolsLast6Months uchun oxirgi 6 oy kesiladi.
     const endAnchor = new Date();
     endAnchor.setDate(1);
     endAnchor.setHours(0, 0, 0, 0);
     endAnchor.setMonth(endAnchor.getMonth() - monthOffset);
 
-    const startAnchor = new Date(endAnchor);
-    startAnchor.setMonth(startAnchor.getMonth() - 5);
+    const trendStartAnchor = new Date(endAnchor);
+    trendStartAnchor.setMonth(trendStartAnchor.getMonth() - 11);
 
-    const startDay = formatDay(startAnchor);
+    const startDay = formatDay(trendStartAnchor);
     const endMonthLast = new Date(endAnchor.getFullYear(), endAnchor.getMonth() + 1, 0);
     endMonthLast.setHours(23, 59, 59, 999);
     const endDay = formatDay(endMonthLast);
@@ -135,15 +136,57 @@ const getStats = async (req, res) => {
       };
     }, {});
 
-    const schoolsLast6Months = [];
-    for (let i = 0; i < 6; i += 1) {
-      const d = new Date(startAnchor.getFullYear(), startAnchor.getMonth() + i, 1);
+    const schoolsTrend12Months = [];
+    for (let i = 0; i < 12; i += 1) {
+      const d = new Date(trendStartAnchor.getFullYear(), trendStartAnchor.getMonth() + i, 1);
       const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      schoolsLast6Months.push({
+      schoolsTrend12Months.push({
         yearMonth: ym,
         count: countsByYearMonth[ym] || 0,
       });
     }
+
+    const schoolsLast6Months = schoolsTrend12Months.slice(-6);
+
+    const startDayUtc = `${startDay}T00:00:00.000Z`;
+    const rawUsersByMonth = await User.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(startDayUtc),
+            $lte: endMonthLast,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m", date: "$createdAt", timezone: "Asia/Tashkent" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const userCountsByYearMonth = rawUsersByMonth.reduce((acc, item) => {
+      return {
+        ...acc,
+        [item._id]: item.count,
+      };
+    }, {});
+
+    const usersTrend12Months = [];
+    for (let i = 0; i < 12; i += 1) {
+      const d = new Date(trendStartAnchor.getFullYear(), trendStartAnchor.getMonth() + i, 1);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      usersTrend12Months.push({
+        yearMonth: ym,
+        count: userCountsByYearMonth[ym] || 0,
+      });
+    }
+
+    const usersLast6Months = usersTrend12Months.slice(-6);
 
     const newSchoolsLast6Months = schoolsLast6Months.reduce((total, item) => total + item.count, 0);
     const attentionItems = [];
@@ -211,6 +254,9 @@ const getStats = async (req, res) => {
         attentionItems,
       },
       schoolsLast6Months,
+      usersLast6Months,
+      schoolsTrend12Months,
+      usersTrend12Months,
       range: {
         start: startDay,
         end: endDay,

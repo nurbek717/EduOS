@@ -36,6 +36,7 @@ import { Eye, EyeOff, Lock } from "lucide-react";
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const TABLE_PAGE_SIZE = 5;
 const AdminSchoolsChart = lazy(() => import("@/components/admin/AdminSchoolsChart"));
+const AdminAttentionTrendChart = lazy(() => import("@/components/admin/AdminAttentionTrendChart"));
 
 type Director = {
   _id: string;
@@ -82,6 +83,18 @@ type Stats = {
     yearMonth: string;
     count: number;
   }[];
+  usersLast6Months?: {
+    yearMonth: string;
+    count: number;
+  }[];
+  schoolsTrend12Months?: {
+    yearMonth: string;
+    count: number;
+  }[];
+  usersTrend12Months?: {
+    yearMonth: string;
+    count: number;
+  }[];
   range?: {
     start: string;
     end: string;
@@ -113,31 +126,7 @@ type AdminHeaderNotification = {
   id: string;
   text: string;
   at: string;
-  section: "overview" | "schools" | "users" | "subscriptions" | "exams";
-};
-
-type AdminExam = {
-  id: string;
-  title: string;
-  className: string;
-  subjectName: string;
-  duration: number;
-  startTime: string;
-  endTime: string;
-  isPublished: boolean;
-  createdByRole?: string;
-};
-
-type AdminExamResult = {
-  id: string;
-  studentName: string;
-  studentEmail: string;
-  status: string;
-  score: number;
-  maxScore: number;
-  gradePercent: number;
-  pendingManual: number;
-  isFinalScore: boolean;
+  section: "overview" | "schools" | "users" | "subscriptions";
 };
 
 const roleLabelKeys: Record<UserRole, string> = {
@@ -208,14 +197,8 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [schools, setSchools] = useState<School[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [section, setSection] = useState<"overview" | "schools" | "users" | "subscriptions" | "exams" | "profile">("schools");
+  const [section, setSection] = useState<"overview" | "schools" | "users" | "subscriptions" | "profile">("schools");
   const [monthOffset, setMonthOffset] = useState(0);
-  const [examsLoading, setExamsLoading] = useState(false);
-  const [exams, setExams] = useState<AdminExam[]>([]);
-  const [examResultsLoading, setExamResultsLoading] = useState(false);
-  const [selectedExamId, setSelectedExamId] = useState<string>("");
-  const [selectedExamTitle, setSelectedExamTitle] = useState<string>("");
-  const [examResults, setExamResults] = useState<AdminExamResult[]>([]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [userDialogOpen, setUserDialogOpen] = useState(false);
@@ -225,8 +208,6 @@ const AdminDashboard = () => {
   const [usersSearch, setUsersSearch] = useState("");
   const [schoolsPage, setSchoolsPage] = useState(1);
   const [subscriptionsPage, setSubscriptionsPage] = useState(1);
-  const [examsPage, setExamsPage] = useState(1);
-  const [examResultsPage, setExamResultsPage] = useState(1);
   const [usersPage, setUsersPage] = useState(1);
 
   const [schoolName, setSchoolName] = useState("");
@@ -287,8 +268,6 @@ const AdminDashboard = () => {
 
   const schoolsPagination = getPagination(schools, schoolsPage);
   const subscriptionsPagination = getPagination(subscriptions, subscriptionsPage);
-  const examsPagination = getPagination(exams, examsPage);
-  const examResultsPagination = getPagination(examResults, examResultsPage);
   const usersPagination = getPagination(users, usersPage);
 
   const fetchSchools = async () => {
@@ -390,51 +369,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const fetchExams = async () => {
-    if (!token) return;
-    setExamsLoading(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/exams/manage`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || ad("errors.fetchExams"));
-      setExams(Array.isArray(data) ? data : []);
-    } catch (err: unknown) {
-      toast({
-        title: ad("toasts.error"),
-        description: err instanceof Error ? err.message : ad("errors.fetchExams"),
-        variant: "destructive",
-      });
-    } finally {
-      setExamsLoading(false);
-    }
-  };
-
-  const fetchExamResults = async (examId: string, examTitle?: string) => {
-    if (!token || !examId) return;
-    setExamResultsLoading(true);
-    setSelectedExamId(examId);
-    setSelectedExamTitle(examTitle || ad("exams.results.defaultTitle"));
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/exams/${examId}/results`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || ad("errors.fetchExamResults"));
-      setExamResults(Array.isArray(data?.attempts) ? data.attempts : []);
-    } catch (err: unknown) {
-      toast({
-        title: ad("toasts.error"),
-        description: err instanceof Error ? err.message : ad("errors.fetchExamResults"),
-        variant: "destructive",
-      });
-      setExamResults([]);
-    } finally {
-      setExamResultsLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchSchools();
     // Overview kartalarida ham "kun qoldi" chiqishi uchun subscriptionlarni ham yuklab qo'yamiz.
@@ -463,18 +397,8 @@ const AdminDashboard = () => {
   }, [usersSearch]);
 
   useEffect(() => {
-    setExamResultsPage(1);
-  }, [selectedExamId]);
-
-  useEffect(() => {
     if (section !== "subscriptions") return;
     fetchSubscriptions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section]);
-
-  useEffect(() => {
-    if (section !== "exams") return;
-    fetchExams();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section]);
 
@@ -973,12 +897,6 @@ const AdminDashboard = () => {
       subtitle: s.address || ad("schools.fallback"),
       section: "schools" as const,
     })),
-    ...exams.map((e) => ({
-      id: e.id,
-      title: e.title,
-      subtitle: `${e.className} • ${e.subjectName}`,
-      section: "exams" as const,
-    })),
     ...users.map((u) => ({
       id: u.id,
       title: u.name,
@@ -1012,8 +930,24 @@ const AdminDashboard = () => {
 
   return (
     <AdminLayout
-      title={t("dashboard.admin.title")}
-      subtitle={t("dashboard.admin.subtitle")}
+      title={
+        section === "schools"
+          ? ad("schoolsList")
+          : section === "subscriptions"
+            ? ad("subscriptions.title")
+            : section === "users"
+              ? ad("users.title")
+              : t("dashboard.admin.title")
+      }
+      subtitle={
+        section === "schools"
+          ? ad("schools.description")
+          : section === "subscriptions"
+            ? ad("subscriptions.description")
+            : section === "users"
+              ? ad("users.description")
+              : t("dashboard.admin.subtitle")
+      }
       currentSection={section}
       onSectionChange={setSection}
       headerNotifications={headerNotifications}
@@ -1235,19 +1169,20 @@ const AdminDashboard = () => {
                 )}
               </CardContent>
             </Card>
+
+            <Suspense fallback={<ChartSkeleton height={280} />}>
+              <AdminAttentionTrendChart
+                schoolsTrend12Months={stats?.schoolsTrend12Months ?? stats?.schoolsLast6Months ?? []}
+                usersTrend12Months={stats?.usersTrend12Months ?? stats?.usersLast6Months ?? []}
+              />
+            </Suspense>
           </div>
         )}
 
         {/* Schools table */}
         {section === "schools" && (
           <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <div>
-              <CardTitle>Maktablar ro'yxati</CardTitle>
-              <CardDescription>
-                {ad("schools.description")}
-              </CardDescription>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-end space-y-0 pb-4">
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="gap-2">
@@ -1536,13 +1471,7 @@ const AdminDashboard = () => {
         {/* Subscriptions */}
         {section === "subscriptions" && (
           <Card>
-            <CardHeader className="space-y-4">
-              <div>
-                <CardTitle>Obunani qo'shish</CardTitle>
-                <CardDescription>{ad("subscriptions.description")}</CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 pt-6">
               <form onSubmit={handleCreateSubscription} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="subscription-school">{ad("subscriptions.form.school")}</Label>
@@ -1713,214 +1642,10 @@ const AdminDashboard = () => {
           </Card>
         )}
 
-        {section === "exams" && (
-          <Card>
-            <CardHeader className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <CardTitle>Imtihonlar va natijalar</CardTitle>
-                  <CardDescription>
-                    {ad("exams.description")}
-                  </CardDescription>
-                </div>
-                <Button type="button" variant="outline" size="sm" onClick={() => void fetchExams()}>
-                  {ad("common.refresh")}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{ad("exams.table.exam")}</TableHead>
-                    <TableHead>{ad("table.class")}</TableHead>
-                    <TableHead>{ad("table.subject")}</TableHead>
-                    <TableHead>{ad("exams.table.duration")}</TableHead>
-                    <TableHead>{ad("exams.table.status")}</TableHead>
-                    <TableHead className="text-right">{ad("exams.table.results")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {examsLoading ? (
-                    <TableSkeleton rows={5} columns={6} />
-                  ) : exams.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center text-sm text-muted-foreground">
-                        {ad("exams.empty")}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    examsPagination.rows.map((exam) => (
-                      <TableRow key={exam.id}>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <p className="font-medium text-foreground">{exam.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(exam.startTime).toLocaleString(locale)} - {new Date(exam.endTime).toLocaleString(locale)}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{exam.className || "—"}</TableCell>
-                        <TableCell>{exam.subjectName || "—"}</TableCell>
-                        <TableCell>{ad("exams.durationMin", { value: exam.duration })}</TableCell>
-                        <TableCell>
-                          <Badge variant={exam.isPublished ? "default" : "outline"}>
-                            {exam.isPublished ? ad("exams.status.published") : ad("exams.status.draft")}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => void fetchExamResults(exam.id, exam.title)}
-                          >
-                            {ad("common.view")}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-
-              {!examsLoading && examsPagination.total > 0 && (
-                <div className="flex items-center justify-between gap-3 border-t pt-4">
-                  <p className="text-sm text-muted-foreground">
-                    {examsPagination.start + 1} - {examsPagination.end} / Jami: {examsPagination.total}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9 rounded-full"
-                      onClick={() => setExamsPage((prev) => Math.max(1, prev - 1))}
-                      disabled={examsPagination.safePage <= 1}
-                    >
-                      ‹
-                    </Button>
-                    <span className="inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-emerald-600 px-3 text-sm font-medium text-emerald-600">
-                      {examsPagination.safePage}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9 rounded-full"
-                      onClick={() => setExamsPage((prev) => Math.min(examsPagination.totalPages, prev + 1))}
-                      disabled={examsPagination.safePage >= examsPagination.totalPages}
-                    >
-                      ›
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {selectedExamId ? (
-                <div className="rounded-lg border p-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <h4 className="text-sm font-semibold text-foreground">{ad("exams.results.title", { exam: selectedExamTitle })}</h4>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedExamId("");
-                        setExamResults([]);
-                      }}
-                    >
-                      {ad("common.close")}
-                    </Button>
-                  </div>
-
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>O&apos;quvchi</TableHead>
-                        <TableHead>{ad("table.status")}</TableHead>
-                        <TableHead>{ad("table.score")}</TableHead>
-                        <TableHead>{ad("table.percent")}</TableHead>
-                        <TableHead>{ad("exams.results.manualPending")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {examResultsLoading ? (
-                        <TableSkeleton rows={5} columns={5} />
-                      ) : examResults.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={5} className="h-20 text-center text-sm text-muted-foreground">
-                            {ad("exams.results.empty")}
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        examResultsPagination.rows.map((row) => (
-                          <TableRow key={row.id}>
-                            <TableCell>
-                              <div className="space-y-1">
-                                <p className="font-medium text-foreground">{row.studentName}</p>
-                                <p className="text-xs text-muted-foreground">{row.studentEmail}</p>
-                              </div>
-                            </TableCell>
-                            <TableCell>{row.status}</TableCell>
-                            <TableCell>{row.score}/{row.maxScore}</TableCell>
-                            <TableCell>{row.gradePercent}%</TableCell>
-                            <TableCell>{row.pendingManual}</TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-
-                  {!examResultsLoading && examResultsPagination.total > 0 && (
-                    <div className="mt-4 flex items-center justify-between gap-3 border-t pt-4">
-                      <p className="text-sm text-muted-foreground">
-                        {examResultsPagination.start + 1} - {examResultsPagination.end} / Jami: {examResultsPagination.total}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className="h-9 w-9 rounded-full"
-                          onClick={() => setExamResultsPage((prev) => Math.max(1, prev - 1))}
-                          disabled={examResultsPagination.safePage <= 1}
-                        >
-                          ‹
-                        </Button>
-                        <span className="inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-emerald-600 px-3 text-sm font-medium text-emerald-600">
-                          {examResultsPagination.safePage}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className="h-9 w-9 rounded-full"
-                          onClick={() => setExamResultsPage((prev) => Math.min(examResultsPagination.totalPages, prev + 1))}
-                          disabled={examResultsPagination.safePage >= examResultsPagination.totalPages}
-                        >
-                          ›
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-        )}
-
         {/* Users table */}
         {section === "users" && (
           <Card>
-            <CardHeader className="space-y-4">
-              <div>
-                <CardTitle>{ad("users.title")}</CardTitle>
-                <CardDescription>
-                  {ad("users.description")}
-                </CardDescription>
-              </div>
-
+            <CardHeader className="space-y-4 pb-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex w-full flex-col gap-3 lg:max-w-sm lg:flex-row lg:items-center">
                   <Input

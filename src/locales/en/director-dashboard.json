@@ -36,6 +36,18 @@
   "admissionsChartFooterHint": "Areas show aggregated counts (not daily). Departures: inactive/graduated or deletion of an active student.",
   "admissionsChartPeriodAdmitted": "Admissions: {{count}}",
   "admissionsChartPeriodDeparted": "Departures: {{count}}",
+  "attendanceChart": {
+    "title": "Student attendance (present / absent)",
+    "description": "School-wide trend for the selected period. Teachers save daily attendance under Students; Face ID also counts.",
+    "ariaRange": "Select time range",
+    "range1d": "1 day",
+    "range1w": "1 week",
+    "range1m": "1 month",
+    "seriesPresent": "Present (incl. late)",
+    "seriesAbsent": "Absent",
+    "empty": "No attendance records for this period."
+  },
+  "attendanceStatsLoadError": "Failed to load attendance statistics.",
   "errorTitle": "Error",
   "successTitle": "Success",
   "savedTitle": "Saved",

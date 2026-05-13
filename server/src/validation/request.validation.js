@@ -346,6 +346,11 @@ const validators = {
       day: { type: "dayQuery" },
     },
   }),
+  teacherAttendanceStatsQuery: validateRequest({
+    query: {
+      range: { type: "enum", values: ["1d", "1w", "1m"], nullable: true },
+    },
+  }),
   directorUsersQuery: validateRequest({
     query: {
       role: { type: "enum", values: ["teacher", "student", "parent", "school_admin"] },

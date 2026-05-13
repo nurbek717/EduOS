@@ -66,7 +66,9 @@
     "deleteHomework": "Failed to delete homework.",
     "gradeHomework": "Failed to grade homework submission.",
     "createStudent": "Failed to create student.",
-    "updateStudent": "Failed to update student."
+    "updateStudent": "Failed to update student.",
+    "fetchAttendanceStats": "Failed to load attendance statistics.",
+    "saveAttendance": "Failed to save attendance."
   },
   "fallback": {
     "student": "Student",
@@ -111,7 +113,18 @@
     "nextLessonMissing": "Next lesson is not in timetable",
     "noClasses": "No class has been assigned to you yet.",
     "latestGradesTitle": "Latest grades",
-    "latestGradesDesc": "Recently assigned grades in extended table view."
+    "latestGradesDesc": "Recently assigned grades in extended table view.",
+    "attendanceChart": {
+      "title": "Student attendance",
+      "description": "School-wide present / absent trend for the selected period.",
+      "ariaRange": "Select time range",
+      "range1d": "1 day",
+      "range1w": "1 week",
+      "range1m": "1 month",
+      "seriesPresent": "Present (incl. late)",
+      "seriesAbsent": "Absent",
+      "empty": "No attendance records for this period."
+    }
   },
   "table": {
     "student": "Student",
@@ -140,6 +153,7 @@
       "validation": {
         "required": "Name, email, password, and class are required."
       },
+      "homeroomOnlyCreate": "New students can only be added to a class where you are homeroom teacher. You can still use other classes for attendance.",
       "created": "New student created."
     },
     "table": {
@@ -152,6 +166,18 @@
     },
     "actions": {
       "edit": "Edit"
+    },
+    "attendance": {
+      "title": "Daily attendance",
+      "hint": "Pick a status for each student and save. Counts appear on the school dashboard chart.",
+      "dateLabel": "Date",
+      "present": "Present",
+      "absent": "Absent",
+      "late": "Late",
+      "save": "Save attendance",
+      "saved": "Attendance saved.",
+      "pickClass": "Select a class first.",
+      "noStudents": "No students in this class yet."
     },
     "edit": {
       "title": "Edit student",

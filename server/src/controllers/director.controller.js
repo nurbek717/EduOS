@@ -11,6 +11,7 @@ const FinanceTransaction = require("../models/FinanceTransaction");
 const Grade = require("../models/Grade");
 const Subscription = require("../models/Subscription");
 const StudentDepartureAudit = require("../models/StudentDepartureAudit");
+const { getSchoolAttendanceStats } = require("../utils/schoolAttendanceStats");
 
 const ensureSchoolManagementUser = async (user) => {
   if (!user.schoolId) {
@@ -1973,7 +1974,14 @@ const setAttendanceByFace = async (req, res) => {
     today.setHours(0, 0, 0, 0);
     await Attendance.findOneAndUpdate(
       { student: best.student._id, date: today, school: school._id },
-      { status: "present", school: school._id },
+      {
+        $set: {
+          status: "present",
+          school: school._id,
+          student: best.student._id,
+          date: today,
+        },
+      },
       { upsert: true, returnDocument: "after" },
     );
 
@@ -2215,6 +2223,20 @@ const deleteTimetableEntry = async (req, res) => {
   }
 };
 
+const listAttendanceStatsForDirector = async (req, res) => {
+  try {
+    const school = await ensureSchoolManagementUser(req.user);
+    const range = (req.query.range || "1w").toString();
+    if (!["1d", "1w", "1m"].includes(range)) {
+      return res.status(400).json({ message: "range must be 1d, 1w, or 1m" });
+    }
+    const payload = await getSchoolAttendanceStats(school._id, range);
+    return res.json(payload);
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Failed to load attendance stats" });
+  }
+};
+
 module.exports = {
   createSchoolAdminForDirector,
   listUsersForDirector,
@@ -2243,5 +2265,6 @@ module.exports = {
   listTimetableForClass,
   updateTimetableEntry,
   deleteTimetableEntry,
+  listAttendanceStatsForDirector,
 };
 

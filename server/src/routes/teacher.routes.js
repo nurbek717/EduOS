@@ -17,6 +17,7 @@ const {
   updateGradeForTeacher,
   deleteGradeForTeacher,
   listTimetableForTeacher,
+  listAttendanceStatsForTeacher,
 } = require("../controllers/teacher.controller");
 const {
   listTeacherThreads,
@@ -44,6 +45,7 @@ router.delete("/grades/:id", validators.idParam, deleteGradeForTeacher);
 
 router.post("/attendance", validators.teacherAttendance, setAttendanceForClass);
 router.post("/attendance/face", validators.faceAttendance, setAttendanceByFace);
+router.get("/attendance/stats", validators.teacherAttendanceStatsQuery, listAttendanceStatsForTeacher);
 
 router.get("/homework", validators.teacherHomeworkQuery, listHomeworkForTeacher);
 router.post("/homework", uploadHomeworkAttachment, validators.teacherHomework, createHomework);

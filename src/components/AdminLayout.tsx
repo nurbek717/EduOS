@@ -5,7 +5,6 @@ import {
   School,
   Users,
   Ticket,
-  FileCheck,
   ChevronRight,
 } from "lucide-react";
 import {
@@ -27,7 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import HeaderActions from "@/components/dashboard/HeaderActions";
 import { useTranslation } from "react-i18next";
 
-type AdminSection = "overview" | "schools" | "users" | "subscriptions" | "exams" | "profile";
+type AdminSection = "overview" | "schools" | "users" | "subscriptions" | "profile";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -108,7 +107,6 @@ const AdminLayout = ({
     { label: t("admin.nav.schools"), section: "schools", icon: School },
     { label: t("admin.nav.users"), section: "users", icon: Users },
     { label: t("admin.nav.subscriptions"), section: "subscriptions", icon: Ticket },
-    { label: t("admin.nav.exams"), section: "exams", icon: FileCheck },
   ];
 
   const sectionLabels: Record<AdminSection, string> = {
@@ -116,7 +114,6 @@ const AdminLayout = ({
     schools: t("admin.nav.schools"),
     users: t("admin.nav.users"),
     subscriptions: t("admin.nav.subscriptions"),
-    exams: t("admin.nav.exams"),
     profile: "Profil",
   };
 
@@ -249,14 +246,14 @@ const AdminLayout = ({
           </div>
           <div className="flex-1 overflow-auto p-6">
           {(title || subtitle) && (
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                {title || t("admin.layoutTitle")}
-              </h1>
-              {subtitle && (
-                <p className="mt-1 text-muted-foreground">{subtitle}</p>
-              )}
-              <div className="mt-3 h-1 w-12 rounded-full bg-primary" />
+            <div className="mb-4">
+              {title ? (
+                <h1 className="font-semibold text-md md:text-lg text-[#212B36] leading-tight tracking-wider">{title}</h1>
+              ) : null}
+              {subtitle ? (
+                <p className="text-sm flex items-center justify-start gap-1 text-[#FE9F43] font-medium md:text-sm">{subtitle}</p>
+              ) : null}
+              <div className="mt-3 h-1 w-12 rounded-full bg-primary" aria-hidden />
             </div>
           )}
           {children}

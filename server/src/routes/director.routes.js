@@ -27,6 +27,7 @@ const {
   updateTimetableEntry,
   deleteTimetableEntry,
   getSubscriptionStatus,
+  listAttendanceStatsForDirector,
 } = require("../controllers/director.controller");
 const {
   getFinanceOverview,
@@ -73,6 +74,7 @@ router.get("/students", listStudentsForDirector);
 router.patch("/students/:id", requireRoles("school_admin"), validators.directorUpdateStudent, updateStudentForDirector);
 router.post("/parents", requireRoles("school_admin"), validators.directorCreateParent, createParent);
 router.post("/attendance/face", validators.faceAttendance, setAttendanceByFace);
+router.get("/attendance/stats", validators.teacherAttendanceStatsQuery, listAttendanceStatsForDirector);
 
 router.post("/timetable", requireRoles("school_admin"), validators.directorCreateTimetable, createTimetableEntry);
 router.get("/timetable", validators.directorTimetableQuery, listTimetableForClass);
