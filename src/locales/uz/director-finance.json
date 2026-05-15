@@ -12,6 +12,24 @@
   "savedTitle": "Saqlandi",
   "updatedTitle": "Yangilandi",
   "deletedTitle": "O'chirildi",
+  "exportExcel": "Excelga eksport",
+  "export": {
+    "total": "Jami",
+    "generatedAt": "Yaratilgan vaqt",
+    "sheets": {
+      "summary": "Umumiy",
+      "income": "Kirim",
+      "expense": "Chiqim",
+      "studentPayments": "O'quvchi to'lovlari",
+      "staffPayments": "Xodim to'lovlari",
+      "otherTransactions": "Boshqa to'lovlar",
+      "studentBalances": "O'quvchi balansi",
+      "staffBalances": "Xodim balansi",
+      "yearGrid": "Yillik jadval",
+      "chartsMonthly": "Oylik grafik",
+      "chartsYearly": "Yillik grafik"
+    }
+  },
   "cards": {
     "monthIncome": "Shu oy kirim",
     "monthExpense": "Shu oy chiqim",
@@ -33,6 +51,8 @@
     "category": "Kategoriya",
     "amount": "Summa",
     "date": "Sana",
+    "billingMonth": "Qaysi oy uchun",
+    "paymentDate": "Pul qabul qilingan sana",
     "note": "Izoh",
     "student": "O'quvchi",
     "staff": "Xodim",
@@ -41,17 +61,36 @@
     "salaryPaymentNoteExample": "Masalan, mart oyi maoshi",
     "transaction": {
       "title": "Kirim yoki chiqim qo'shish",
-      "desc": "Manual transaction yozuvi orqali har qanday moliyaviy harakatni kiriting."
+      "desc": "Homiylik, grant va boshqa umumiy kirim-chiqimlar. O'quvchi to'lovi va xodim maoshi uchun quyidagi alohida formadan foydalaning."
     },
     "studentPayment": {
       "title": "O'quvchi to'lovi qo'shish",
-      "desc": "O'quvchi tomonidan to'langan pulni darhol moliyaviy hisobotga kiriting.",
+      "desc": "O'quvchi kontrakti shu yerdan kiritiladi — statistikada bir marta hisoblanadi va qarz kamayadi.",
       "submit": "To'lovni qo'shish"
     },
     "salaryPayment": {
       "title": "Xodim maoshi to'lovi",
-      "desc": "To'langan maosh summasini kiriting va oy yakunida qoldiqni kuzating.",
+      "desc": "Xodim maoshi shu yerdan kiritiladi — umumiy chiqimda bir marta hisoblanadi.",
       "submit": "Maosh to'lovini qo'shish"
+    }
+  },
+  "yearGrid": {
+    "title": "Yillik to'lov jadvali",
+    "desc": "Sheets dagidek: har bir o'quvchi uchun oyma-oy to'langan summalar. Ma'lumot bazada saqlanadi, bu yerda faqat ko'rsatiladi.",
+    "yearLabel": "Yil",
+    "student": "O'quvchi",
+    "class": "Sinf",
+    "monthlyFee": "Kontrakt",
+    "yearPaid": "Yil jami",
+    "yearDebt": "Qarz",
+    "empty": "Tanlangan yil uchun o'quvchilar topilmadi.",
+    "hint": "O'quvchi ustuni chapda qotadi. Oylar bo'ylab gorizontal scroll qiling. Ko'p o'quvchi bo'lsa jadval ichida pastga scroll qiling.",
+    "cellDue": "Kutilgan: {{amount}}",
+    "legend": {
+      "paid": "To'liq to'langan",
+      "partial": "Qisman",
+      "unpaid": "To'lanmagan",
+      "na": "Ro'yxatda yo'q / kelajak oy"
     }
   },
   "studentTable": {
@@ -83,6 +122,7 @@
     "descManage": "Kiritilgan barcha kirim va chiqimlar shu yerda saqlanadi.",
     "descView": "Kiritilgan barcha kirim va chiqimlar shu yerda ko'rinadi.",
     "date": "Sana",
+    "billingMonth": "Oy",
     "type": "Turi",
     "category": "Kategoriya",
     "note": "Izoh",
@@ -118,7 +158,8 @@
     "salaryPaymentAdded": "Xodim maoshi to'lovi qo'shildi.",
     "studentFeeUpdated": "O'quvchi uchun oylik to'lov saqlandi.",
     "staffSalaryUpdated": "Xodimning oylik maoshi saqlandi.",
-    "transactionDeleted": "Transaction ro'yxatdan olib tashlandi."
+    "transactionDeleted": "Transaction ro'yxatdan olib tashlandi.",
+    "exported": "Excel fayl tayyor."
   },
   "errors": {
     "financeLoad": "Moliyaviy ma'lumotlarni yuklab bo'lmadi",
@@ -134,6 +175,7 @@
     "staffSalaryUpdate": "Oylik maosh yangilanmadi",
     "staffSalaryUpdateDesc": "Xodim maoshini saqlashda xatolik yuz berdi.",
     "transactionDelete": "Transaction o'chirilmadi",
-    "transactionDeleteDesc": "Transactionni o'chirishda xatolik yuz berdi."
+    "transactionDeleteDesc": "Transactionni o'chirishda xatolik yuz berdi.",
+    "exportFailed": "Excel faylni eksport qilib bo'lmadi."
   }
 }

@@ -188,12 +188,17 @@ const validators = {
       studentId: objectIdField(),
     },
   }),
+  directorFinanceOverviewQuery: validateRequest({
+    query: {
+      year: { type: "integerString", min: 1970, max: 2100 },
+    },
+  }),
   directorCreateFinanceTransaction: validateRequest({
     body: {
       type: { type: "enum", values: ["income", "expense"], required: true },
       category: {
         type: "enum",
-        values: ["student_fee", "salary", "donation", "grant", "other_income", "utilities", "maintenance", "supplies", "tax", "bonus", "other_expense"],
+        values: ["donation", "grant", "other_income", "utilities", "maintenance", "supplies", "tax", "bonus", "other_expense"],
         required: true,
       },
       amount: { type: "number", required: true, min: 0.01 },
@@ -205,6 +210,13 @@ const validators = {
     body: {
       studentId: objectIdField({ required: true }),
       amount: { type: "number", required: true, min: 0.01 },
+      billingMonth: {
+        type: "string",
+        required: true,
+        nonEmpty: true,
+        pattern: /^\d{4}-(0[1-9]|1[0-2])$/,
+        patternMessage: "billingMonth must be in YYYY-MM format",
+      },
       occurredAt: { type: "dateString", required: true },
       description: nullableStringField({ maxLength: 255 }),
     },
@@ -221,6 +233,13 @@ const validators = {
     body: {
       staffUserId: objectIdField({ required: true }),
       amount: { type: "number", required: true, min: 0.01 },
+      billingMonth: {
+        type: "string",
+        required: true,
+        nonEmpty: true,
+        pattern: /^\d{4}-(0[1-9]|1[0-2])$/,
+        patternMessage: "billingMonth must be in YYYY-MM format",
+      },
       occurredAt: { type: "dateString", required: true },
       description: nullableStringField({ maxLength: 255 }),
     },

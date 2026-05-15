@@ -22,6 +22,14 @@ const financeTransactionSchema = new mongoose.Schema(
     category: { type: String, enum: FINANCE_TRANSACTION_CATEGORIES, required: true, index: true },
     amount: { type: Number, required: true, min: 0 },
     occurredAt: { type: Date, required: true, index: true },
+    /** Qaysi oy uchun to'lov: YYYY-MM (masalan 2026-03) */
+    billingMonth: {
+      type: String,
+      trim: true,
+      default: null,
+      match: [/^\d{4}-(0[1-9]|1[0-2])$/, "billingMonth must be YYYY-MM"],
+      index: true,
+    },
     description: { type: String, trim: true, default: null },
     student: { type: mongoose.Schema.Types.ObjectId, ref: "Student", default: null, index: true },
     staffUser: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },

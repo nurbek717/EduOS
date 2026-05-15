@@ -87,7 +87,12 @@ router.patch(
 );
 router.delete("/timetable/:id", requireRoles("school_admin"), validators.idParam, deleteTimetableEntry);
 
-router.get("/finance/overview", requireRoles("director", "school_admin"), getFinanceOverview);
+router.get(
+  "/finance/overview",
+  requireRoles("director", "school_admin"),
+  validators.directorFinanceOverviewQuery,
+  getFinanceOverview,
+);
 router.post("/finance/transactions", requireRoles("school_admin"), validators.directorCreateFinanceTransaction, createFinanceTransaction);
 router.delete("/finance/transactions/:id", requireRoles("school_admin"), validators.idParam, deleteFinanceTransaction);
 router.post("/finance/student-payments", requireRoles("school_admin"), validators.directorRecordStudentPayment, recordStudentPayment);

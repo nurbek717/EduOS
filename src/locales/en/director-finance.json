@@ -12,6 +12,24 @@
   "savedTitle": "Saved",
   "updatedTitle": "Updated",
   "deletedTitle": "Deleted",
+  "exportExcel": "Export to Excel",
+  "export": {
+    "total": "Total",
+    "generatedAt": "Generated at",
+    "sheets": {
+      "summary": "Summary",
+      "income": "Income",
+      "expense": "Expense",
+      "studentPayments": "Student Payments",
+      "staffPayments": "Staff Payments",
+      "otherTransactions": "Other Transactions",
+      "studentBalances": "Student Balances",
+      "staffBalances": "Staff Balances",
+      "yearGrid": "Year Grid",
+      "chartsMonthly": "Charts Monthly",
+      "chartsYearly": "Charts Yearly"
+    }
+  },
   "cards": {
     "monthIncome": "This month income",
     "monthExpense": "This month expense",
@@ -33,6 +51,8 @@
     "category": "Category",
     "amount": "Amount",
     "date": "Date",
+    "billingMonth": "Payment for month",
+    "paymentDate": "Cash received date",
     "note": "Note",
     "student": "Student",
     "staff": "Staff",
@@ -41,17 +61,36 @@
     "salaryPaymentNoteExample": "For example, March salary",
     "transaction": {
       "title": "Add income or expense",
-      "desc": "Record any financial movement via manual transaction entry."
+      "desc": "Sponsorship, grants, and other general income/expense. Use the dedicated forms below for student fees and staff salaries."
     },
     "studentPayment": {
       "title": "Add student payment",
-      "desc": "Add student payment directly to financial reports.",
+      "desc": "Record student tuition here — it counts once in statistics and reduces debt.",
       "submit": "Add payment"
     },
     "salaryPayment": {
       "title": "Staff salary payment",
-      "desc": "Enter paid salary amount and monitor monthly remainder.",
+      "desc": "Record staff salary here — it counts once in expense totals.",
       "submit": "Add salary payment"
+    }
+  },
+  "yearGrid": {
+    "title": "Annual payment grid",
+    "desc": "Spreadsheet-style view of each student's monthly payments. Data stays in the database; this is read-only.",
+    "yearLabel": "Year",
+    "student": "Student",
+    "class": "Class",
+    "monthlyFee": "Fee",
+    "yearPaid": "Year total",
+    "yearDebt": "Debt",
+    "empty": "No students found for the selected year.",
+    "hint": "Add payments via the student payment form. The grid is view-only for security.",
+    "cellDue": "Expected: {{amount}}",
+    "legend": {
+      "paid": "Fully paid",
+      "partial": "Partial",
+      "unpaid": "Unpaid",
+      "na": "Not enrolled / future month"
     }
   },
   "studentTable": {
@@ -83,6 +122,7 @@
     "descManage": "All entered income and expense records are stored here.",
     "descView": "All entered income and expense records are shown here.",
     "date": "Date",
+    "billingMonth": "Month",
     "type": "Type",
     "category": "Category",
     "note": "Note",
@@ -118,7 +158,8 @@
     "salaryPaymentAdded": "Staff salary payment added.",
     "studentFeeUpdated": "Student monthly fee saved.",
     "staffSalaryUpdated": "Staff monthly salary saved.",
-    "transactionDeleted": "Transaction removed from records."
+    "transactionDeleted": "Transaction removed from records.",
+    "exported": "Excel export ready."
   },
   "errors": {
     "financeLoad": "Could not load financial data",
@@ -134,6 +175,7 @@
     "staffSalaryUpdate": "Monthly salary was not updated",
     "staffSalaryUpdateDesc": "An error occurred while saving staff monthly salary.",
     "transactionDelete": "Transaction was not deleted",
-    "transactionDeleteDesc": "An error occurred while deleting transaction."
+    "transactionDeleteDesc": "An error occurred while deleting transaction.",
+    "exportFailed": "Could not export Excel file."
   }
 }

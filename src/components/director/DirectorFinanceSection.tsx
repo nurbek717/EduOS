@@ -9,6 +9,7 @@ import {
   YAxis,
 } from "recharts";
 import { BadgeDollarSign, CreditCard, TrendingDown, TrendingUp, Trash2, Wallet } from "lucide-react";
+import * as XLSX from "xlsx";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import DirectorStudentPaymentGrid, { type StudentPaymentGrid } from "@/components/director/DirectorStudentPaymentGrid";
 import { useToast } from "@/hooks/use-toast";
 import { useAppLocale } from "@/context/LanguageContext";
 import { useTranslation } from "react-i18next";
@@ -72,6 +74,7 @@ type RecentTransaction = {
   amount: number;
   description?: string | null;
   occurredAt: string;
+  billingMonth?: string | null;
   studentName?: string | null;
   staffName?: string | null;
 };
@@ -90,6 +93,7 @@ type FinanceOverviewResponse = {
     expense: string[];
   };
   currentYear: number;
+  studentPaymentGrid?: StudentPaymentGrid;
 };
 
 const roleLabelKeys: Record<StaffBalance["role"], string> = {
@@ -113,6 +117,17 @@ const categoryLabelKeys: Record<string, string> = {
 };
 
 const getToday = () => new Date().toISOString().slice(0, 10);
+
+const getCurrentBillingMonth = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+};
+
+const formatBillingMonthLabel = (billingMonth: string, locale: string) => {
+  const [year, month] = billingMonth.split("-").map(Number);
+  if (!year || !month) return billingMonth;
+  return new Date(year, month - 1, 1).toLocaleDateString(locale, { month: "long", year: "numeric" });
+};
 
 type DirectorFinanceSectionProps = {
   onDataChanged?: () => Promise<void> | void;
@@ -140,6 +155,11 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
 
   const [loading, setLoading] = useState(false);
   const [finance, setFinance] = useState<FinanceOverviewResponse | null>(null);
+  const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
+  const availableYears = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return Array.from({ length: 6 }, (_, index) => currentYear - index);
+  }, []);
 
   const [transactionType, setTransactionType] = useState<"income" | "expense">("income");
   const [transactionCategory, setTransactionCategory] = useState("donation");
@@ -149,11 +169,13 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
 
   const [studentPaymentStudentId, setStudentPaymentStudentId] = useState("");
   const [studentPaymentAmount, setStudentPaymentAmount] = useState("");
+  const [studentPaymentBillingMonth, setStudentPaymentBillingMonth] = useState(getCurrentBillingMonth);
   const [studentPaymentDate, setStudentPaymentDate] = useState(getToday());
   const [studentPaymentDescription, setStudentPaymentDescription] = useState("");
 
   const [salaryPaymentStaffId, setSalaryPaymentStaffId] = useState("");
   const [salaryPaymentAmount, setSalaryPaymentAmount] = useState("");
+  const [salaryPaymentBillingMonth, setSalaryPaymentBillingMonth] = useState(getCurrentBillingMonth);
   const [salaryPaymentDate, setSalaryPaymentDate] = useState(getToday());
   const [salaryPaymentDescription, setSalaryPaymentDescription] = useState("");
 
@@ -211,11 +233,11 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
     setTransactionsPage(1);
   }, [finance?.studentBalances?.length, finance?.staffBalances?.length, finance?.recentTransactions?.length]);
 
-  const fetchFinanceOverview = async () => {
+  const fetchFinanceOverview = async (year = viewYear) => {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/director/finance/overview`, {
+      const res = await fetch(`${API_BASE_URL}/api/director/finance/overview?year=${year}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -247,9 +269,9 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
   };
 
   useEffect(() => {
-    fetchFinanceOverview();
+    fetchFinanceOverview(viewYear);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [viewYear]);
 
   useEffect(() => {
     if (availableCategories.length === 0) return;
@@ -314,6 +336,7 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
         body: JSON.stringify({
           studentId: studentPaymentStudentId,
           amount: Number(studentPaymentAmount),
+          billingMonth: studentPaymentBillingMonth,
           occurredAt: studentPaymentDate,
           description: studentPaymentDescription.trim() || null,
         }),
@@ -354,6 +377,7 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
         body: JSON.stringify({
           staffUserId: salaryPaymentStaffId,
           amount: Number(salaryPaymentAmount),
+          billingMonth: salaryPaymentBillingMonth,
           occurredAt: salaryPaymentDate,
           description: salaryPaymentDescription.trim() || null,
         }),
@@ -477,6 +501,169 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
 
   const stats = finance?.summary;
 
+  const handleExportExcel = () => {
+    if (!finance || !stats) {
+      toast({ title: t("errorTitle"), description: t("errors.financeLoad"), variant: "destructive" });
+      return;
+    }
+
+    try {
+      const workbook = XLSX.utils.book_new();
+      const nowLabel = new Date().toLocaleString(locale);
+      const exportFilename = `finance-${viewYear}.xlsx`;
+
+      const addSheet = (name: string, rows: Array<Array<string | number>>) => {
+        const sheet = XLSX.utils.aoa_to_sheet(rows);
+        XLSX.utils.book_append_sheet(workbook, sheet, name);
+      };
+
+      const categoryLabel = (category?: string | null) => {
+        if (!category) return t("categories.other");
+        return t(categoryLabelKeys[category] || "categories.other");
+      };
+
+      const buildTransactionRows = (items: RecentTransaction[]) => {
+        const rows: Array<Array<string | number>> = [
+          [
+            t("transactions.date"),
+            t("transactions.billingMonth"),
+            t("transactions.category"),
+            t("transactions.subject"),
+            t("transactions.note"),
+            t("transactions.amount"),
+          ],
+        ];
+
+        items.forEach((item) => {
+          rows.push([
+            item.occurredAt,
+            item.billingMonth || "",
+            categoryLabel(item.category),
+            item.studentName || item.staffName || t("transactions.general"),
+            item.description || "",
+            item.amount,
+          ]);
+        });
+
+        if (items.length > 0) {
+          const total = items.reduce((sum, item) => sum + (item.amount || 0), 0);
+          rows.push([]);
+          rows.push([t("export.total"), "", "", "", "", total]);
+        }
+
+        return rows;
+      };
+
+      addSheet(t("export.sheets.summary"), [
+        [t("export.generatedAt"), nowLabel],
+        [t("yearGrid.yearLabel"), viewYear],
+        [t("cards.monthIncome"), stats.monthIncome],
+        [t("cards.monthExpense"), stats.monthExpense],
+        [t("cards.yearIncome"), stats.yearIncome],
+        [t("cards.yearExpense"), stats.yearExpense],
+        [t("cards.studentDebt"), stats.totalStudentDebt],
+        [t("cards.salaryPending"), stats.salaryPendingThisMonth],
+      ]);
+
+      const incomeTransactions = recentTransactions.filter((item) => item.type === "income");
+      const expenseTransactions = recentTransactions.filter((item) => item.type === "expense");
+      const studentTransactions = recentTransactions.filter((item) => item.category === "student_fee");
+      const staffTransactions = recentTransactions.filter((item) => item.category === "salary");
+      const otherTransactions = recentTransactions.filter(
+        (item) => item.category !== "student_fee" && item.category !== "salary",
+      );
+
+      addSheet(t("export.sheets.income"), buildTransactionRows(incomeTransactions));
+      addSheet(t("export.sheets.expense"), buildTransactionRows(expenseTransactions));
+      addSheet(t("export.sheets.studentPayments"), buildTransactionRows(studentTransactions));
+      addSheet(t("export.sheets.staffPayments"), buildTransactionRows(staffTransactions));
+      addSheet(t("export.sheets.otherTransactions"), buildTransactionRows(otherTransactions));
+
+      addSheet(t("export.sheets.studentBalances"), [
+        [
+          t("studentTable.student"),
+          t("studentTable.class"),
+          t("studentTable.monthlyFee"),
+          t("studentTable.paidMonth"),
+          t("studentTable.paidYear"),
+          t("studentTable.debt"),
+        ],
+        ...studentBalances.map((student) => [
+          student.name,
+          student.className || "",
+          student.monthlyFee,
+          student.paidThisMonth,
+          student.paidThisYear,
+          student.yearDebt,
+        ]),
+      ]);
+
+      addSheet(t("export.sheets.staffBalances"), [
+        [
+          t("staffTable.staff"),
+          t("staffTable.role"),
+          t("staffTable.monthlySalary"),
+          t("staffTable.paidMonth"),
+          t("staffTable.paidYear"),
+          t("staffTable.remaining"),
+        ],
+        ...staffBalances.map((staff) => [
+          staff.name,
+          roleLabels[staff.role],
+          staff.monthlySalary,
+          staff.paidThisMonth,
+          staff.paidThisYear,
+          staff.remainingThisMonth,
+        ]),
+      ]);
+
+      if (finance.studentPaymentGrid) {
+        const grid = finance.studentPaymentGrid;
+        addSheet(t("export.sheets.yearGrid"), [
+          [
+            t("yearGrid.student"),
+            t("yearGrid.class"),
+            t("yearGrid.monthlyFee"),
+            ...grid.monthLabels,
+            t("yearGrid.yearPaid"),
+            t("yearGrid.yearDebt"),
+          ],
+          ...grid.rows.map((row) => [
+            row.name,
+            row.className || "",
+            row.monthlyFee,
+            ...row.months.map((month) => month.paid),
+            row.yearTotalPaid,
+            row.yearDebt,
+          ]),
+        ]);
+      }
+
+      addSheet(t("export.sheets.chartsMonthly"), [
+        [t("charts.monthlyTitle")],
+        ["", ""],
+        [t("transactions.billingMonth"), t("income"), t("expense")],
+        ...((finance.charts?.monthly || []).map((point) => [point.label, point.income, point.expense])),
+      ]);
+
+      addSheet(t("export.sheets.chartsYearly"), [
+        [t("charts.yearlyTitle")],
+        ["", ""],
+        [t("yearGrid.yearLabel"), t("income"), t("expense")],
+        ...((finance.charts?.yearly || []).map((point) => [point.label, point.income, point.expense])),
+      ]);
+
+      XLSX.writeFile(workbook, exportFilename);
+      toast({ title: t("savedTitle"), description: t("messages.exported") });
+    } catch (err: unknown) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : t("errors.exportFailed"),
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -594,6 +781,16 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
         </Card>
       </div>
 
+      <DirectorStudentPaymentGrid
+        grid={finance?.studentPaymentGrid}
+        loading={loading}
+        viewYear={viewYear}
+        onViewYearChange={setViewYear}
+        availableYears={availableYears}
+        onExport={handleExportExcel}
+        exportDisabled={loading || !finance}
+      />
+
       {canManageFinance && (
         <div className="grid gap-4 xl:grid-cols-3">
         <Card>
@@ -674,7 +871,16 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
                 <Input type="number" min="0" step="1000" value={studentPaymentAmount} onChange={(e) => setStudentPaymentAmount(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label>{t("forms.date")}</Label>
+                <Label>{t("forms.billingMonth")}</Label>
+                <Input
+                  type="month"
+                  value={studentPaymentBillingMonth}
+                  onChange={(e) => setStudentPaymentBillingMonth(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("forms.paymentDate")}</Label>
                 <Input type="date" value={studentPaymentDate} onChange={(e) => setStudentPaymentDate(e.target.value)} required />
               </div>
               <div className="space-y-2">
@@ -715,7 +921,16 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
                 <Input type="number" min="0" step="1000" value={salaryPaymentAmount} onChange={(e) => setSalaryPaymentAmount(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label>{t("forms.date")}</Label>
+                <Label>{t("forms.billingMonth")}</Label>
+                <Input
+                  type="month"
+                  value={salaryPaymentBillingMonth}
+                  onChange={(e) => setSalaryPaymentBillingMonth(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("forms.paymentDate")}</Label>
                 <Input type="date" value={salaryPaymentDate} onChange={(e) => setSalaryPaymentDate(e.target.value)} required />
               </div>
               <div className="space-y-2">
@@ -980,6 +1195,7 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
             <TableHeader>
               <TableRow>
                 <TableHead>{t("transactions.date")}</TableHead>
+                <TableHead>{t("transactions.billingMonth")}</TableHead>
                 <TableHead>{t("transactions.type")}</TableHead>
                 <TableHead>{t("transactions.category")}</TableHead>
                 <TableHead>{t("transactions.note")}</TableHead>
@@ -993,6 +1209,11 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
                 pagedTransactions.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>{new Date(item.occurredAt).toLocaleDateString(locale)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {item.billingMonth
+                        ? formatBillingMonthLabel(item.billingMonth, locale)
+                        : "—"}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={item.type === "income" ? "secondary" : "destructive"}>
                         {item.type === "income" ? t("income") : t("expense")}
@@ -1020,7 +1241,7 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={canManageFinance ? 7 : 6} className="h-24 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={canManageFinance ? 8 : 7} className="h-24 text-center text-sm text-muted-foreground">
                     {t("transactions.empty")}
                   </TableCell>
                 </TableRow>
