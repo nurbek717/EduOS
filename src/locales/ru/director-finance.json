@@ -12,7 +12,7 @@
   "savedTitle": "Сохранено",
   "updatedTitle": "Обновлено",
   "deletedTitle": "Удалено",
-  "exportExcel": "Экспорт в Excel",
+  "exportExcel": "Сохранить",
   "export": {
     "total": "Итого",
     "generatedAt": "Сформировано",

@@ -1,4 +1,5 @@
 import { Fragment, useMemo, useRef } from "react";
+import { Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppLocale } from "@/context/LanguageContext";
-import ExcelExportIcon from "@/assets/icons/excel-export.svg";
 
 export type StudentPaymentGridMonth = {
   month: number;
@@ -42,7 +42,7 @@ type DirectorStudentPaymentGridProps = {
   exportDisabled?: boolean;
 };
 
-const STUDENT_COL_WIDTH_PX = 176;
+const STUDENT_COL_WIDTH_PX = 208;
 const ROW_CLASS = "flex h-11 items-center border-b border-border/80 px-2 text-sm last:border-b-0";
 const HEADER_ROW_CLASS = "flex h-10 items-center border-b bg-muted/40 px-2 text-xs font-medium text-muted-foreground";
 
@@ -84,9 +84,24 @@ const DirectorStudentPaymentGrid = ({
     return moneyFormatter.format(value);
   };
 
+  const formatCompactAmount = (value: number) => {
+    if (!value) return "0";
+    if (value >= 1_000_000) {
+      const compact = value / 1_000_000;
+      const formatted = Number.isInteger(compact) ? String(compact) : compact.toFixed(1);
+      return `${formatted}M`;
+    }
+    if (value >= 1_000) {
+      const compact = value / 1_000;
+      const formatted = Number.isInteger(compact) ? String(compact) : compact.toFixed(1);
+      return `${formatted}K`;
+    }
+    return moneyFormatter.format(value);
+  };
+
   const rows = grid?.rows || [];
   const monthLabels = grid?.monthLabels || [];
-  const scrollGridTemplate = `minmax(4rem, 5.5rem) minmax(4rem, 5.5rem) repeat(${monthLabels.length}, minmax(2.75rem, 1fr)) minmax(5.25rem, 7rem) minmax(5.25rem, 7rem)`;
+  const scrollGridTemplate = `minmax(4rem, 5.5rem) minmax(4rem, 5.5rem) repeat(${monthLabels.length}, minmax(2.75rem, 1fr)) minmax(4.25rem, 5.75rem) minmax(4.25rem, 5.75rem)`;
   const scrollBodyMaxHeight = "calc(min(70vh, 520px) - 2.5rem)";
   const studentScrollRef = useRef<HTMLDivElement>(null);
   const dataScrollRef = useRef<HTMLDivElement>(null);
@@ -120,13 +135,13 @@ const DirectorStudentPaymentGrid = ({
           {onExport && (
             <Button
               type="button"
-              variant="outline"
+              variant="default"
               size="sm"
               onClick={onExport}
               disabled={exportDisabled}
-              className="gap-2"
+              className="gap-2 border-transparent bg-emerald-600 text-[18px] text-white shadow-none hover:bg-emerald-700"
             >
-              <img src={ExcelExportIcon} alt="Excel" className="h-4 w-4" />
+              <Save className="h-6 w-6" />
               {t("exportExcel")}
             </Button>
           )}
@@ -202,7 +217,7 @@ const DirectorStudentPaymentGrid = ({
                 className="min-w-0 flex-1 overflow-auto"
                 onScroll={() => syncVerticalScroll("data")}
               >
-                <div className="grid w-full min-w-0 text-sm" style={{ gridTemplateColumns: scrollGridTemplate }}>
+                <div className="grid w-max min-w-full text-sm" style={{ gridTemplateColumns: scrollGridTemplate }}>
                   <div className={cn(HEADER_ROW_CLASS, "sticky top-0 z-[2] bg-muted/95 backdrop-blur-sm")}>
                     {t("yearGrid.class")}
                   </div>
@@ -254,15 +269,15 @@ const DirectorStudentPaymentGrid = ({
                           </span>
                         </div>
                       ))}
-                      <div className={cn(ROW_CLASS, "justify-end font-medium tabular-nums")}>
-                        {formatMoney(row.yearTotalPaid)}
+                      <div className={cn(ROW_CLASS, "justify-end px-1 font-medium tabular-nums whitespace-nowrap")}>
+                        {formatCompactAmount(row.yearTotalPaid)}
                       </div>
                       <div className={cn(ROW_CLASS, "justify-end")}>
                         <Badge
                           variant={row.yearDebt > 0 ? "destructive" : "secondary"}
-                          className="max-w-full truncate font-normal"
+                          className="max-w-full truncate whitespace-nowrap px-2 font-normal"
                         >
-                          {formatMoney(row.yearDebt)}
+                          {formatCompactAmount(row.yearDebt)}
                         </Badge>
                       </div>
                     </Fragment>
@@ -273,7 +288,6 @@ const DirectorStudentPaymentGrid = ({
           )}
         </div>
 
-        <p className="mt-3 text-xs text-muted-foreground">{t("yearGrid.hint")}</p>
       </CardContent>
     </Card>
   );

@@ -12,7 +12,7 @@
   "savedTitle": "Saved",
   "updatedTitle": "Updated",
   "deletedTitle": "Deleted",
-  "exportExcel": "Export to Excel",
+  "exportExcel": "Save",
   "export": {
     "total": "Total",
     "generatedAt": "Generated at",
