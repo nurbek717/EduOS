@@ -32,6 +32,7 @@ const Login = () => {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
@@ -53,9 +54,7 @@ const Login = () => {
       };
 
       localStorage.setItem("auth_token", data.token || data.accessToken);
-      if (data.refreshToken) {
-        localStorage.setItem("refresh_token", data.refreshToken);
-      }
+      localStorage.removeItem("refresh_token");
       localStorage.setItem("auth_user", JSON.stringify(normalizedUser));
 
       toast({

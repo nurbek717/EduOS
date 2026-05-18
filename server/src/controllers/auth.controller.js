@@ -1,6 +1,29 @@
 const User = require("../models/User");
 const { generateAccessToken, generateRefreshToken, verifyToken } = require("../utils/jwt");
 
+const REFRESH_COOKIE_NAME = "refresh_token";
+const DEFAULT_REFRESH_DAYS = 30;
+
+const parseRefreshDays = () => {
+  const raw = process.env.JWT_REFRESH_EXPIRES_IN;
+  if (!raw) return DEFAULT_REFRESH_DAYS;
+  const match = /^\s*(\d+)\s*d\s*$/i.exec(raw);
+  if (!match) return DEFAULT_REFRESH_DAYS;
+  const days = Number(match[1]);
+  return Number.isFinite(days) && days > 0 ? days : DEFAULT_REFRESH_DAYS;
+};
+
+const buildRefreshCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === "production";
+  const days = parseRefreshDays();
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: "lax",
+    maxAge: days * 24 * 60 * 60 * 1000,
+  };
+};
+
 const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -21,9 +44,10 @@ const login = async (req, res) => {
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
 
+  res.cookie(REFRESH_COOKIE_NAME, refreshToken, buildRefreshCookieOptions());
+
   return res.json({
     token: accessToken,
-    refreshToken,
     user: {
       id: user._id,
       name: user.name,
@@ -38,10 +62,10 @@ const login = async (req, res) => {
 };
 
 const refresh = async (req, res) => {
-  const { refreshToken } = req.body;
+  const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME];
 
   if (!refreshToken) {
-    return res.status(400).json({ message: "refreshToken is required" });
+    return res.status(401).json({ message: "Refresh token is missing" });
   }
 
   try {
@@ -52,6 +76,9 @@ const refresh = async (req, res) => {
     }
 
     const accessToken = generateAccessToken(user);
+    const nextRefreshToken = generateRefreshToken(user);
+
+    res.cookie(REFRESH_COOKIE_NAME, nextRefreshToken, buildRefreshCookieOptions());
 
     return res.json({
       token: accessToken,

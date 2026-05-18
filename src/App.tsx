@@ -50,8 +50,7 @@ const RequireRole = ({ allowed, children }: RequireRoleProps) => {
     if (typeof window === "undefined") return;
 
     const { token } = getStoredAuth();
-    const refreshToken = localStorage.getItem("refresh_token");
-    const shouldRefresh = Boolean(refreshToken) && (!token || isTokenExpired(token));
+    const shouldRefresh = Boolean(token) && isTokenExpired(token);
 
     if (!shouldRefresh) return;
 
@@ -79,9 +78,7 @@ const RequireRole = ({ allowed, children }: RequireRoleProps) => {
 
   const { token, user } = getStoredAuth();
   const normalizedRole = normalizeUserRole(user?.role);
-  const refreshToken = localStorage.getItem("refresh_token");
-
-  if (refreshToken && (!token || isTokenExpired(token)) && refreshState !== "failed") {
+  if (token && isTokenExpired(token) && refreshState !== "failed") {
     return <FullScreenSkeleton />;
   }
 
@@ -112,8 +109,7 @@ const AuthRefreshManager = () => {
 
     const scheduleRefresh = () => {
       const token = localStorage.getItem("auth_token");
-      const refreshToken = localStorage.getItem("refresh_token");
-      if (!token || !refreshToken) return;
+      if (!token) return;
 
       const expiresAt = getTokenExpiresAt(token);
       if (!expiresAt) return;
@@ -132,8 +128,7 @@ const AuthRefreshManager = () => {
 
     const refreshIfNeeded = () => {
       const token = localStorage.getItem("auth_token");
-      const refreshToken = localStorage.getItem("refresh_token");
-      if (!token || !refreshToken) return;
+      if (!token) return;
       if (!isTokenExpired(token, 60)) return;
 
       void refreshAccessToken()

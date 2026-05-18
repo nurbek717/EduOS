@@ -87,19 +87,11 @@ export const refreshAccessToken = async () => {
     throw new Error("Refresh token is not available");
   }
 
-  const refreshToken = localStorage.getItem("refresh_token");
-  if (!refreshToken) {
-    throw new Error("Refresh token is not available");
-  }
-
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = fetch(`${API_BASE_URL}/api/auth/refresh`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ refreshToken }),
+    credentials: "include",
   })
     .then(async (res) => {
       const data = await res.json().catch(() => null);
