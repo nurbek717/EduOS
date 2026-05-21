@@ -26,10 +26,12 @@
     "fetchStats": "Failed to load statistics.",
     "fetchUsers": "Failed to load users.",
     "fetchSubscriptions": "Failed to load subscriptions.",
+    "fetchPlans": "Failed to load subscription plans.",
     "fetchExams": "Failed to load exams.",
     "fetchExamResults": "Failed to load exam results.",
     "superAdminLoginRequired": "Please sign in as super admin first.",
     "createSubscription": "Failed to create subscription.",
+    "deleteSubscription": "Failed to delete subscription.",
     "createSchool": "Failed to create school.",
     "fetchUserDetails": "Failed to load user details.",
     "updateUser": "Failed to update user.",
@@ -225,25 +227,41 @@
     "title": "Add subscription",
     "description": "Set subscription period for a school",
     "created": "Subscription saved.",
+    "deleted": "Subscription for {{schoolName}} was deleted.",
+    "confirmDelete": "Delete subscription for {{schoolName}}?",
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    },
     "expired": "Expired",
     "daysLeft": "{{count}} days left",
     "daysShort": "{{count}} d",
     "empty": "No subscriptions yet",
     "loading": "Loading subscriptions...",
     "listTitle": "Subscriptions",
+    "moneyFormat": "{{value}} UZS",
     "table": {
       "school": "School",
+      "plan": "Plan",
       "endDate": "End date",
+      "totalPrice": "Amount",
       "daysLeft": "Days left"
     },
     "form": {
       "school": "School *",
       "schoolPlaceholder": "Select school",
+      "plan": "Plan *",
+      "planPlaceholder": "Select plan",
+      "plansLoading": "Loading plans...",
       "days": "Days *",
+      "daysShort": "days",
+      "amount": "Subscription amount (UZS)",
+      "amountHint": "Plan name is the tier only. Enter the amount paid for this subscription (Free plan is 0).",
       "submit": "Add subscription"
     },
     "validation": {
       "selectSchool": "Select a school.",
+      "selectPlan": "Select a plan.",
       "days": "Days must be greater than 0."
     }
   },

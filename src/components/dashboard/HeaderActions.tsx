@@ -236,7 +236,7 @@ const HeaderActions = <T extends string>({
     { code: "en", label: t("preferences.languageEn"), flag: "🇺🇸" },
   ];
   const resolvedSubscription: SubscriptionInfo = subscriptionInfo || {
-    planName: t("subscription.currentPlan"),
+    planName: t("subscription.unassigned", { defaultValue: "Obuna belgilanmagan" }),
     startDate: null,
     endDate: null,
     contractNumber: "-",

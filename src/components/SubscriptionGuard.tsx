@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import { useLocation, useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import { dashboardPathByRole, getStoredAuth, normalizeUserRole } from "@/lib/auth";
+import { buildSubscriptionHeaderInfo } from "@/lib/school-subscription";
 
 type SubscriptionStatus = {
   startAt?: string | null;
@@ -74,6 +75,18 @@ export default function SubscriptionGuard({ children }: Props) {
       const data = (await res.json()) as { subscription?: SubscriptionStatus | null };
       const isExpired = Boolean(data?.subscription?.isExpired);
       setExpired(isExpired);
+
+      const roleKey = normalizedRole ? `dashboard:${normalizedRole}:subscriptionInfo` : null;
+      const headerInfo = buildSubscriptionHeaderInfo(data.subscription ?? null, {
+        schoolId: user?.schoolId ? String(user.schoolId) : null,
+      });
+      if (roleKey && headerInfo && typeof window !== "undefined") {
+        try {
+          localStorage.setItem(roleKey, JSON.stringify(headerInfo));
+        } catch {
+          // ignore
+        }
+      }
     } catch {
       // ignore transient network errors
     }

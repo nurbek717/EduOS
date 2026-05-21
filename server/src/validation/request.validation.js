@@ -534,7 +534,9 @@ const validators = {
   adminCreateSubscription: validateRequest({
     body: {
       schoolId: objectIdField({ required: true }),
+      planId: objectIdField({ required: true }),
       days: { type: "integer", required: true, min: 1, max: 3650 },
+      totalPrice: { type: "number", required: false, min: 0 },
     },
   }),
   adminSetSubscriptionEndAt: validateRequest({

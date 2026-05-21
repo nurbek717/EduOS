@@ -6,6 +6,14 @@
   "subscriptionExpiringTitle": "Obuna muddati tugamoqda",
   "subscriptionExpiredBody": "Maktabingiz obuna muddati tugadi. Hozirda imtiyozli davr amalda. Tez orada tizim funksiyalari cheklanishi mumkin. Iltimos, Super Admin bilan bog'laning yoki to'lovni amalga oshiring.",
   "subscriptionExpiringBody": "Obuna tugashiga {{days}} kun qoldi. Tizim to'xtovsiz ishlashi uchun obunani vaqtida uzaytiring.",
+  "planGate": {
+    "financeTitle": "Moliya bo'limi yopiq",
+    "financeDesc": "Kirim/chiqim, maosh va yillik to'lov jadvali faqat Pro va Enterprise tariflarida.",
+    "analyticsTitle": "Kengaytirilgan tahlil yopiq",
+    "analyticsDesc": "Qabul/chiqish grafigi va chuqur ogohlantirishlar faqat Pro va Enterprise tariflarida.",
+    "attendanceTitle": "Davomat hisobotlari yopiq",
+    "attendanceDesc": "Davomat statistikasi joriy tarifda mavjud emas."
+  },
   "statsFilterTitle": "UMUMIY KO'RSATGICH",
   "statsFilterDesc": "",
   "today": "Bugun",

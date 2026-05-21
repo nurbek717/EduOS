@@ -12,6 +12,14 @@ const path = require("path");
 // DB connect/seed are intentionally not imported here (see note below).
 
 const authRoutes = require("./routes/auth.routes");
+const saasAuthRoutes = require("./modules/auth/auth.routes");
+const tenantRoutes = require("./modules/tenants/tenant.routes");
+const planRoutes = require("./modules/plans/plan.routes");
+const subscriptionRoutes = require("./modules/subscriptions/subscription.routes");
+const branchRoutes = require("./modules/branches/branch.routes");
+const saasStudentRoutes = require("./modules/students/student.routes");
+const saasTeacherRoutes = require("./modules/teachers/teacher.routes");
+const analyticsRoutes = require("./modules/analytics/analytics.routes");
 const schoolRoutes = require("./routes/school.routes");
 const directorRoutes = require("./routes/director.routes");
 const teacherRoutes = require("./routes/teacher.routes");
@@ -133,6 +141,14 @@ app.get("/api/health", (req, res) => {
 
 // 7. ROUTES
 app.use("/api/auth", authRoutes);
+app.use("/api/saas/auth", saasAuthRoutes);
+app.use("/api/tenants", tenantRoutes);
+app.use("/api/plans", planRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/branches", branchRoutes);
+app.use("/api/students", saasStudentRoutes);
+app.use("/api/teachers", saasTeacherRoutes);
+app.use("/api/analytics", analyticsRoutes);
 app.use("/api/schools", schoolRoutes);
 app.use("/api/director", directorRoutes);
 app.use("/api/teacher", teacherRoutes);

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import HeaderActions from "@/components/dashboard/HeaderActions";
+import { useSchoolSubscriptionHeader } from "@/hooks/useSchoolSubscriptionHeader";
 import { useTranslation } from "react-i18next";
 
 export type ParentSection = "overview" | "profile" | "grades" | "homework" | "notifications" | "attendance" | "exams" | "support";
@@ -43,6 +44,7 @@ const ParentLayout = ({
 }: ParentLayoutProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation("layout");
+  const { subscriptionInfo, subscriptionLabel } = useSchoolSubscriptionHeader();
   const rawUser = typeof window !== "undefined" ? localStorage.getItem("auth_user") : null;
   const currentUser = rawUser ? JSON.parse(rawUser) : null;
 
@@ -184,6 +186,9 @@ const ParentLayout = ({
               notifications={headerNotifications}
               searchItems={searchItems}
               onLogout={handleLogout}
+              compactHeader
+              subscriptionLabel={subscriptionLabel}
+              subscriptionInfo={subscriptionInfo}
             />
           </div>
           <div className="flex-1 overflow-auto p-6">

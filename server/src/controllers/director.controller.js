@@ -12,6 +12,12 @@ const Grade = require("../models/Grade");
 const Subscription = require("../models/Subscription");
 const StudentDepartureAudit = require("../models/StudentDepartureAudit");
 const { getSchoolAttendanceStats } = require("../utils/schoolAttendanceStats");
+const {
+  mapSubscriptionStatusPayload,
+  resolveSchoolPlan,
+  assertCanAddStudents,
+  assertCanAddClass,
+} = require("../utils/schoolPlan");
 
 const ensureSchoolManagementUser = async (user) => {
   if (!user.schoolId) {
@@ -22,6 +28,14 @@ const ensureSchoolManagementUser = async (user) => {
     throw new Error("School not found for school manager");
   }
   return school;
+};
+
+const ensureSchoolMemberUser = async (user) => {
+  const allowed = new Set(["director", "school_admin", "teacher", "student", "parent"]);
+  if (!allowed.has(user.role)) {
+    throw new Error("User role cannot access school subscription");
+  }
+  return ensureSchoolManagementUser(user);
 };
 
 const BASE_MANAGEABLE_SCHOOL_USER_ROLES = ["teacher", "student", "parent"];
@@ -749,6 +763,8 @@ const deleteUserForDirector = async (req, res) => {
 const getOverview = async (req, res) => {
   try {
     const school = await ensureSchoolManagementUser(req.user);
+    const schoolPlan = req.schoolPlan || (await resolveSchoolPlan(school._id));
+    const { features } = schoolPlan;
 
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -875,12 +891,14 @@ const getOverview = async (req, res) => {
         .exec(),
     ]);
 
-    const admissionTimeline = buildAdmissionTimeline(
-      admissionRangeStartUtc,
-      recentAdmissionsForTimeline,
-      departedStudentsForTimeline,
-      departureAuditsForTimeline,
-    );
+    const admissionTimeline = features.analytics
+      ? buildAdmissionTimeline(
+          admissionRangeStartUtc,
+          recentAdmissionsForTimeline,
+          departedStudentsForTimeline,
+          departureAuditsForTimeline,
+        )
+      : [];
 
     const recentActivities = [
       ...recentTeachers.map((t) => ({
@@ -932,69 +950,73 @@ const getOverview = async (req, res) => {
       });
     }
 
-    const classSummaries = await buildClassSummaries(school._id, classesWithTeachers);
-    const classScoreDown = classSummaries
-      .filter((item) => item.monthlyTrend === "down")
-      .sort((a, b) => (a.monthlyGrowth || 0) - (b.monthlyGrowth || 0))[0];
+    if (features.analytics) {
+      const classSummaries = await buildClassSummaries(school._id, classesWithTeachers);
+      const classScoreDown = classSummaries
+        .filter((item) => item.monthlyTrend === "down")
+        .sort((a, b) => (a.monthlyGrowth || 0) - (b.monthlyGrowth || 0))[0];
 
-    if (classScoreDown) {
-      alerts.push({
-        level: "warning",
-        message: `${classScoreDown.name} sinfida natija pasaygan. ${classScoreDown.monthlyTrendReason}`,
-      });
+      if (classScoreDown) {
+        alerts.push({
+          level: "warning",
+          message: `${classScoreDown.name} sinfida natija pasaygan. ${classScoreDown.monthlyTrendReason}`,
+        });
+      }
+
+      const attendanceIssue = classSummaries
+        .filter((item) => (item.absentCount || 0) + (item.lateCount || 0) > 0)
+        .sort((a, b) => ((b.absentCount || 0) + (b.lateCount || 0)) - ((a.absentCount || 0) + (a.lateCount || 0)))[0];
+
+      if (attendanceIssue) {
+        alerts.push({
+          level: "info",
+          message: `${attendanceIssue.name} sinfida davomatga e'tibor kerak: ${attendanceIssue.absentCount || 0} ta kelmaganlik, ${attendanceIssue.lateCount || 0} ta kechikish qayd etilgan.`,
+        });
+      }
+
+      const noDataClass = classSummaries
+        .filter((item) => item.monthlyTrend === "no_data")
+        .sort((a, b) => (a.studentCount || 0) - (b.studentCount || 0))[0];
+
+      if (noDataClass) {
+        alerts.push({
+          level: "info",
+          message: `${noDataClass.name} sinfi uchun hali yetarli baho yoki davomat ma'lumoti yo'q.`,
+        });
+      }
     }
 
-    const attendanceIssue = classSummaries
-      .filter((item) => (item.absentCount || 0) + (item.lateCount || 0) > 0)
-      .sort((a, b) => ((b.absentCount || 0) + (b.lateCount || 0)) - ((a.absentCount || 0) + (a.lateCount || 0)))[0];
-
-    if (attendanceIssue) {
-      alerts.push({
-        level: "info",
-        message: `${attendanceIssue.name} sinfida davomatga e'tibor kerak: ${attendanceIssue.absentCount || 0} ta kelmaganlik, ${attendanceIssue.lateCount || 0} ta kechikish qayd etilgan.`,
+    if (features.payment) {
+      const studentPaymentYearMap = new Map();
+      studentFeeTransactions.forEach((item) => {
+        const key = String(item.student);
+        studentPaymentYearMap.set(key, (studentPaymentYearMap.get(key) || 0) + (Number(item.amount) || 0));
       });
-    }
 
-    const noDataClass = classSummaries
-      .filter((item) => item.monthlyTrend === "no_data")
-      .sort((a, b) => (a.studentCount || 0) - (b.studentCount || 0))[0];
+      const debtorStudents = studentsWithFees
+        .map((studentItem) => {
+          const monthlyFee = Number(studentItem.monthlyFee) || 0;
+          const dueStart = studentItem.createdAt > startOfYear ? studentItem.createdAt : startOfYear;
+          const dueMonthCount = monthlyFee > 0 ? countMonthsInclusive(dueStart, now) : 0;
+          const expectedThisYear = monthlyFee * dueMonthCount;
+          const paidThisYear = studentPaymentYearMap.get(String(studentItem._id)) || 0;
+          const debt = Math.max(expectedThisYear - paidThisYear, 0);
 
-    if (noDataClass) {
-      alerts.push({
-        level: "info",
-        message: `${noDataClass.name} sinfi uchun hali yetarli baho yoki davomat ma'lumoti yo'q.`,
-      });
-    }
+          return {
+            name: studentItem.user?.name || "O'quvchi",
+            debt,
+          };
+        })
+        .filter((studentItem) => studentItem.debt > 0)
+        .sort((a, b) => b.debt - a.debt);
 
-    const studentPaymentYearMap = new Map();
-    studentFeeTransactions.forEach((item) => {
-      const key = String(item.student);
-      studentPaymentYearMap.set(key, (studentPaymentYearMap.get(key) || 0) + (Number(item.amount) || 0));
-    });
-
-    const debtorStudents = studentsWithFees
-      .map((studentItem) => {
-        const monthlyFee = Number(studentItem.monthlyFee) || 0;
-        const dueStart = studentItem.createdAt > startOfYear ? studentItem.createdAt : startOfYear;
-        const dueMonthCount = monthlyFee > 0 ? countMonthsInclusive(dueStart, now) : 0;
-        const expectedThisYear = monthlyFee * dueMonthCount;
-        const paidThisYear = studentPaymentYearMap.get(String(studentItem._id)) || 0;
-        const debt = Math.max(expectedThisYear - paidThisYear, 0);
-
-        return {
-          name: studentItem.user?.name || "O'quvchi",
-          debt,
-        };
-      })
-      .filter((studentItem) => studentItem.debt > 0)
-      .sort((a, b) => b.debt - a.debt);
-
-    if (debtorStudents.length > 0) {
-      const leadDebtor = debtorStudents[0];
-      alerts.push({
-        level: "warning",
-        message: `${debtorStudents.length} ta o'quvchida qarzdorlik bor. Eng katta qarzdorlik: ${leadDebtor.name}.`,
-      });
+      if (debtorStudents.length > 0) {
+        const leadDebtor = debtorStudents[0];
+        alerts.push({
+          level: "warning",
+          message: `${debtorStudents.length} ta o'quvchida qarzdorlik bor. Eng katta qarzdorlik: ${leadDebtor.name}.`,
+        });
+      }
     }
 
     return res.json({
@@ -1013,16 +1035,19 @@ const getOverview = async (req, res) => {
         week: teacherWeek,
         month: teacherMonth,
       },
-      finance: {
-        monthIncome: monthIncome[0]?.total || 0,
-        monthExpense: monthExpense[0]?.total || 0,
+      finance: features.finance
+        ? {
+            monthIncome: monthIncome[0]?.total || 0,
+            monthExpense: monthExpense[0]?.total || 0,
+          }
+        : { monthIncome: 0, monthExpense: 0 },
+      subscription: await mapSubscriptionStatusPayload(school._id),
+      planFeatures: features,
+      planLimits: {
+        maxStudents: schoolPlan.maxStudents,
+        maxBranches: schoolPlan.maxBranches,
+        planName: schoolPlan.planName,
       },
-      subscription: subscriptionDoc ? {
-        startAt: subscriptionDoc.created_at || null,
-        endAt: subscriptionDoc.endAt || null,
-        daysLeft: subscriptionDoc.endAt ? Math.ceil((new Date(subscriptionDoc.endAt) - now) / (1000 * 60 * 60 * 24)) : null,
-        isExpired: subscriptionDoc.endAt ? new Date(subscriptionDoc.endAt) < now : false,
-      } : null,
       recentActivities,
       alerts: alerts.slice(0, 6),
       admissionTimeline,
@@ -1035,17 +1060,10 @@ const getOverview = async (req, res) => {
 
 const getSubscriptionStatus = async (req, res) => {
   try {
-    const school = await ensureSchoolManagementUser(req.user);
-    const subscriptionDoc = await Subscription.findOne({ school: school._id }).lean().exec();
-    const now = new Date();
+    const school = await ensureSchoolMemberUser(req.user);
 
     return res.json({
-      subscription: subscriptionDoc ? {
-        startAt: subscriptionDoc.created_at || null,
-        endAt: subscriptionDoc.endAt || null,
-        daysLeft: subscriptionDoc.endAt ? Math.ceil((new Date(subscriptionDoc.endAt) - now) / (1000 * 60 * 60 * 24)) : null,
-        isExpired: subscriptionDoc.endAt ? new Date(subscriptionDoc.endAt) < now : false,
-      } : null,
+      subscription: await mapSubscriptionStatusPayload(school._id),
     });
   } catch (err) {
     return res.status(400).json({ message: err.message || "Failed to load subscription status" });
@@ -1061,6 +1079,8 @@ const createClass = async (req, res) => {
 
     const school = await ensureSchoolManagementUser(req.user);
 
+    await assertCanAddClass(school._id);
+
     const existing = await ClassModel.findOne({ name, school: school._id });
     if (existing) {
       return res.status(400).json({ message: "Class with this name already exists in this school" });
@@ -1069,7 +1089,7 @@ const createClass = async (req, res) => {
     const cls = await ClassModel.create({ name, school: school._id });
     return res.status(201).json(cls);
   } catch (err) {
-    return res.status(400).json({ message: err.message || "Failed to create class" });
+    return res.status(err.statusCode || 400).json({ message: err.message || "Failed to create class" });
   }
 };
 
@@ -1558,6 +1578,8 @@ const createStudent = async (req, res) => {
 
     const school = await ensureSchoolManagementUser(req.user);
 
+    await assertCanAddStudents(school._id, 1);
+
     const [existingUser, cls] = await Promise.all([
       User.findOne({ email }),
       ClassModel.findOne({ _id: classId, school: school._id }),
@@ -1614,7 +1636,7 @@ const createStudent = async (req, res) => {
       student,
     });
   } catch (err) {
-    return res.status(400).json({ message: err.message || "Failed to create student" });
+    return res.status(err.statusCode || 400).json({ message: err.message || "Failed to create student" });
   }
 };
 
@@ -1815,6 +1837,14 @@ const importStudents = async (req, res) => {
         },
       });
     });
+
+    if (validRows.length > 0) {
+      try {
+        await assertCanAddStudents(school._id, validRows.length);
+      } catch (limitErr) {
+        return res.status(limitErr.statusCode || 403).json({ message: limitErr.message });
+      }
+    }
 
     let created = 0;
     for (const row of validRows) {

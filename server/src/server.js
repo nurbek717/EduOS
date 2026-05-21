@@ -1,7 +1,8 @@
 const http = require("http");
 const app = require("./app");
 const connectDb = require("./config/db");
-const { seedSuperAdmin } = require("./config/seed");
+const { seedSuperAdmin, seedSaasSuperAdmin } = require("./config/seed");
+const { seedSchoolPlans } = require("./config/seed-school-plans");
 
 const PORT = process.env.PORT || 5000;
 
@@ -28,6 +29,14 @@ connectDb().then(() => {
   seedSuperAdmin().catch((err) => {
     // eslint-disable-next-line no-console
     console.error("Error seeding super admin", err);
+  });
+  seedSaasSuperAdmin().catch((err) => {
+    // eslint-disable-next-line no-console
+    console.error("Error seeding SaaS super admin", err);
+  });
+  seedSchoolPlans().catch((err) => {
+    // eslint-disable-next-line no-console
+    console.error("Error seeding school plans", err);
   });
 });
 

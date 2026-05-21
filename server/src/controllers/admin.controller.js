@@ -1,6 +1,8 @@
 const User = require("../models/User");
 const School = require("../models/School");
 const Subscription = require("../models/Subscription");
+const { ADMIN_SUBSCRIPTION_PLAN_NAMES } = require("../config/seed-school-plans");
+const Plan = require("../modules/plans/plan.model");
 const Teacher = require("../models/Teacher");
 const Student = require("../models/Student");
 const ParentModel = require("../models/Parent");
@@ -350,8 +352,41 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const mapSubscriptionResponse = (sub, school) => ({
+  id: sub._id,
+  schoolId: school?._id ?? sub.school,
+  schoolName: school?.name ?? "Maktab",
+  createdAt: sub.created_at || null,
+  endAt: sub.endAt,
+  planId: sub.plan || null,
+  planName: sub.planName || null,
+  monthlyPrice: sub.monthlyPrice ?? 0,
+  totalPrice: sub.totalPrice ?? 0,
+  periodDays: sub.periodDays ?? 0,
+});
+
+const listPlansForAdmin = async (req, res) => {
+  try {
+    const plans = await Plan.find({ name: { $in: ADMIN_SUBSCRIPTION_PLAN_NAMES } }).lean().exec();
+    const order = new Map(ADMIN_SUBSCRIPTION_PLAN_NAMES.map((name, index) => [name, index]));
+    plans.sort((a, b) => (order.get(a.name) ?? 99) - (order.get(b.name) ?? 99));
+
+    return res.json(
+      plans.map((plan) => ({
+        id: plan._id,
+        name: plan.name,
+        maxStudents: plan.maxStudents,
+        maxBranches: plan.maxBranches,
+        features: plan.features || {},
+      })),
+    );
+  } catch (err) {
+    return fail(res, req, 500, err.message || "Rejalar ro'yxatini yuklab bo'lmadi");
+  }
+};
+
 const createOrExtendSubscription = async (req, res) => {
-  const { schoolId, days } = req.body;
+  const { schoolId, days, planId, totalPrice: totalPriceRaw } = req.body;
 
   try {
     const school = await School.findById(schoolId);
@@ -359,36 +394,45 @@ const createOrExtendSubscription = async (req, res) => {
       return fail(res, req, 404, "Maktab topilmadi");
     }
 
+    const plan = await Plan.findById(planId).lean().exec();
+    if (!plan) {
+      return fail(res, req, 404, "Tarif rejasi topilmadi");
+    }
+    if (!ADMIN_SUBSCRIPTION_PLAN_NAMES.includes(plan.name)) {
+      return fail(res, req, 400, "Tanlangan tarif rejasi ruxsat etilmagan");
+    }
+
     const DAY_MS = 24 * 60 * 60 * 1000;
     const now = new Date();
+    const periodDays = Number(days);
+    const addedTotalPrice = Math.max(0, Math.round(Number(totalPriceRaw) || 0));
 
     const existing = await Subscription.findOne({ school: schoolId }).exec();
 
     if (existing) {
-      // Agar oldingi obuna hali tugamagan bo'lsa, qolgan muddatga qo'shib uzaytiramiz.
       const base = existing.endAt && existing.endAt.getTime() > now.getTime() ? existing.endAt : now;
-      existing.endAt = new Date(base.getTime() + days * DAY_MS);
+      existing.endAt = new Date(base.getTime() + periodDays * DAY_MS);
+      existing.plan = plan._id;
+      existing.planName = plan.name;
+      existing.monthlyPrice = 0;
+      existing.periodDays = (existing.periodDays || 0) + periodDays;
+      existing.totalPrice = (existing.totalPrice || 0) + addedTotalPrice;
       await existing.save();
 
-      return res.json({
-        id: existing._id,
-        schoolId: school._id,
-        schoolName: school.name,
-        endAt: existing.endAt,
-      });
+      return res.json(mapSubscriptionResponse(existing, school));
     }
 
     const created = await Subscription.create({
       school: school._id,
-      endAt: new Date(now.getTime() + days * DAY_MS),
+      plan: plan._id,
+      planName: plan.name,
+      monthlyPrice: 0,
+      totalPrice: addedTotalPrice,
+      periodDays,
+      endAt: new Date(now.getTime() + periodDays * DAY_MS),
     });
 
-    return res.status(201).json({
-      id: created._id,
-      schoolId: school._id,
-      schoolName: school.name,
-      endAt: created.endAt,
-    });
+    return res.status(201).json(mapSubscriptionResponse(created, school));
   } catch (err) {
     return fail(res, req, 500, err.message || "Obunani qo'shishda xatolik");
   }
@@ -412,13 +456,7 @@ const setSubscriptionEndAt = async (req, res) => {
     sub.endAt = parsed;
     await sub.save();
 
-    return res.json({
-      id: sub._id,
-      schoolId: sub.school?._id ?? null,
-      schoolName: sub.school?.name ?? "Maktab",
-      createdAt: sub.created_at || null,
-      endAt: sub.endAt,
-    });
+    return res.json(mapSubscriptionResponse(sub, sub.school));
   } catch (err) {
     return fail(res, req, 500, err.message || "Obunani yangilashda xatolik");
   }
@@ -432,17 +470,25 @@ const listSubscriptions = async (req, res) => {
       .lean()
       .exec();
 
-    return res.json(
-      subs.map((s) => ({
-        id: s._id,
-        schoolId: s.school?._id ?? null,
-        schoolName: s.school?.name ?? "Maktab",
-        createdAt: s.created_at || null,
-        endAt: s.endAt,
-      })),
-    );
+    return res.json(subs.map((s) => mapSubscriptionResponse(s, s.school)));
   } catch (err) {
     return fail(res, req, 500, err.message || "Obunalar ro'yxatini yuklashda xatolik");
+  }
+};
+
+const deleteSubscription = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const sub = await Subscription.findById(id).exec();
+    if (!sub) {
+      return fail(res, req, 404, "Obuna topilmadi");
+    }
+
+    await sub.deleteOne();
+    return res.json({ message: "Obuna o'chirildi" });
+  } catch (err) {
+    return fail(res, req, 500, err.message || "Obunani o'chirishda xatolik");
   }
 };
 
@@ -452,8 +498,10 @@ module.exports = {
   getUser,
   updateUser,
   deleteUser,
+  listPlansForAdmin,
   createOrExtendSubscription,
   setSubscriptionEndAt,
   listSubscriptions,
+  deleteSubscription,
 };
 

@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import HeaderActions from "@/components/dashboard/HeaderActions";
+import { useSchoolSubscriptionHeader } from "@/hooks/useSchoolSubscriptionHeader";
+import { hasPlanFeature } from "@/lib/school-plan-features";
 import { useTranslation } from "react-i18next";
 import { normalizeUserRole } from "@/lib/auth";
 
@@ -80,7 +82,13 @@ const DirectorLayout = ({
     }
   })();
 
-  const effectiveSubscriptionInfo = subscriptionInfo ?? cachedSubscriptionInfo;
+  const {
+    subscriptionInfo: fetchedSubscriptionInfo,
+    subscriptionLabel: fetchedSubscriptionLabel,
+    planContext: fetchedPlanContext,
+  } = useSchoolSubscriptionHeader();
+
+  const effectiveSubscriptionInfo = subscriptionInfo ?? cachedSubscriptionInfo ?? fetchedSubscriptionInfo;
   const [studentsDropdownOpen, setStudentsDropdownOpen] = useState(false);
   const navItems: { label: string; section: DirectorSection; icon: typeof LayoutDashboard }[] = [
     { label: t("director.nav.dashboard"), section: "dashboard", icon: LayoutDashboard },
@@ -97,6 +105,13 @@ const DirectorLayout = ({
   if (!isSchoolAdmin) {
     navItems.splice(3, 0, { label: t("director.nav.schoolAdmins"), section: "school_admins", icon: UserCircle });
   }
+
+  const visibleNavItems = navItems.filter((item) => {
+    if (item.section === "payments") {
+      return hasPlanFeature(fetchedPlanContext, "finance");
+    }
+    return true;
+  });
 
   const sectionLabels: Record<DirectorSection, string> = {
     dashboard: t("director.nav.dashboard"),
@@ -211,7 +226,7 @@ const DirectorLayout = ({
             <SidebarGroupLabel className="text-white">{t("common.sections")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {navItems.map((item) => {
+                {visibleNavItems.map((item) => {
                   const isActive = item.section === currentSection;
                   const isStudentsItem = isSchoolAdmin && item.section === "students";
                   return (
@@ -368,7 +383,7 @@ const DirectorLayout = ({
               </span>
             </div>
             <HeaderActions
-              navItems={navItems}
+              navItems={visibleNavItems}
               currentSection={currentSection}
               onSectionChange={onSectionChange}
               profileTargetSection="settings"
@@ -382,11 +397,13 @@ const DirectorLayout = ({
               onLogout={handleLogout}
               compactHeader
               subscriptionLabel={
-                resolvedSubscriptionInfo?.status === "expired"
-                  ? t("subscription.expired", { defaultValue: "Muddat tugagan" })
-                  : typeof resolvedSubscriptionInfo?.daysLeft === "number"
-                    ? t("director.subscriptionDaysLeft", { count: Math.max(0, resolvedSubscriptionInfo.daysLeft) })
-                    : t("subscription.active", { defaultValue: "Faol" })
+                subscriptionInfo
+                  ? resolvedSubscriptionInfo?.status === "expired"
+                    ? t("subscription.expired", { defaultValue: "Muddat tugagan" })
+                    : typeof resolvedSubscriptionInfo?.daysLeft === "number"
+                      ? t("director.subscriptionDaysLeft", { count: Math.max(0, resolvedSubscriptionInfo.daysLeft) })
+                      : t("subscription.active", { defaultValue: "Faol" })
+                  : fetchedSubscriptionLabel
               }
               subscriptionInfo={resolvedSubscriptionInfo}
             />

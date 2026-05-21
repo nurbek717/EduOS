@@ -47,6 +47,7 @@ export type TranslationKey =
 	| "subscription.active"
 	| "subscription.expired"
 	| "subscription.daysLeft"
+	| "subscription.unassigned"
 	| "common.sections"
 	| "parent.badge"
 	| "parent.panel"
@@ -165,6 +166,7 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 		"subscription.active": "Faol",
 		"subscription.expired": "Nofaol",
 		"subscription.daysLeft": "{{count}} kun qoldi",
+		"subscription.unassigned": "Obuna belgilanmagan",
 		"common.sections": "Bo'limlar",
 		"parent.badge": "OTA-ONA",
 		"parent.panel": "Farzand nazorati paneli",
@@ -280,6 +282,7 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 		"subscription.active": "Активен",
 		"subscription.expired": "Неактивен",
 		"subscription.daysLeft": "Осталось {{count}} дн.",
+		"subscription.unassigned": "Подписка не назначена",
 		"common.sections": "Разделы",
 		"parent.badge": "РОДИТЕЛЬ",
 		"parent.panel": "Панель контроля ребенка",
@@ -395,6 +398,7 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 		"subscription.active": "Active",
 		"subscription.expired": "Expired",
 		"subscription.daysLeft": "{{count}} days left",
+		"subscription.unassigned": "No subscription assigned",
 		"common.sections": "Sections",
 		"parent.badge": "PARENT",
 		"parent.panel": "Child monitoring panel",

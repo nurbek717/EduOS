@@ -32,6 +32,7 @@ import {
   UserCircle,
 } from "lucide-react";
 import { Eye, EyeOff, Lock } from "lucide-react";
+import { resolveSubscriptionPlanName } from "@/lib/school-subscription";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const TABLE_PAGE_SIZE = 5;
@@ -53,6 +54,15 @@ type School = {
   director?: Director | null;
   status?: "active" | "inactive";
 };
+
+type AdminPlan = {
+  id: string;
+  name: string;
+  maxStudents: number;
+  maxBranches: number;
+};
+
+const FREE_PLAN_NAME = "Bepul";
 
 type Stats = {
   totalSchools: number;
@@ -120,6 +130,11 @@ type SubscriptionItem = {
   schoolName: string;
   createdAt?: string | null;
   endAt: string;
+  planId?: string | null;
+  planName?: string | null;
+  monthlyPrice?: number;
+  totalPrice?: number;
+  periodDays?: number;
 };
 
 type AdminHeaderNotification = {
@@ -243,8 +258,22 @@ const AdminDashboard = () => {
   const [subscriptionEditTarget, setSubscriptionEditTarget] = useState<SubscriptionItem | null>(null);
   const [subscriptionEditEndAt, setSubscriptionEditEndAt] = useState<string>("");
   const [subscriptionSchoolId, setSubscriptionSchoolId] = useState<string>("");
+  const [subscriptionPlanId, setSubscriptionPlanId] = useState<string>("");
   const [subscriptionDays, setSubscriptionDays] = useState<number>(30);
+  const [subscriptionTotalPrice, setSubscriptionTotalPrice] = useState<number>(0);
+  const [adminPlans, setAdminPlans] = useState<AdminPlan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
   const [nowMs, setNowMs] = useState<number>(Date.now());
+
+  const moneyFormatter = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const formatMoney = (value: number) => ad("subscriptions.moneyFormat", { value: moneyFormatter.format(Math.round(value || 0)) });
+
+  const selectedSubscriptionPlan = useMemo(
+    () => adminPlans.find((plan) => plan.id === subscriptionPlanId) || null,
+    [adminPlans, subscriptionPlanId],
+  );
+
+  const isFreePlanSelected = selectedSubscriptionPlan?.name === FREE_PLAN_NAME;
 
   const subscriptionsForOverviewUI = subscriptions
     .slice()
@@ -369,6 +398,32 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchAdminPlans = async () => {
+    if (!token) return;
+    setPlansLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/plans`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || ad("errors.fetchPlans"));
+      const plans = Array.isArray(data) ? data : [];
+      setAdminPlans(plans);
+      if (!subscriptionPlanId && plans.length > 0) {
+        const bepul = plans.find((p) => p.name === FREE_PLAN_NAME);
+        setSubscriptionPlanId(bepul?.id ?? plans[0].id);
+      }
+    } catch (err: unknown) {
+      toast({
+        title: ad("toasts.error"),
+        description: err instanceof Error ? err.message : ad("errors.fetchPlans"),
+        variant: "destructive",
+      });
+    } finally {
+      setPlansLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchSchools();
     // Overview kartalarida ham "kun qoldi" chiqishi uchun subscriptionlarni ham yuklab qo'yamiz.
@@ -399,6 +454,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (section !== "subscriptions") return;
     fetchSubscriptions();
+    fetchAdminPlans();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section]);
 
@@ -436,6 +492,15 @@ const AdminDashboard = () => {
       return;
     }
 
+    if (!subscriptionPlanId) {
+      toast({
+        title: ad("toasts.insufficient"),
+        description: ad("subscriptions.validation.selectPlan"),
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!Number.isFinite(subscriptionDays) || subscriptionDays < 1) {
       toast({
         title: ad("toasts.insufficient"),
@@ -455,7 +520,9 @@ const AdminDashboard = () => {
         },
         body: JSON.stringify({
           schoolId: subscriptionSchoolId,
+          planId: subscriptionPlanId,
           days: subscriptionDays,
+          totalPrice: isFreePlanSelected ? 0 : Math.max(0, Math.round(subscriptionTotalPrice || 0)),
         }),
       });
 
@@ -468,7 +535,12 @@ const AdminDashboard = () => {
       });
 
       setSubscriptionSchoolId("");
+      if (adminPlans.length > 0) {
+        const bepul = adminPlans.find((p) => p.name === FREE_PLAN_NAME);
+        setSubscriptionPlanId(bepul?.id ?? adminPlans[0].id);
+      }
       setSubscriptionDays(30);
+      setSubscriptionTotalPrice(0);
       await fetchSubscriptions();
       // "Umumiy ko'rinish" dagi kartalarda ham obuna tugash kunlari yangilanishi uchun
       await fetchStats(monthOffset);
@@ -544,6 +616,46 @@ const AdminDashboard = () => {
       });
     } finally {
       setSubscriptionEditSubmitting(false);
+    }
+  };
+
+  const handleDeleteSubscription = async (sub: SubscriptionItem) => {
+    if (!token) {
+      toast({
+        title: ad("toasts.error"),
+        description: ad("errors.superAdminLoginRequired"),
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!window.confirm(ad("subscriptions.confirmDelete", { schoolName: sub.schoolName }))) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/subscriptions/${sub.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || ad("errors.deleteSubscription"));
+
+      toast({
+        title: ad("toasts.deleted"),
+        description: ad("subscriptions.deleted", { schoolName: sub.schoolName }),
+      });
+
+      await fetchSubscriptions();
+      await fetchStats(monthOffset);
+    } catch (err: unknown) {
+      toast({
+        title: ad("toasts.error"),
+        description: err instanceof Error ? err.message : ad("errors.deleteSubscription"),
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -918,7 +1030,7 @@ const AdminDashboard = () => {
     const daysLeft = typeof diffMs === "number" ? (expired ? 0 : Math.max(0, Math.ceil(diffMs / (24 * 60 * 60 * 1000)))) : null;
 
     return {
-      planName: sub.schoolName || "Maktab",
+      planName: resolveSubscriptionPlanName(sub.planName) || sub.schoolName || "Maktab",
       schoolId: sub.schoolId,
       startDate: sub.createdAt || null,
       endDate: sub.endAt || null,
@@ -953,7 +1065,9 @@ const AdminDashboard = () => {
       headerNotifications={headerNotifications}
       searchItems={searchItems}
       subscriptionInfo={{
-        planName: topSubscription?.schoolName || "TEST",
+        planName: topSubscription
+          ? resolveSubscriptionPlanName(topSubscription.planName) || topSubscription.schoolName || "Maktab"
+          : "Obuna belgilanmagan",
         startDate: topSubscription?.createdAt || null,
         endDate: topSubscription?.endAt || null,
         contractNumber: topSubscription ? `SUB-${topSubscription.schoolId?.slice?.(-6) || "000000"}` : "MYS-133891/26",
@@ -1494,6 +1608,34 @@ const AdminDashboard = () => {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="subscription-plan">{ad("subscriptions.form.plan")}</Label>
+                  <select
+                    id="subscription-plan"
+                    value={subscriptionPlanId}
+                    onChange={(e) => {
+                      const nextId = e.target.value;
+                      setSubscriptionPlanId(nextId);
+                      const nextPlan = adminPlans.find((p) => p.id === nextId);
+                      if (nextPlan?.name === FREE_PLAN_NAME) {
+                        setSubscriptionTotalPrice(0);
+                      }
+                    }}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                    required
+                    disabled={plansLoading || adminPlans.length === 0}
+                  >
+                    <option value="" disabled>
+                      {plansLoading ? ad("subscriptions.form.plansLoading") : ad("subscriptions.form.planPlaceholder")}
+                    </option>
+                    {adminPlans.map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="subscription-days">{ad("subscriptions.form.days")}</Label>
                   <Input
                     id="subscription-days"
@@ -1506,9 +1648,31 @@ const AdminDashboard = () => {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="subscription-amount">{ad("subscriptions.form.amount")}</Label>
+                  <Input
+                    id="subscription-amount"
+                    type="number"
+                    min={0}
+                    step={1000}
+                    value={isFreePlanSelected ? 0 : subscriptionTotalPrice}
+                    onChange={(e) => setSubscriptionTotalPrice(Number.parseInt(e.target.value || "0", 10))}
+                    disabled={isFreePlanSelected}
+                    required={!isFreePlanSelected}
+                  />
+                  <p className="text-xs text-muted-foreground">{ad("subscriptions.form.amountHint")}</p>
+                </div>
+
                 <Button
                   type="submit"
-                  disabled={subscriptionsSubmitting || !subscriptionSchoolId || subscriptionDays < 1 || schools.length === 0}
+                  disabled={
+                    subscriptionsSubmitting ||
+                    !subscriptionSchoolId ||
+                    !subscriptionPlanId ||
+                    subscriptionDays < 1 ||
+                    schools.length === 0 ||
+                    adminPlans.length === 0
+                  }
                 >
                   {subscriptionsSubmitting ? ad("common.saving") : ad("subscriptions.form.submit")}
                 </Button>
@@ -1524,17 +1688,19 @@ const AdminDashboard = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{ad("subscriptions.table.school")}</TableHead>
+                      <TableHead>{ad("subscriptions.table.plan")}</TableHead>
                       <TableHead>{ad("subscriptions.table.endDate")}</TableHead>
+                      <TableHead className="text-right">{ad("subscriptions.table.totalPrice")}</TableHead>
                       <TableHead className="text-right">{ad("subscriptions.table.daysLeft")}</TableHead>
                       <TableHead className="text-right">Amallar</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {subscriptionsLoading ? (
-                      <TableSkeleton rows={5} columns={4} />
+                      <TableSkeleton rows={5} columns={6} />
                     ) : subscriptions.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center">
+                        <TableCell colSpan={6} className="h-24 text-center">
                           <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                             <School className="h-10 w-10 opacity-40" />
                             <p className="text-sm font-medium">{ad("subscriptions.empty")}</p>
@@ -1543,29 +1709,58 @@ const AdminDashboard = () => {
                       </TableRow>
                     ) : (
                       subscriptionsPagination.rows.map((sub) => {
-                        const endTime = new Date(sub.endAt).getTime();
-                        const diffMs = endTime - nowMs;
-                        const expired = diffMs <= 0;
-                        const daysLeft = expired ? 0 : Math.max(0, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
+                        const endTime = sub.endAt ? new Date(sub.endAt).getTime() : Number.NaN;
+                        const validEnd = Number.isFinite(endTime);
+                        const diffMs = validEnd ? endTime - nowMs : Number.NaN;
+                        const expired = !validEnd || diffMs <= 0;
+                        const daysLeft =
+                          !validEnd || expired ? 0 : Math.max(0, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
 
                         return (
                           <TableRow key={sub.id}>
                             <TableCell className="font-medium">{sub.schoolName}</TableCell>
+                            <TableCell>{sub.planName || "—"}</TableCell>
                             <TableCell className="text-muted-foreground">
                               {sub.endAt ? new Date(sub.endAt).toLocaleDateString(locale) : "—"}
                             </TableCell>
+                            <TableCell className="text-right text-muted-foreground">
+                              {sub.totalPrice ? formatMoney(sub.totalPrice) : "—"}
+                            </TableCell>
                             <TableCell className="text-right">
-                              {expired ? (
+                              {!validEnd ? (
+                                <span className="text-muted-foreground">—</span>
+                              ) : expired ? (
                                 <span className="text-red-500">{ad("subscriptions.expired")}</span>
                               ) : (
                                 ad("subscriptions.daysLeft", { count: daysLeft })
                               )}
                             </TableCell>
-                            <TableCell className="text-right">
-                              <Button type="button" variant="outline" size="sm" onClick={() => handleOpenSubscriptionEdit(sub)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                O'zgartirish
-                              </Button>
+                            <TableCell className="w-[88px]">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => handleOpenSubscriptionEdit(sub)}
+                                  title={ad("subscriptions.actions.edit")}
+                                  aria-label={ad("subscriptions.actions.edit")}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => void handleDeleteSubscription(sub)}
+                                  disabled={loading}
+                                  title={ad("subscriptions.actions.delete")}
+                                  aria-label={ad("subscriptions.actions.delete")}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         );

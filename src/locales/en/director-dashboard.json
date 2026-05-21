@@ -6,6 +6,14 @@
   "subscriptionExpiringTitle": "Subscription expiring soon",
   "subscriptionExpiredBody": "Your school subscription has expired. Grace period is active. Some features may be limited soon. Please contact Super Admin or complete the payment.",
   "subscriptionExpiringBody": "Your subscription ends in {{days}} days. Please renew on time to avoid interruptions.",
+  "planGate": {
+    "financeTitle": "Finance module locked",
+    "financeDesc": "Income/expense, payroll, and yearly payment grid require Pro or Enterprise.",
+    "analyticsTitle": "Advanced analytics locked",
+    "analyticsDesc": "Admission/departure charts and deep alerts require Pro or Enterprise.",
+    "attendanceTitle": "Attendance reports locked",
+    "attendanceDesc": "Attendance statistics are not available on your current plan."
+  },
   "statsFilterTitle": "Filtered statistics",
   "statsFilterDesc": "Choose period for student and teacher cards.",
   "today": "Today",

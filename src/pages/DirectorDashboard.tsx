@@ -27,34 +27,35 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAppLocale } from "@/context/LanguageContext";
 import { useTranslation } from "react-i18next";
 import { normalizeUserRole, refreshAccessToken } from "@/lib/auth";
+import { buildSubscriptionHeaderInfo } from "@/lib/school-subscription";
+import { buildSchoolPlanContext, hasPlanFeature, type SchoolPlanContext } from "@/lib/school-plan-features";
+import PlanFeatureGate from "@/components/director/PlanFeatureGate";
 
-type DirectorSection = "dashboard" | "students" | "teachers" | "classes" | "schedule" | "payments" | "exams" | "settings" | "support";
+type DirectorSection =
+  | "dashboard"
+  | "students"
+  | "teachers"
+  | "school_admins"
+  | "classes"
+  | "schedule"
+  | "payments"
+  | "exams"
+  | "settings"
+  | "support";
+
+type SchoolAdminRow = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  createdAt?: string;
+};
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const ALL_CLASSES_VALUE = "__all__";
 const DIRECTOR_USERS_PAGE_SIZE = 5;
 const STUDENTS_LIST_PAGE_SIZE = 10;
 const RENDER_LEGACY_PROFILE = Boolean(import.meta.env.VITE_RENDER_LEGACY_PROFILE);
-
-const resolveSubscriptionPlanName = (
-  startAt?: string | null,
-  endAt?: string | null,
-) => {
-  if (!startAt || !endAt) return "Obuna";
-
-  const startDate = new Date(startAt);
-  const endDate = new Date(endAt);
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-    return "Obuna";
-  }
-
-  const durationMs = endDate.getTime() - startDate.getTime();
-  if (durationMs <= 0) return "Obuna";
-
-  const durationDays = Math.round(durationMs / (1000 * 60 * 60 * 24));
-  if (durationDays >= 330) return "1 yillik";
-  return "1 oylik";
-};
 
 type DirectorOverview = {
   classes: number;
@@ -93,7 +94,20 @@ type DirectorOverview = {
     endAt: string | null;
     daysLeft: number | null;
     isExpired: boolean;
+    planName?: string | null;
   } | null;
+  planFeatures?: {
+    analytics?: boolean;
+    finance?: boolean;
+    payment?: boolean;
+    attendanceReports?: boolean;
+    ai?: boolean;
+  };
+  planLimits?: {
+    maxStudents?: number;
+    maxBranches?: number;
+    planName?: string;
+  };
 };
 
 /**
@@ -442,6 +456,7 @@ const DirectorDashboard = () => {
   const { t: tStats } = useTranslation("director-stats");
   const { t: tTable } = useTranslation("director-table");
   const { t: tFilters } = useTranslation("director-filters");
+  const tUi = (key: string) => t(`ui.${key}`);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -552,6 +567,15 @@ const DirectorDashboard = () => {
   const [teacherPassword, setTeacherPassword] = useState("");
   const [teacherSubjectId, setTeacherSubjectId] = useState("");
   const [showTeacherPassword, setShowTeacherPassword] = useState(false);
+  const [schoolAdmins, setSchoolAdmins] = useState<SchoolAdminRow[]>([]);
+  const [schoolAdminsLoading, setSchoolAdminsLoading] = useState(false);
+  const [schoolAdminDialogOpen, setSchoolAdminDialogOpen] = useState(false);
+  const [schoolAdminName, setSchoolAdminName] = useState("");
+  const [schoolAdminEmail, setSchoolAdminEmail] = useState("");
+  const [schoolAdminPhone, setSchoolAdminPhone] = useState("");
+  const [schoolAdminPassword, setSchoolAdminPassword] = useState("");
+  const [showSchoolAdminPassword, setShowSchoolAdminPassword] = useState(false);
+  const [creatingSchoolAdmin, setCreatingSchoolAdmin] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -562,6 +586,7 @@ const DirectorDashboard = () => {
       "dashboard",
       "students",
       "teachers",
+      "school_admins",
       "classes",
       "schedule",
       "payments",
@@ -1352,6 +1377,84 @@ const DirectorDashboard = () => {
     }
   };
 
+  const fetchSchoolAdmins = async () => {
+    if (!token) return;
+
+    setSchoolAdminsLoading(true);
+    try {
+      const res = await apiFetch(`${API_BASE_URL}/api/director/users?role=school_admin`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || t("errors.usersLoad"));
+
+      const rows: SchoolAdminRow[] = Array.isArray(data)
+        ? data.map((item: SchoolAdminRow & { user?: { phone?: string | null } }) => ({
+            id: item.id,
+            name: item.name,
+            email: item.email,
+            phone: item.phone ?? item.user?.phone ?? null,
+            createdAt: item.createdAt,
+          }))
+        : [];
+
+      setSchoolAdmins(rows);
+    } catch (err: unknown) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : t("errors.usersLoadDesc"),
+        variant: "destructive",
+      });
+    } finally {
+      setSchoolAdminsLoading(false);
+    }
+  };
+
+  const handleCreateSchoolAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+
+    setCreatingSchoolAdmin(true);
+    try {
+      const res = await apiFetch(`${API_BASE_URL}/api/director/school-admin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: schoolAdminName.trim(),
+          email: schoolAdminEmail.trim(),
+          phone: schoolAdminPhone.trim(),
+          password: schoolAdminPassword,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || t("errors.schoolAdminCreate"));
+
+      toast({
+        title: t("successTitle"),
+        description: t("messages.schoolAdminCreated"),
+      });
+
+      setSchoolAdminDialogOpen(false);
+      setSchoolAdminName("");
+      setSchoolAdminEmail("");
+      setSchoolAdminPhone("");
+      setSchoolAdminPassword("");
+      await fetchSchoolAdmins();
+      await fetchOverview();
+    } catch (err: unknown) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : t("errors.schoolAdminCreateDesc"),
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingSchoolAdmin(false);
+    }
+  };
+
   const fetchDirectorUsers = async (options?: {
     role?: "all" | DirectorManageableRole;
     search?: string;
@@ -1636,6 +1739,11 @@ const DirectorDashboard = () => {
 
   useEffect(() => {
     if (!token || section !== "dashboard") return;
+    const plan = buildSchoolPlanContext(overview?.subscription ?? null, overview);
+    if (!hasPlanFeature(plan, "attendanceReports")) {
+      setDirectorAttendanceStatsSeries([]);
+      return;
+    }
     let cancelled = false;
     const run = async () => {
       setLoadingDirectorAttendanceStats(true);
@@ -1671,7 +1779,13 @@ const DirectorDashboard = () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, section, directorAttendanceStatsRange]);
+  }, [token, section, directorAttendanceStatsRange, overview?.planFeatures?.attendanceReports]);
+
+  useEffect(() => {
+    if (section !== "school_admins" || isSchoolAdmin) return;
+    void fetchSchoolAdmins();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section, isSchoolAdmin]);
 
   useEffect(() => {
     if (section !== "teachers" && section !== "students") return;
@@ -2698,10 +2812,20 @@ const DirectorDashboard = () => {
     })),
   ];
 
-  const subscriptionPlanName = resolveSubscriptionPlanName(
-    overview?.subscription?.startAt,
-    overview?.subscription?.endAt,
+  const directorSubscriptionInfo = buildSubscriptionHeaderInfo(overview?.subscription ?? null, {
+    schoolId: currentUser?.schoolId ? String(currentUser.schoolId) : null,
+  });
+
+  const schoolPlan: SchoolPlanContext = useMemo(
+    () => buildSchoolPlanContext(overview?.subscription ?? null, overview),
+    [overview],
   );
+
+  useEffect(() => {
+    if (section === "payments" && !hasPlanFeature(schoolPlan, "finance")) {
+      setSection("dashboard");
+    }
+  }, [section, schoolPlan]);
 
   const studentsHeaderTitle =
     studentsView === "attach"
@@ -2721,21 +2845,13 @@ const DirectorDashboard = () => {
     <DirectorLayout
       currentSection={section}
       onSectionChange={(nextSection) => {
-        if (nextSection === "school_admins") return;
         setSection(nextSection as DirectorSection);
       }}
       currentStudentsView={studentsView}
       onStudentsViewChange={setStudentsView}
       headerNotifications={headerNotifications}
       searchItems={searchItems}
-      subscriptionInfo={{
-        planName: subscriptionPlanName,
-        startDate: overview?.subscription?.startAt || null,
-        endDate: overview?.subscription?.endAt || null,
-        contractNumber: localStorage.getItem("subscription_contract_number") || "MYS-133891/26",
-        status: overview?.subscription?.isExpired ? "expired" : "active",
-        daysLeft: overview?.subscription?.daysLeft ?? null,
-      }}
+      subscriptionInfo={directorSubscriptionInfo}
     >
       <div className="space-y-8">
         {overview?.subscription && (overview.subscription.isExpired || (overview.subscription.daysLeft !== null && overview.subscription.daysLeft <= 7)) && (
@@ -2797,17 +2913,24 @@ const DirectorDashboard = () => {
               </div>
             </div>
 
-            <TeacherAttendanceOverviewChart
-              data={directorAttendanceStatsSeries}
-              bucket={directorAttendanceStatsBucket}
-              range={directorAttendanceStatsRange}
-              onRangeChange={setDirectorAttendanceStatsRange}
-              loading={loadingDirectorAttendanceStats}
-              locale={locale}
-              i18nNamespace="director-dashboard"
-              chartKeyPrefix="attendanceChart"
-              loadingTranslationKey="loading"
-            />
+            <PlanFeatureGate
+              plan={schoolPlan}
+              feature="attendanceReports"
+              title={t("planGate.attendanceTitle")}
+              description={t("planGate.attendanceDesc")}
+            >
+              <TeacherAttendanceOverviewChart
+                data={directorAttendanceStatsSeries}
+                bucket={directorAttendanceStatsBucket}
+                range={directorAttendanceStatsRange}
+                onRangeChange={setDirectorAttendanceStatsRange}
+                loading={loadingDirectorAttendanceStats}
+                locale={locale}
+                i18nNamespace="director-dashboard"
+                chartKeyPrefix="attendanceChart"
+                loadingTranslationKey="loading"
+              />
+            </PlanFeatureGate>
 
             {!overview ? (
               <>
@@ -2897,23 +3020,27 @@ const DirectorDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  <div className="md:col-span-2 lg:col-span-4">
-                    <p className=" text-gray-500 text-sm font-semibold text-foreground"> MOLIYAVIY FAOLLIK</p>
-                  </div>
+                  {hasPlanFeature(schoolPlan, "finance") ? (
+                    <>
+                      <div className="md:col-span-2 lg:col-span-4">
+                        <p className=" text-gray-500 text-sm font-semibold text-foreground"> MOLIYAVIY FAOLLIK</p>
+                      </div>
 
-                  <DirectorOverviewFinancePie
-                    monthIncome={overview.finance?.monthIncome ?? 0}
-                    monthExpense={overview.finance?.monthExpense ?? 0}
-                    formatMoney={formatMoney}
-                    title={tStats("monthFinancePieTitle")}
-                    description={tStats("monthFinancePieDesc")}
-                    incomeLabel={tStats("monthIncome")}
-                    expenseLabel={tStats("monthExpense")}
-                    emptyMessage={tStats("monthFinancePieEmpty")}
-                    netLabel={tStats("monthFinanceNetLabel")}
-                    footerHint={tStats("monthFinancePieFooterHint")}
-                    onOpenPayments={() => setSection("payments")}
-                  />
+                      <DirectorOverviewFinancePie
+                        monthIncome={overview.finance?.monthIncome ?? 0}
+                        monthExpense={overview.finance?.monthExpense ?? 0}
+                        formatMoney={formatMoney}
+                        title={tStats("monthFinancePieTitle")}
+                        description={tStats("monthFinancePieDesc")}
+                        incomeLabel={tStats("monthIncome")}
+                        expenseLabel={tStats("monthExpense")}
+                        emptyMessage={tStats("monthFinancePieEmpty")}
+                        netLabel={tStats("monthFinanceNetLabel")}
+                        footerHint={tStats("monthFinancePieFooterHint")}
+                        onOpenPayments={() => setSection("payments")}
+                      />
+                    </>
+                  ) : null}
                 </div>
 
                 <div className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
@@ -2967,10 +3094,19 @@ const DirectorDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  <DirectorDashboardAlertsPie alerts={overview.alerts} />
                 </div>
 
-                <DirectorDashboardAreaChart series={overview.admissionTimeline} />
+                <PlanFeatureGate
+                  plan={schoolPlan}
+                  feature="analytics"
+                  title={t("planGate.analyticsTitle")}
+                  description={t("planGate.analyticsDesc")}
+                >
+                  <div className="space-y-4">
+                    <DirectorDashboardAlertsPie alerts={overview.alerts} />
+                    <DirectorDashboardAreaChart series={overview.admissionTimeline} />
+                  </div>
+                </PlanFeatureGate>
               </>
             )}
           </>
@@ -4022,6 +4158,130 @@ const DirectorDashboard = () => {
           </Card>
         )}
 
+        {section === "school_admins" && !isSchoolAdmin && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <div>
+                <CardTitle className="text-[18px] font-bold text-[#212b36]">{tUi("schoolAdminsTitle")}</CardTitle>
+                <CardDescription className="text-sm font-medium text-[#FE9F43]">
+                  {t("alertsMessages.noSchoolAdmin")}
+                </CardDescription>
+              </div>
+              <Dialog open={schoolAdminDialogOpen} onOpenChange={setSchoolAdminDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" disabled={schoolAdmins.length > 0}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {tUi("addNewAdmin")}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{tUi("createSchoolAdminTitle")}</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleCreateSchoolAdmin} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="school-admin-name">{t("form.name")}</Label>
+                      <Input
+                        id="school-admin-name"
+                        value={schoolAdminName}
+                        onChange={(e) => setSchoolAdminName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="school-admin-email">{t("form.email")}</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          id="school-admin-email"
+                          type="email"
+                          value={schoolAdminEmail}
+                          onChange={(e) => setSchoolAdminEmail(e.target.value)}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="school-admin-phone">{t("phone")}</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          id="school-admin-phone"
+                          value={schoolAdminPhone}
+                          onChange={(e) => setSchoolAdminPhone(e.target.value)}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="school-admin-password">{t("password")}</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          id="school-admin-password"
+                          type={showSchoolAdminPassword ? "text" : "password"}
+                          value={schoolAdminPassword}
+                          onChange={(e) => setSchoolAdminPassword(e.target.value)}
+                          className="pl-10 pr-10"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSchoolAdminPassword((prev) => !prev)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showSchoolAdminPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit" disabled={creatingSchoolAdmin}>
+                        {creatingSchoolAdmin ? t("saving") : t("save")}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("form.name")}</TableHead>
+                    <TableHead>{t("form.email")}</TableHead>
+                    <TableHead>{t("form.phone")}</TableHead>
+                    <TableHead>{t("table.createdAt")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {schoolAdminsLoading ? (
+                    <TableSkeleton rows={2} columns={4} />
+                  ) : schoolAdmins.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="py-6 text-center text-sm text-muted-foreground">
+                        {t("alertsMessages.noSchoolAdmin")}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    schoolAdmins.map((admin) => (
+                      <TableRow key={admin.id}>
+                        <TableCell className="font-medium">{admin.name}</TableCell>
+                        <TableCell>{admin.email}</TableCell>
+                        <TableCell>{admin.phone || "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString(locale) : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+
         {(section === "teachers" || section === "students") && (
           <Card>
 
@@ -4976,7 +5236,16 @@ const DirectorDashboard = () => {
         )
         }
 
-        {section === "payments" && <DirectorFinanceSection onDataChanged={fetchOverview} />}
+        {section === "payments" && (
+          <PlanFeatureGate
+            plan={schoolPlan}
+            feature="finance"
+            title={t("planGate.financeTitle")}
+            description={t("planGate.financeDesc")}
+          >
+            <DirectorFinanceSection onDataChanged={fetchOverview} />
+          </PlanFeatureGate>
+        )}
 
         {
           section === "settings" && (

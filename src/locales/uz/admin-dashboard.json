@@ -26,10 +26,12 @@
     "fetchStats": "Statistikani yuklab bo'lmadi.",
     "fetchUsers": "Foydalanuvchilar ro'yxatini yuklashda xatolik.",
     "fetchSubscriptions": "Obunalarni yuklashda xatolik.",
+    "fetchPlans": "Obuna planlarini yuklashda xatolik.",
     "fetchExams": "Imtihonlar ro'yxatini yuklashda xatolik.",
     "fetchExamResults": "Imtihon natijalarini yuklashda xatolik.",
     "superAdminLoginRequired": "Avval tizimga super admin sifatida kiring.",
     "createSubscription": "Obunani qo'shishda xatolik yuz berdi.",
+    "deleteSubscription": "Obunani o'chirishda xatolik yuz berdi.",
     "createSchool": "Maktab yaratishda xatolik yuz berdi.",
     "fetchUserDetails": "Foydalanuvchi ma'lumotlarini yuklashda xatolik.",
     "updateUser": "Foydalanuvchini yangilashda xatolik yuz berdi.",
@@ -225,25 +227,41 @@
     "title": "Obunani qo'shish",
     "description": "Maktab uchun obuna muddatini belgilang",
     "created": "Obuna saqlandi.",
+    "deleted": "{{schoolName}} obunasi o'chirildi.",
+    "confirmDelete": "{{schoolName}} obunasini o'chirmoqchimisiz?",
+    "actions": {
+      "edit": "Tahrirlash",
+      "delete": "O'chirish"
+    },
     "expired": "Muddati tugagan",
     "daysLeft": "{{count}} kun qoldi",
     "daysShort": "{{count}} kun",
     "empty": "Hozircha obuna yo'q",
     "loading": "Obunalar yuklanmoqda...",
     "listTitle": "Obunalar ro'yxati",
+    "moneyFormat": "{{value}} so'm",
     "table": {
       "school": "Maktab",
+      "plan": "Plan",
       "endDate": "Tugash sanasi",
+      "totalPrice": "Summa",
       "daysLeft": "Qolgan kun"
     },
     "form": {
       "school": "Maktab *",
       "schoolPlaceholder": "Maktab tanlang",
+      "plan": "Plan *",
+      "planPlaceholder": "Plan tanlang",
+      "plansLoading": "Planlar yuklanmoqda...",
       "days": "Necha kun *",
+      "daysShort": "kun",
+      "amount": "Obuna summasi (so'm)",
+      "amountHint": "Tarif nomi faqat rejani ko'rsatadi. To'langan summani shu yerga kiriting (Bepul rejada 0).",
       "submit": "Obunani qo'shish"
     },
     "validation": {
       "selectSchool": "Maktabni tanlang.",
+      "selectPlan": "Planni tanlang.",
       "days": "Necha kun kiritishingiz kerak (1 dan katta)."
     }
   },
