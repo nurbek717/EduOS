@@ -19,14 +19,7 @@ import {
   type UserRole,
 } from "@/lib/auth";
 
-const Index = lazy(() => import("./pages/Index"));
-const About = lazy(() => import("./pages/About"));
-const Programs = lazy(() => import("./pages/Programs"));
-const News = lazy(() => import("./pages/News"));
-const Events = lazy(() => import("./pages/Events"));
-const Admissions = lazy(() => import("./pages/Admissions"));
-const Gallery = lazy(() => import("./pages/Gallery"));
-const Contact = lazy(() => import("./pages/Contact"));
+const Marketing = lazy(() => import("./pages/Marketing"));
 const Login = lazy(() => import("./pages/Login"));
 const StudentDashboard = lazy(() => import("./pages/StudentDashboard"));
 const ParentDashboard = lazy(() => import("./pages/ParentDashboard"));
@@ -163,17 +156,16 @@ const App = () => (
         <AuthRefreshManager />
         <Suspense fallback={<RouteFallback />}>
           <Routes>
-            {/* Asosiy kirish sahifasi sifatida Login */}
-            <Route path="/" element={<Login />} />
-            {/* Eski landing sahifa kerak bo'lsa, alohida yo'lga ko'chirdik */}
-            <Route path="/home" element={<Index />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/programs" element={<Programs />} />
-            <Route path="/news" element={<News />} />
-            <Route path="/events" element={<Events />} />
-            <Route path="/admissions" element={<Admissions />} />
-            <Route path="/gallery" element={<Gallery />} />
-            <Route path="/contact" element={<Contact />} />
+            {/* Marketing landing (GitHub loyihasi) */}
+            <Route path="/" element={<Marketing />} />
+            <Route path="/home" element={<Marketing />} />
+            <Route path="/about" element={<Marketing />} />
+            <Route path="/programs" element={<Marketing />} />
+            <Route path="/news" element={<Marketing />} />
+            <Route path="/events" element={<Marketing />} />
+            <Route path="/admissions" element={<Marketing />} />
+            <Route path="/gallery" element={<Marketing />} />
+            <Route path="/contact" element={<Marketing />} />
             <Route path="/login" element={<Login />} />
             <Route
               path="/student/dashboard"

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -194,4 +194,205 @@
   .shadow-elevated {
     box-shadow: var(--shadow-elevated);
   }
+}
+
+@layer base {
+  .marketing-theme {
+    --background: 210 40% 99%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 222 89% 55%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 210 100% 65%;
+    --primary-deep: 226 71% 40%;
+
+    --secondary: 214 100% 97%;
+    --secondary-foreground: 222 89% 35%;
+
+    --muted: 214 32% 95%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 199 89% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --feat-blue-1: 222 89% 55%;
+    --feat-blue-2: 199 89% 60%;
+    --feat-violet-1: 262 83% 58%;
+    --feat-violet-2: 292 84% 61%;
+    --feat-emerald-1: 160 84% 39%;
+    --feat-emerald-2: 173 80% 40%;
+    --feat-amber-1: 32 95% 50%;
+    --feat-amber-2: 48 96% 53%;
+    --feat-rose-1: 346 87% 54%;
+    --feat-rose-2: 14 91% 60%;
+    --feat-cyan-1: 188 94% 43%;
+    --feat-cyan-2: 199 89% 60%;
+    --feat-indigo-1: 234 89% 60%;
+    --feat-indigo-2: 262 83% 65%;
+    --feat-teal-1: 175 84% 38%;
+    --feat-teal-2: 158 64% 52%;
+  }
+
+  .marketing-theme.dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 210 100% 70%;
+    --primary-deep: 226 71% 45%;
+
+    --secondary: 217 33% 14%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 70%;
+
+    --accent: 199 89% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 45%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 18%;
+    --input: 217 33% 18%;
+    --ring: 217 91% 60%;
+    --sidebar-background: 222 47% 8%;
+    --sidebar-foreground: 210 40% 95%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 14%;
+    --sidebar-accent-foreground: 210 40% 95%;
+    --sidebar-border: 217 33% 18%;
+    --sidebar-ring: 217 91% 60%;
+
+    --feat-blue-1: 217 91% 60%;
+    --feat-blue-2: 199 89% 65%;
+    --feat-violet-1: 262 83% 68%;
+    --feat-violet-2: 292 84% 70%;
+    --feat-emerald-1: 160 70% 50%;
+    --feat-emerald-2: 173 70% 50%;
+    --feat-amber-1: 38 95% 60%;
+    --feat-amber-2: 48 96% 62%;
+    --feat-rose-1: 346 87% 64%;
+    --feat-rose-2: 14 91% 68%;
+    --feat-cyan-1: 188 85% 55%;
+    --feat-cyan-2: 199 89% 65%;
+    --feat-indigo-1: 234 89% 70%;
+    --feat-indigo-2: 262 83% 72%;
+    --feat-teal-1: 175 70% 50%;
+    --feat-teal-2: 158 64% 60%;
+  }
+
+  .marketing-theme {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  .marketing-theme h1,
+  .marketing-theme h2,
+  .marketing-theme h3,
+  .marketing-theme h4,
+  .marketing-theme h5,
+  .marketing-theme h6 {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    @apply tracking-tight;
+  }
+}
+
+@layer utilities {
+  .marketing-theme .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%);
+  }
+  .marketing-theme .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .marketing-theme .gradient-soft {
+    background: radial-gradient(ellipse at top, hsl(var(--secondary)) 0%, hsl(var(--background)) 70%);
+  }
+  .marketing-theme .shadow-glow {
+    box-shadow: 0 20px 60px -20px hsl(var(--primary) / 0.35);
+  }
+  .marketing-theme .shadow-card {
+    box-shadow: 0 4px 24px -8px hsl(var(--primary) / 0.15);
+  }
+  .marketing-theme .shadow-icon {
+    box-shadow: 0 12px 32px -8px hsl(var(--primary) / 0.45);
+  }
+
+  .marketing-theme.dark .shadow-card {
+    box-shadow: 0 4px 24px -8px hsl(0 0% 0% / 0.5);
+  }
+  .marketing-theme.dark .shadow-glow {
+    box-shadow: 0 20px 60px -20px hsl(var(--primary) / 0.45), 0 0 0 1px hsl(var(--primary) / 0.1);
+  }
+
+  .marketing-theme .animate-float {
+    animation: marketing-float 5s ease-in-out infinite;
+  }
+  .marketing-theme .animate-float-delayed {
+    animation: marketing-float-delayed 6s ease-in-out infinite;
+    animation-delay: 1s;
+  }
+  .marketing-theme .animate-fade-up {
+    animation: marketing-fade-up 0.7s ease-out both;
+  }
+  .marketing-theme .animate-pulse-glow {
+    animation: marketing-pulse-glow 2.5s ease-in-out infinite;
+  }
+
+  .marketing-theme .feature-icon {
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-style: preserve-3d;
+    perspective: 600px;
+  }
+}
+
+@keyframes marketing-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(2deg); }
+}
+@keyframes marketing-float-delayed {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-16px) rotate(-3deg); }
+}
+@keyframes marketing-fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes marketing-pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.5); }
+  50% { box-shadow: 0 0 0 16px hsl(var(--primary) / 0); }
 }

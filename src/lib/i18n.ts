@@ -8,6 +8,9 @@ import {
   translations,
   type AppLanguage,
 } from "@/lib/translations";
+import marketingEn from "@/marketing/locales/en";
+import marketingRu from "@/marketing/locales/ru";
+import marketingUz from "@/marketing/locales/uz";
 
 type NamespaceName =
   | "translation"
@@ -23,7 +26,8 @@ type NamespaceName =
   | "admin-dashboard"
   | "student-dashboard"
   | "parent-dashboard"
-  | "teacher-dashboard";
+  | "teacher-dashboard"
+  | "marketing";
 
 type I18nResource = Partial<Record<NamespaceName, Record<string, unknown>>>;
 
@@ -56,6 +60,12 @@ const pickNamespaceEntries = (source: Record<string, string>, prefixes: string[]
   );
 };
 
+const marketingResources: Record<AppLanguage, Record<string, unknown>> = {
+  en: marketingEn,
+  ru: marketingRu,
+  uz: marketingUz,
+};
+
 const resources = APP_LANGUAGES.reduce<Record<AppLanguage, I18nResource>>((acc, language) => {
   const full = translations[language];
 
@@ -64,6 +74,7 @@ const resources = APP_LANGUAGES.reduce<Record<AppLanguage, I18nResource>>((acc, 
     common: pickNamespaceEntries(full, NS_COMMON_PREFIXES),
     layout: pickNamespaceEntries(full, NS_LAYOUT_PREFIXES),
     dashboard: pickNamespaceEntries(full, NS_DASHBOARD_PREFIXES),
+    marketing: marketingResources[language],
   };
 
   return acc;
@@ -107,6 +118,7 @@ if (!i18n.isInitialized) {
       "student-dashboard",
       "parent-dashboard",
       "teacher-dashboard",
+      "marketing",
     ],
     partialBundledLanguages: true,
     interpolation: {
