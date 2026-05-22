@@ -440,7 +440,7 @@ const createOrExtendSubscription = async (req, res) => {
 
 const setSubscriptionEndAt = async (req, res) => {
   const { id } = req.params;
-  const { endAt } = req.body;
+  const { endAt, planId } = req.body;
 
   try {
     const parsed = new Date(endAt);
@@ -454,6 +454,19 @@ const setSubscriptionEndAt = async (req, res) => {
     }
 
     sub.endAt = parsed;
+
+    if (planId) {
+      const plan = await Plan.findById(planId).lean().exec();
+      if (!plan) {
+        return fail(res, req, 404, "Tarif rejasi topilmadi");
+      }
+      if (!ADMIN_SUBSCRIPTION_PLAN_NAMES.includes(plan.name)) {
+        return fail(res, req, 400, "Tanlangan tarif rejasi ruxsat etilmagan");
+      }
+      sub.plan = plan._id;
+      sub.planName = plan.name;
+    }
+
     await sub.save();
 
     return res.json(mapSubscriptionResponse(sub, sub.school));

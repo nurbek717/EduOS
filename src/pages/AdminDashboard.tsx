@@ -257,6 +257,7 @@ const AdminDashboard = () => {
   const [subscriptionEditSubmitting, setSubscriptionEditSubmitting] = useState(false);
   const [subscriptionEditTarget, setSubscriptionEditTarget] = useState<SubscriptionItem | null>(null);
   const [subscriptionEditEndAt, setSubscriptionEditEndAt] = useState<string>("");
+  const [subscriptionEditPlanId, setSubscriptionEditPlanId] = useState<string>("");
   const [subscriptionSchoolId, setSubscriptionSchoolId] = useState<string>("");
   const [subscriptionPlanId, setSubscriptionPlanId] = useState<string>("");
   const [subscriptionDays, setSubscriptionDays] = useState<number>(30);
@@ -562,6 +563,8 @@ const AdminDashboard = () => {
     const mm = d ? String(d.getMonth() + 1).padStart(2, "0") : String(new Date().getMonth() + 1).padStart(2, "0");
     const dd = d ? String(d.getDate()).padStart(2, "0") : String(new Date().getDate()).padStart(2, "0");
     setSubscriptionEditEndAt(`${yyyy}-${mm}-${dd}`);
+    setSubscriptionEditPlanId(sub.planId || "");
+    if (adminPlans.length === 0) fetchAdminPlans();
     setSubscriptionEditOpen(true);
   };
 
@@ -586,22 +589,22 @@ const AdminDashboard = () => {
 
     setSubscriptionEditSubmitting(true);
     try {
+      const body: Record<string, string> = { endAt: subscriptionEditEndAt };
+      if (subscriptionEditPlanId) body.planId = subscriptionEditPlanId;
       const res = await fetch(`${API_BASE_URL}/api/admin/subscriptions/${subscriptionEditTarget.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          endAt: subscriptionEditEndAt,
-        }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Obunani yangilashda xatolik");
 
       toast({
         title: ad("toasts.success"),
-        description: "Obuna tugash sanasi yangilandi",
+        description: subscriptionEditPlanId ? "Obuna yangilandi" : "Obuna tugash sanasi yangilandi",
       });
 
       setSubscriptionEditOpen(false);
@@ -1803,25 +1806,41 @@ const AdminDashboard = () => {
                 )}
               </div>
 
-              <Dialog open={subscriptionEditOpen} onOpenChange={setSubscriptionEditOpen}>
+              <Dialog open={subscriptionEditOpen} onOpenChange={(open) => { setSubscriptionEditOpen(open); if (!open) setSubscriptionEditPlanId(""); }}>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
-                    <DialogTitle>Obuna tugash sanasini o'zgartirish</DialogTitle>
+                    <DialogTitle>{subscriptionEditPlanId ? "Obunani tahrirlash" : "Obuna tugash sanasini o'zgartirish"}</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-2">
-                    <Label>Maktab</Label>
-                    <div className="rounded-md border bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                      {subscriptionEditTarget?.schoolName || "-"}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Maktab</Label>
+                      <div className="rounded-md border bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                        {subscriptionEditTarget?.schoolName || "-"}
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="subscription-edit-endAt">Tugash sanasi</Label>
-                    <Input
-                      id="subscription-edit-endAt"
-                      type="date"
-                      value={subscriptionEditEndAt}
-                      onChange={(e) => setSubscriptionEditEndAt(e.target.value)}
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="subscription-edit-plan">Tarif rejasi</Label>
+                      <select
+                        id="subscription-edit-plan"
+                        value={subscriptionEditPlanId}
+                        onChange={(e) => setSubscriptionEditPlanId(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="">O'zgartirmaslik</option>
+                        {adminPlans.map((plan) => (
+                          <option key={plan.id} value={plan.id}>{plan.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="subscription-edit-endAt">Tugash sanasi</Label>
+                      <Input
+                        id="subscription-edit-endAt"
+                        type="date"
+                        value={subscriptionEditEndAt}
+                        onChange={(e) => setSubscriptionEditEndAt(e.target.value)}
+                      />
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => setSubscriptionEditOpen(false)} disabled={subscriptionEditSubmitting}>

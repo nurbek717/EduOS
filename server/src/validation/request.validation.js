@@ -545,6 +545,7 @@ const validators = {
     },
     body: {
       endAt: { type: "dateString", required: true },
+      planId: objectIdField({ required: false }),
     },
   }),
   createTicket: validateRequest({
