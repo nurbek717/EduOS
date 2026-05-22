@@ -83,14 +83,14 @@ export function hasPlanFeature(ctx: SchoolPlanContext, key: keyof PlanFeatures):
 }
 
 export function comparePlanTier(planName: string): number {
-  const order = ["Bepul", "Standard", "Pro", "Enterprise"];
+  const order = ["Bepul", "Standard", "Pro", "Premium"];
   const idx = order.indexOf(planName);
   return idx === -1 ? 0 : idx;
 }
 
 export function requiredPlanLabelForFeature(feature: keyof PlanFeatures): string {
   if (feature === "finance" || feature === "analytics") return "Pro";
-  if (feature === "ai") return "Enterprise";
+  if (feature === "ai") return "Premium";
   if (feature === "payment" || feature === "attendanceReports") return "Standard";
   return "Pro";
 }

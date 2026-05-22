@@ -31,7 +31,7 @@ const DEFAULT_PLANS = [
     price: 0,
   },
   {
-    name: "Enterprise",
+    name: "Premium",
     maxStudents: -1,
     maxBranches: -1,
     features: {

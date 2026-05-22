@@ -116,7 +116,7 @@ const en: Translations = {
       { q: "Is there a free trial?", a: "Yes, we offer a 14-day fully functional free trial. No credit card required." },
       { q: "How is technical support organized?", a: "Live support via Telegram, phone and email on weekdays 09:00–20:00. Premium plans include 24/7 support." },
       { q: "Can existing data be migrated?", a: "Absolutely. We migrate students, staff and financial history for free from Excel or other systems." },
-      { q: "Is it suitable for schools with multiple branches?", a: "Yes, Pro and Enterprise plans let you manage unlimited branches from a single dashboard." },
+      { q: "Is it suitable for schools with multiple branches?", a: "Yes, Pro and Premium plans let you manage unlimited branches from a single dashboard." },
     ],
   },
   cta: {

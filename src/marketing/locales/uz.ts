@@ -114,7 +114,7 @@ const uz = {
       { q: "Bepul sinov muddati bormi?", a: "Ha, 14 kunlik to'liq funksional bepul sinov beriladi. Karta ma'lumotlari talab qilinmaydi." },
       { q: "Texnik yordam qanday tashkil etilgan?", a: "Telegram, telefon va elektron pochta orqali ish kunlari 09:00–20:00 oralig'ida jonli yordam ko'rsatamiz. Premium tariflarda 24/7 qo'llab-quvvatlash mavjud." },
       { q: "Mavjud ma'lumotlarni ko'chirib o'tkazsa bo'ladimi?", a: "Albatta. Excel yoki boshqa tizimlardan o'quvchilar, xodimlar va moliyaviy tarixni bepul ko'chirib o'tkazib beramiz." },
-      { q: "Bir nechta filiali bo'lgan maktablar uchun mosmi?", a: "Ha, Pro va Enterprise tariflarda cheksiz filiallarni yagona kabinet orqali boshqarish imkoniyati mavjud." },
+      { q: "Bir nechta filiali bo'lgan maktablar uchun mosmi?", a: "Ha, Pro va Premium tariflarda cheksiz filiallarni yagona kabinet orqali boshqarish imkoniyati mavjud." },
     ],
   },
   cta: {

@@ -160,7 +160,7 @@ const featureDeniedMessage = (featureKey, planName) => {
     ai: "AI funksiyalar",
   };
   const label = labels[featureKey] || featureKey;
-  return `${label} "${planName}" tarifida yo'q. Pro yoki Enterprise tarifiga o'ting.`;
+  return `${label} "${planName}" tarifida yo'q. Pro yoki Premium tarifiga o'ting.`;
 };
 
 module.exports = {

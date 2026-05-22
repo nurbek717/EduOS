@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 const plans = [
   { key: "start", name: "Start", price: "299 000", popular: false, featureKeys: ["f1", "f2", "f3", "f4"] },
   { key: "pro", name: "Pro", price: "599 000", popular: true, featureKeys: ["f1", "f2", "f3", "f4", "f5"] },
-  { key: "enterprise", name: "Enterprise", price: null, popular: false, featureKeys: ["f1", "f2", "f3", "f4", "f5"] },
+  { key: "premium", name: "Premium", price: null, popular: false, featureKeys: ["f1", "f2", "f3", "f4", "f5"] },
 ] as const;
 
 export const Pricing = () => {
