@@ -2,6 +2,7 @@ const Subscription = require("../models/Subscription");
 const Plan = require("../modules/plans/plan.model");
 const ClassModel = require("../models/Class");
 const Student = require("../models/Student");
+const Branch = require("../models/Branch");
 
 const DEFAULT_FEATURES = {
   analytics: true,
@@ -151,6 +152,26 @@ const assertCanAddClass = async (schoolId) => {
   return plan;
 };
 
+const assertCanAddBranch = async (schoolId) => {
+  const plan = await resolveSchoolPlan(schoolId);
+  if (plan.maxBranches === -1) {
+    return plan;
+  }
+
+  const current = await Branch.countDocuments({ school: schoolId }).exec();
+  if (current >= plan.maxBranches) {
+    const error = new Error(
+      `Filial limiti tugadi. "${plan.planName}" tarifida maksimal ${plan.maxBranches} ta filial.`,
+    );
+    error.code = "BRANCH_LIMIT";
+    error.statusCode = 403;
+    error.meta = { current, max: plan.maxBranches, planName: plan.planName };
+    throw error;
+  }
+
+  return plan;
+};
+
 const featureDeniedMessage = (featureKey, planName) => {
   const labels = {
     finance: "Moliya bo'limi",
@@ -170,5 +191,6 @@ module.exports = {
   mapSubscriptionStatusPayload,
   assertCanAddStudents,
   assertCanAddClass,
+  assertCanAddBranch,
   featureDeniedMessage,
 };

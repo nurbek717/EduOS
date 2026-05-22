@@ -33,7 +33,7 @@ const DEFAULT_PLANS = [
   {
     name: "Pro",
     maxStudents: 1000,
-    maxBranches: 10,
+    maxBranches: 5,
     price: 3_000_000,
     features: {
       analytics: true,

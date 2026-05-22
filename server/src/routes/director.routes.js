@@ -8,6 +8,10 @@ const {
   getOverview,
   createClass,
   listClasses,
+  listBranches,
+  createBranch,
+  updateBranch,
+  deleteBranch,
   getClassInsights,
   updateClass,
   createSubject,
@@ -65,6 +69,10 @@ router.delete("/users/:id", requireRoles("school_admin"), validators.idParam, de
 
 router.post("/classes", requireRoles("school_admin"), validators.directorCreateClass, createClass);
 router.get("/classes", listClasses);
+router.get("/branches", requireRoles("director"), listBranches);
+router.post("/branches", requireRoles("director"), validators.directorCreateBranch, createBranch);
+router.patch("/branches/:id", requireRoles("director"), validators.directorUpdateBranch, updateBranch);
+router.delete("/branches/:id", requireRoles("director"), validators.idParam, deleteBranch);
 router.get(
   "/classes/insights",
   validators.directorClassInsightsQuery,

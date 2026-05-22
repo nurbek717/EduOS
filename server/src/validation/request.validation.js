@@ -66,6 +66,24 @@ const validators = {
       name: nonEmptyStringField({ required: true, minLength: 1, maxLength: 100 }),
     },
   }),
+  directorCreateBranch: validateRequest({
+    body: {
+      name: nonEmptyStringField({ required: true, minLength: 1, maxLength: 120 }),
+      address: nullableStringField({ maxLength: 255 }),
+      managerUserId: objectIdField({ nullable: true }),
+    },
+  }),
+  directorUpdateBranch: validateRequest({
+    params: {
+      id: objectIdField({ required: true }),
+    },
+    body: {
+      name: nonEmptyStringField({ minLength: 1, maxLength: 120 }),
+      address: nullableStringField({ maxLength: 255 }),
+      managerUserId: objectIdField({ nullable: true }),
+    },
+    rules: [requireAtLeastOne(["name", "address", "managerUserId"])],
+  }),
   directorUpdateClass: validateRequest({
     params: {
       id: objectIdField({ required: true }),

@@ -37,6 +37,7 @@ type DirectorSection =
   | "students"
   | "teachers"
   | "school_admins"
+  | "branches"
   | "classes"
   | "schedule"
   | "payments"
@@ -50,6 +51,27 @@ type SchoolAdminRow = {
   email: string;
   phone?: string | null;
   createdAt?: string;
+};
+type BranchManager = {
+  id: string;
+  name: string;
+  role: "school_admin" | "teacher";
+};
+
+type BranchRow = {
+  id: string;
+  name: string;
+  address?: string | null;
+  createdAt?: string | null;
+  managerUser?: BranchManager | null;
+};
+
+type AssignableUser = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  role: "school_admin" | "teacher";
 };
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -577,6 +599,23 @@ const DirectorDashboard = () => {
   const [schoolAdminPassword, setSchoolAdminPassword] = useState("");
   const [showSchoolAdminPassword, setShowSchoolAdminPassword] = useState(false);
   const [creatingSchoolAdmin, setCreatingSchoolAdmin] = useState(false);
+  const [branches, setBranches] = useState<BranchRow[]>([]);
+  const [branchesLoading, setBranchesLoading] = useState(false);
+  const [branchDialogOpen, setBranchDialogOpen] = useState(false);
+  const [branchName, setBranchName] = useState("");
+  const [branchAddress, setBranchAddress] = useState("");
+  const [creatingBranch, setCreatingBranch] = useState(false);
+  const [editBranchDialogOpen, setEditBranchDialogOpen] = useState(false);
+  const [editingBranch, setEditingBranch] = useState<BranchRow | null>(null);
+  const [editBranchName, setEditBranchName] = useState("");
+  const [editBranchAddress, setEditBranchAddress] = useState("");
+  const [savingBranchEdit, setSavingBranchEdit] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [assigningBranch, setAssigningBranch] = useState<BranchRow | null>(null);
+  const [assignUserId, setAssignUserId] = useState("");
+  const [assignableUsers, setAssignableUsers] = useState<AssignableUser[]>([]);
+  const [assignableUsersLoading, setAssignableUsersLoading] = useState(false);
+  const [savingBranchAssignment, setSavingBranchAssignment] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -588,6 +627,7 @@ const DirectorDashboard = () => {
       "students",
       "teachers",
       "school_admins",
+      "branches",
       "classes",
       "schedule",
       "payments",
@@ -812,6 +852,7 @@ const DirectorDashboard = () => {
     students: false,
     users: false,
     exams: false,
+    branches: false,
   });
   const directorUsersRequestIdRef = useRef(0);
 
@@ -1411,6 +1452,42 @@ const DirectorDashboard = () => {
     }
   };
 
+  const fetchBranches = async () => {
+    if (!token) return;
+
+    setBranchesLoading(true);
+    try {
+      const res = await apiFetch(`${API_BASE_URL}/api/director/branches`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Filiallarni yuklab bo'lmadi");
+      }
+
+      const rows: BranchRow[] = Array.isArray(data.branches)
+        ? data.branches.map((item: { _id?: string; id?: string; name?: string; address?: string; createdAt?: string; created_at?: string; managerUser?: BranchManager | null }) => ({
+          id: String(item._id || item.id || ""),
+          name: item.name || "",
+          address: item.address ?? null,
+          createdAt: item.createdAt ?? item.created_at ?? null,
+          managerUser: item.managerUser ?? null,
+        }))
+        : [];
+
+      setBranches(rows);
+      loadedDirectorDataRef.current.branches = true;
+    } catch (err: unknown) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : "Filiallarni yuklab bo'lmadi",
+        variant: "destructive",
+      });
+    } finally {
+      setBranchesLoading(false);
+    }
+  };
+
   const handleCreateSchoolAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
@@ -1453,6 +1530,205 @@ const DirectorDashboard = () => {
       });
     } finally {
       setCreatingSchoolAdmin(false);
+    }
+  };
+
+  const handleCreateBranch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+
+    if (!branchName.trim()) {
+      toast({
+        title: t("errorTitle"),
+        description: "Filial nomini kiriting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCreatingBranch(true);
+    try {
+      const res = await apiFetch(`${API_BASE_URL}/api/director/branches`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: branchName.trim(),
+          address: branchAddress.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Filial yaratilmadi");
+      }
+
+      toast({
+        title: t("successTitle"),
+        description: "Filial qo'shildi.",
+      });
+
+      setBranchDialogOpen(false);
+      setBranchName("");
+      setBranchAddress("");
+      await fetchBranches();
+    } catch (err: unknown) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : "Filial yaratilmadi",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingBranch(false);
+    }
+  };
+
+  const fetchAssignableUsers = async () => {
+    if (!token) return;
+    setAssignableUsersLoading(true);
+    try {
+      const res = await apiFetch(`${API_BASE_URL}/api/director/users`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Foydalanuvchilarni yuklab bo'lmadi");
+      const users: AssignableUser[] = Array.isArray(data)
+        ? data.filter((u: { role?: string }) => u.role === "school_admin" || u.role === "teacher")
+          .map((u: { id?: string; _id?: string; name?: string; email?: string; phone?: string | null; role?: string }) => ({
+            id: String(u.id || u._id || ""),
+            name: u.name || "",
+            email: u.email || "",
+            phone: u.phone ?? null,
+            role: u.role as "school_admin" | "teacher",
+          }))
+        : [];
+      setAssignableUsers(users);
+    } catch (err: unknown) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : "Foydalanuvchilarni yuklab bo'lmadi",
+        variant: "destructive",
+      });
+    } finally {
+      setAssignableUsersLoading(false);
+    }
+  };
+
+  const handleEditBranch = (branch: BranchRow) => {
+    setEditingBranch(branch);
+    setEditBranchName(branch.name);
+    setEditBranchAddress(branch.address || "");
+    setEditBranchDialogOpen(true);
+  };
+
+  const handleSaveBranchEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !editingBranch) return;
+    setSavingBranchEdit(true);
+    try {
+      const body: Record<string, string> = {};
+      if (editBranchName.trim()) body.name = editBranchName.trim();
+      if (editBranchAddress !== editingBranch.address) body.address = editBranchAddress.trim();
+
+      const res = await apiFetch(`${API_BASE_URL}/api/director/branches/${editingBranch.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Filial tahrirlanmadi");
+
+      toast({
+        title: t("successTitle"),
+        description: "Filial tahrirlandi.",
+      });
+
+      setEditBranchDialogOpen(false);
+      setEditingBranch(null);
+      await fetchBranches();
+    } catch (err: unknown) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : "Filial tahrirlanmadi",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingBranchEdit(false);
+    }
+  };
+
+  const handleDeleteBranch = async (branch: BranchRow) => {
+    if (!token) return;
+    if (!window.confirm(`"${branch.name}" filialini o'chirmoqchimisiz?`)) return;
+
+    try {
+      const res = await apiFetch(`${API_BASE_URL}/api/director/branches/${branch.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Filial o'chirilmadi");
+
+      toast({
+        title: t("successTitle"),
+        description: "Filial o'chirildi.",
+      });
+
+      await fetchBranches();
+    } catch (err: unknown) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : "Filial o'chirilmadi",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAssignManager = (branch: BranchRow) => {
+    setAssigningBranch(branch);
+    setAssignUserId(branch.managerUser?.id || "");
+    void fetchAssignableUsers();
+    setAssignDialogOpen(true);
+  };
+
+  const handleSaveAssignManager = async () => {
+    if (!token || !assigningBranch) return;
+    setSavingBranchAssignment(true);
+    try {
+      const res = await apiFetch(`${API_BASE_URL}/api/director/branches/${assigningBranch.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          managerUserId: assignUserId || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Mas'ul biriktirilmadi");
+
+      toast({
+        title: t("successTitle"),
+        description: assignUserId ? "Mas'ul biriktirildi." : "Mas'ul olib tashlandi.",
+      });
+
+      setAssignDialogOpen(false);
+      setAssigningBranch(null);
+      setAssignUserId("");
+      await fetchBranches();
+    } catch (err: unknown) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : "Mas'ul biriktirilmadi",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingBranchAssignment(false);
     }
   };
 
@@ -1731,6 +2007,10 @@ const DirectorDashboard = () => {
           ? selectedTimetableClassId
           : undefined;
         await fetchExams(classId);
+      }
+
+      if (section === "branches" && !loadedDirectorDataRef.current.branches && !isSchoolAdmin) {
+        await fetchBranches();
       }
     };
 
@@ -2780,6 +3060,12 @@ const DirectorDashboard = () => {
       title: c.name,
       subtitle: tTable("class"),
       section: "classes" as const,
+    })),
+    ...branches.map((b) => ({
+      id: b.id,
+      title: b.name,
+      subtitle: b.address || t("search.noAddress", { defaultValue: "Manzil yo'q" }),
+      section: "branches" as const,
     })),
     ...subjects.map((s) => ({
       id: s._id,
@@ -4287,6 +4573,204 @@ const DirectorDashboard = () => {
             </CardContent>
           </Card>
         )}
+
+        {section === "branches" && !isSchoolAdmin && (
+          <><Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <div>
+                <CardTitle className="text-[18px] font-bold text-[#212b36]">Filiallar</CardTitle>
+                <CardDescription className="text-sm font-medium text-[#FE9F43]">
+                  Maktab filiallari ro'yxati va yangi filial qo'shish.
+                </CardDescription>
+              </div>
+              <Dialog open={branchDialogOpen} onOpenChange={setBranchDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Filial qo'shish
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Yangi filial</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleCreateBranch} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="branch-name">Filial nomi</Label>
+                      <Input
+                        id="branch-name"
+                        value={branchName}
+                        onChange={(e) => setBranchName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="branch-address">Manzil (ixtiyoriy)</Label>
+                      <Input
+                        id="branch-address"
+                        value={branchAddress}
+                        onChange={(e) => setBranchAddress(e.target.value)}
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit" disabled={creatingBranch}>
+                        {creatingBranch ? t("saving") : t("save")}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Filial</TableHead>
+                    <TableHead>Manzil</TableHead>
+                    <TableHead>Mas'ul</TableHead>
+                    <TableHead>{t("table.createdAt")}</TableHead>
+                    <TableHead className="w-[120px]">Amallar</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {branchesLoading ? (
+                    <TableSkeleton rows={2} columns={5} />
+                  ) : branches.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">
+                        Hozircha filial yo'q.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    branches.map((branch) => (
+                      <TableRow key={branch.id}>
+                        <TableCell className="font-medium">{branch.name}</TableCell>
+                        <TableCell>{branch.address || "—"}</TableCell>
+                        <TableCell>
+                          {branch.managerUser ? (
+                            <span className="text-sm">
+                              {branch.managerUser.name}
+                              <span className="text-xs text-muted-foreground ml-1">
+                                ({branch.managerUser.role === "school_admin" ? "Admin" : "O'qituvchi"})
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {branch.createdAt ? new Date(branch.createdAt).toLocaleDateString(locale) : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleEditBranch(branch)}
+                              title="Tahrirlash"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleAssignManager(branch)}
+                              title="Mas'ul biriktirish"
+                            >
+                              <UserCircle className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteBranch(branch)}
+                              title="O'chirish"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Edit dialog */}
+          <Dialog open={editBranchDialogOpen} onOpenChange={setEditBranchDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Filialni tahrirlash</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSaveBranchEdit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-branch-name">Filial nomi</Label>
+                  <Input
+                    id="edit-branch-name"
+                    value={editBranchName}
+                    onChange={(e) => setEditBranchName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-branch-address">Manzil (ixtiyoriy)</Label>
+                  <Input
+                    id="edit-branch-address"
+                    value={editBranchAddress}
+                    onChange={(e) => setEditBranchAddress(e.target.value)}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={savingBranchEdit}>
+                    {savingBranchEdit ? t("saving") : t("save")}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          {/* Assign manager dialog */}
+          <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  Mas'ul biriktirish — {assigningBranch?.name || ""}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="assign-user">Mas'ul foydalanuvchi</Label>
+                  <select
+                    id="assign-user"
+                    value={assignUserId}
+                    onChange={(e) => setAssignUserId(e.target.value)}
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="">Mas'ul yo'q</option>
+                    {assignableUsersLoading ? (
+                      <option disabled>Yuklanmoqda...</option>
+                    ) : (
+                      assignableUsers.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} — {u.email} {u.phone ? `— ${u.phone}` : ""} ({u.role === "school_admin" ? "Admin" : "O'qituvchi"})
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+                <DialogFooter>
+                  <Button onClick={handleSaveAssignManager} disabled={savingBranchAssignment}>
+                    {savingBranchAssignment ? t("saving") : t("save")}
+                  </Button>
+                </DialogFooter>
+              </div>
+            </DialogContent>
+          </Dialog>
+          </>)}
 
         {(section === "teachers" || section === "students") && (
           <Card>

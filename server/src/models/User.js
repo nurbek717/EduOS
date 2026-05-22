@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
-const ROLES = ["super_admin", "director", "school_admin", "teacher", "student", "parent"];
+const ROLES = ["super_admin", "director", "school_admin", "branch_admin", "teacher", "student", "parent"];
 
 const userSchema = new mongoose.Schema(
   {
@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     role: { type: String, enum: ROLES, required: true },
     school: { type: mongoose.Schema.Types.ObjectId, ref: "School", default: null },
+    branchId: { type: mongoose.Schema.Types.ObjectId, ref: "SchoolBranch", default: null },
     monthlySalary: { type: Number, default: 0, min: 0 },
     // Profil rasmi (Face ID davomat uchun referens sifatida ishlatiladi; URL yoki base64 data URL)
     photoUrl: { type: String, default: null },

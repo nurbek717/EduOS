@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LayoutDashboard, Users, ChevronRight, ChevronDown, BookOpen, GraduationCap, UserCircle, Wallet, CalendarDays, FileText, Settings, MessageCircle, Send, PhoneCall } from "lucide-react";
+import { LayoutDashboard, Users, ChevronRight, ChevronDown, BookOpen, GraduationCap, UserCircle, Wallet, CalendarDays, FileText, Settings, MessageCircle, Send, PhoneCall, Building2 } from "lucide-react";
 import {
   SidebarProvider,
   Sidebar,
@@ -23,7 +23,7 @@ import { hasPlanFeature } from "@/lib/school-plan-features";
 import { useTranslation } from "react-i18next";
 import { normalizeUserRole } from "@/lib/auth";
 
-type DirectorSection = "dashboard" | "students" | "teachers" | "school_admins" | "classes" | "schedule" | "payments" | "exams" | "settings" | "support";
+type DirectorSection = "dashboard" | "students" | "teachers" | "school_admins" | "branches" | "classes" | "schedule" | "payments" | "exams" | "settings" | "support";
 
 interface DirectorLayoutProps {
   children: ReactNode;
@@ -103,7 +103,8 @@ const DirectorLayout = ({
   ];
 
   if (!isSchoolAdmin) {
-    navItems.splice(3, 0, { label: t("director.nav.schoolAdmins"), section: "school_admins", icon: UserCircle });
+    navItems.splice(3, 0, { label: t("director.nav.schoolAdmins", { defaultValue: "School adminlar" }), section: "school_admins", icon: UserCircle });
+    navItems.splice(4, 0, { label: t("director.nav.branches", { defaultValue: "Filiallar" }), section: "branches", icon: Building2 });
   }
 
   const visibleNavItems = navItems.filter((item) => {
@@ -117,7 +118,8 @@ const DirectorLayout = ({
     dashboard: t("director.nav.dashboard"),
     students: t("director.nav.students"),
     teachers: t("director.nav.teachers"),
-    school_admins: t("director.nav.schoolAdmins"),
+    school_admins: t("director.nav.schoolAdmins", { defaultValue: "School adminlar" }),
+    branches: t("director.nav.branches", { defaultValue: "Filiallar" }),
     classes: t("director.nav.classes"),
     schedule: t("director.nav.schedule"),
     payments: t("director.nav.payments"),

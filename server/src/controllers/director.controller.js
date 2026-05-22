@@ -11,12 +11,14 @@ const FinanceTransaction = require("../models/FinanceTransaction");
 const Grade = require("../models/Grade");
 const Subscription = require("../models/Subscription");
 const StudentDepartureAudit = require("../models/StudentDepartureAudit");
+const Branch = require("../models/Branch");
 const { getSchoolAttendanceStats } = require("../utils/schoolAttendanceStats");
 const {
   mapSubscriptionStatusPayload,
   resolveSchoolPlan,
   assertCanAddStudents,
   assertCanAddClass,
+  assertCanAddBranch,
 } = require("../utils/schoolPlan");
 
 const ensureSchoolManagementUser = async (user) => {
@@ -1108,6 +1110,180 @@ const listClasses = async (req, res) => {
     return res.json(result);
   } catch (err) {
     return res.status(400).json({ message: err.message || "Failed to list classes" });
+  }
+};
+
+const listBranches = async (req, res) => {
+  try {
+    const school = await ensureSchoolManagementUser(req.user);
+    const branches = await Branch.find({ school: school._id })
+      .populate("managerUser", "name role")
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+
+    const mapped = branches.map((branch) => ({
+      id: branch._id,
+      name: branch.name,
+      address: branch.address || "",
+      createdAt: branch.createdAt,
+      managerUser: branch.managerUser
+        ? {
+          id: branch.managerUser._id,
+          name: branch.managerUser.name,
+          role: branch.managerUser.role,
+        }
+        : null,
+    }));
+
+    return res.json({ branches: mapped });
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Failed to list branches" });
+  }
+};
+
+const createBranch = async (req, res) => {
+  try {
+    const { name, address, managerUserId } = req.body || {};
+    if (!name) {
+      return res.status(400).json({ message: "Branch name is required" });
+    }
+
+    const school = await ensureSchoolManagementUser(req.user);
+    await assertCanAddBranch(school._id);
+
+    const existing = await Branch.findOne({ name, school: school._id }).lean().exec();
+    if (existing) {
+      return res.status(400).json({ message: "Branch with this name already exists in this school" });
+    }
+
+    let managerUser = null;
+    if (managerUserId) {
+      const user = await User.findOne({
+        _id: managerUserId,
+        school: school._id,
+        role: { $in: ["school_admin", "teacher"] },
+      })
+        .select("name role")
+        .lean()
+        .exec();
+      if (!user) {
+        return res.status(400).json({ message: "Manager user not found in this school" });
+      }
+      managerUser = user._id;
+    }
+
+    const branch = await Branch.create({
+      name: name.trim(),
+      address: address || "",
+      school: school._id,
+      managerUser,
+    });
+
+    const populated = await Branch.findById(branch._id)
+      .populate("managerUser", "name role")
+      .lean()
+      .exec();
+
+    return res.status(201).json({
+      branch: {
+        id: populated._id,
+        name: populated.name,
+        address: populated.address || "",
+        createdAt: populated.createdAt,
+        managerUser: populated.managerUser
+          ? {
+            id: populated.managerUser._id,
+            name: populated.managerUser.name,
+            role: populated.managerUser.role,
+          }
+          : null,
+      },
+    });
+  } catch (err) {
+    return res.status(err.statusCode || 400).json({ message: err.message || "Failed to create branch" });
+  }
+};
+
+const updateBranch = async (req, res) => {
+  try {
+    const school = await ensureSchoolManagementUser(req.user);
+    const { id } = req.params;
+    const { name, address, managerUserId } = req.body || {};
+
+    const patch = {};
+    if (typeof name === "string" && name.trim()) {
+      patch.name = name.trim();
+    }
+    if (typeof address === "string") {
+      patch.address = address;
+    }
+
+    if (typeof managerUserId !== "undefined") {
+      if (!managerUserId) {
+        patch.managerUser = null;
+      } else {
+        const user = await User.findOne({
+          _id: managerUserId,
+          school: school._id,
+          role: { $in: ["school_admin", "teacher"] },
+        })
+          .select("name role")
+          .lean()
+          .exec();
+        if (!user) {
+          return res.status(400).json({ message: "Manager user not found in this school" });
+        }
+        patch.managerUser = user._id;
+      }
+    }
+
+    const branch = await Branch.findOneAndUpdate(
+      { _id: id, school: school._id },
+      patch,
+      { new: true },
+    )
+      .populate("managerUser", "name role")
+      .lean()
+      .exec();
+
+    if (!branch) {
+      return res.status(404).json({ message: "Branch not found" });
+    }
+
+    return res.json({
+      branch: {
+        id: branch._id,
+        name: branch.name,
+        address: branch.address || "",
+        createdAt: branch.createdAt,
+        managerUser: branch.managerUser
+          ? {
+            id: branch.managerUser._id,
+            name: branch.managerUser.name,
+            role: branch.managerUser.role,
+          }
+          : null,
+      },
+    });
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Failed to update branch" });
+  }
+};
+
+const deleteBranch = async (req, res) => {
+  try {
+    const school = await ensureSchoolManagementUser(req.user);
+    const { id } = req.params;
+
+    const branch = await Branch.findOneAndDelete({ _id: id, school: school._id }).lean().exec();
+    if (!branch) {
+      return res.status(404).json({ message: "Branch not found" });
+    }
+
+    return res.json({ ok: true });
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Failed to delete branch" });
   }
 };
 
@@ -2277,6 +2453,10 @@ module.exports = {
   getSubscriptionStatus,
   createClass,
   listClasses,
+  listBranches,
+  createBranch,
+  updateBranch,
+  deleteBranch,
   getClassInsights,
   updateClass,
   createSubject,
