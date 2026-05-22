@@ -4,13 +4,28 @@ import { Lock } from "lucide-react";
 type Props = {
   children: ReactNode;
   locked?: boolean;
+  inline?: boolean;
+  buttonLock?: boolean;
 };
 
-const PlanFeatureLockedOverlay = ({ children, locked = false }: Props) => {
+const PlanFeatureLockedOverlay = ({ children, locked = false, inline = false, buttonLock = false }: Props) => {
   if (!locked) return <>{children}</>;
 
+  if (buttonLock) {
+    return (
+      <div className={`relative ${inline ? "inline-flex" : ""}`}>
+        <div className="pointer-events-none select-none opacity-60">
+          {children}
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center rounded-md bg-slate-100/80">
+          <Lock className="h-4 w-4 text-slate-400" />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative">
+    <div className={`relative ${inline ? "inline-flex" : ""}`}>
       <div className="pointer-events-none select-none blur-sm">
         {children}
       </div>

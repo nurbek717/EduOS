@@ -30,6 +30,7 @@ import { normalizeUserRole, refreshAccessToken } from "@/lib/auth";
 import { buildSubscriptionHeaderInfo } from "@/lib/school-subscription";
 import { buildSchoolPlanContext, hasPlanFeature, type SchoolPlanContext } from "@/lib/school-plan-features";
 import PlanFeatureGate from "@/components/director/PlanFeatureGate";
+import PlanFeatureLockedOverlay from "@/components/director/PlanFeatureLockedOverlay";
 
 type DirectorSection =
   | "dashboard"
@@ -4430,15 +4431,17 @@ const DirectorDashboard = () => {
                                 <ChevronUp className={`h-4 w-4 transition-transform ${studentsBaseFiltersOpen ? "" : "rotate-180"}`} />
                               </Button>
 
-                              <Button
-                                type="button"
-                                className="h-9 shrink-0 bg-blue-600 px-4 text-sm text-white hover:bg-blue-700"
-                                disabled={studentImporting}
-                                onClick={() => studentImportInputRef.current?.click()}
-                              >
-                                <Upload className="mr-2 h-4 w-4" />
-                                {studentImporting ? "Import qilinmoqda..." : "Import"}
-                              </Button>
+                              <PlanFeatureLockedOverlay locked={schoolPlan.planName === "Standard"} inline buttonLock>
+                                <Button
+                                  type="button"
+                                  className="h-9 shrink-0 bg-blue-600 px-4 text-sm text-white hover:bg-blue-700"
+                                  disabled={studentImporting}
+                                  onClick={() => studentImportInputRef.current?.click()}
+                                >
+                                  <Upload className="mr-2 h-4 w-4" />
+                                  {studentImporting ? "Import qilinmoqda..." : "Import"}
+                                </Button>
+                              </PlanFeatureLockedOverlay>
 
                               <Button
                                 type="button"
@@ -4449,14 +4452,16 @@ const DirectorDashboard = () => {
                                 <FileSpreadsheet className="h-4 w-4" />
                               </Button>
 
-                              <Button
-                                type="button"
-                                className="h-9 shrink-0 bg-orange-500 px-4 text-sm text-white hover:bg-orange-600"
-                                onClick={handleDownloadStudentTemplate}
-                              >
-                                <FileText className="mr-2 h-4 w-4" />
-                                Import shabloni
-                              </Button>
+                              <PlanFeatureLockedOverlay locked={schoolPlan.planName === "Standard"} inline buttonLock>
+                                <Button
+                                  type="button"
+                                  className="h-9 shrink-0 bg-orange-500 px-4 text-sm text-white hover:bg-orange-600"
+                                  onClick={handleDownloadStudentTemplate}
+                                >
+                                  <FileText className="mr-2 h-4 w-4" />
+                                  Import shabloni
+                                </Button>
+                              </PlanFeatureLockedOverlay>
 
                               <Link to="/school-admin/dashboard/add-student">
                                 <Button className="h-9 shrink-0 bg-emerald-700 px-4 text-sm text-white hover:bg-emerald-800">
