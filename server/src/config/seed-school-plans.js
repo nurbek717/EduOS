@@ -27,7 +27,7 @@ const DEFAULT_PLANS = [
       ai: false,
       payment: true,
       attendanceReports: true,
-      finance: false,
+      finance: true,
     },
   },
   {

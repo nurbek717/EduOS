@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import type { PlanFeatures, SchoolPlanContext } from "@/lib/school-plan-features";
 import { hasPlanFeature, requiredPlanLabelForFeature } from "@/lib/school-plan-features";
+import PlanFeatureLockedOverlay from "./PlanFeatureLockedOverlay";
 
 type Props = {
   plan: SchoolPlanContext;
@@ -11,10 +12,14 @@ type Props = {
   title: string;
   description: string;
   children: ReactNode;
+  blurOnPlans?: string[];
 };
 
-const PlanFeatureGate = ({ plan, feature, title, description, children }: Props) => {
+const PlanFeatureGate = ({ plan, feature, title, description, children, blurOnPlans }: Props) => {
   if (hasPlanFeature(plan, feature)) {
+    if (blurOnPlans && blurOnPlans.includes(plan.planName)) {
+      return <PlanFeatureLockedOverlay locked>{children}</PlanFeatureLockedOverlay>;
+    }
     return <>{children}</>;
   }
 

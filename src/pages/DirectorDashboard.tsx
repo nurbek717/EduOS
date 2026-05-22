@@ -873,7 +873,7 @@ const DirectorDashboard = () => {
           ? data.alerts
           : [];
       const allowDemoTimeline =
-        import.meta.env.DEV || import.meta.env.VITE_APPEND_DEMO_ADMISSION_TIMELINE === "true";
+        import.meta.env.VITE_APPEND_DEMO_ADMISSION_TIMELINE === "true";
       const forceDemoTimeline = import.meta.env.VITE_FORCE_DEMO_ADMISSION_TIMELINE === "true";
       const apiTimeline = Array.isArray(data.admissionTimeline) ? data.admissionTimeline : [];
       const admissionTimeline =
@@ -3094,6 +3094,14 @@ const DirectorDashboard = () => {
                     </CardContent>
                   </Card>
 
+                  <PlanFeatureGate
+                    plan={schoolPlan}
+                    feature="analytics"
+                    title={t("planGate.analyticsTitle")}
+                    description={t("planGate.analyticsDesc")}
+                  >
+                    <DirectorDashboardAlertsPie alerts={overview.alerts} />
+                  </PlanFeatureGate>
                 </div>
 
                 <PlanFeatureGate
@@ -3102,10 +3110,7 @@ const DirectorDashboard = () => {
                   title={t("planGate.analyticsTitle")}
                   description={t("planGate.analyticsDesc")}
                 >
-                  <div className="space-y-4">
-                    <DirectorDashboardAlertsPie alerts={overview.alerts} />
-                    <DirectorDashboardAreaChart series={overview.admissionTimeline} />
-                  </div>
+                  <DirectorDashboardAreaChart series={overview.admissionTimeline} />
                 </PlanFeatureGate>
               </>
             )}
@@ -5237,14 +5242,10 @@ const DirectorDashboard = () => {
         }
 
         {section === "payments" && (
-          <PlanFeatureGate
-            plan={schoolPlan}
-            feature="finance"
-            title={t("planGate.financeTitle")}
-            description={t("planGate.financeDesc")}
-          >
-            <DirectorFinanceSection onDataChanged={fetchOverview} />
-          </PlanFeatureGate>
+          <DirectorFinanceSection
+            onDataChanged={fetchOverview}
+            locked={schoolPlan.planName === "Standard"}
+          />
         )}
 
         {

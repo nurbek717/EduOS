@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import DirectorStudentPaymentGrid, { type StudentPaymentGrid } from "@/components/director/DirectorStudentPaymentGrid";
+import PlanFeatureLockedOverlay from "@/components/director/PlanFeatureLockedOverlay";
 import { useToast } from "@/hooks/use-toast";
 import { useAppLocale } from "@/context/LanguageContext";
 import { useTranslation } from "react-i18next";
@@ -131,9 +132,10 @@ const formatBillingMonthLabel = (billingMonth: string, locale: string) => {
 
 type DirectorFinanceSectionProps = {
   onDataChanged?: () => Promise<void> | void;
+  locked?: boolean;
 };
 
-const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) => {
+const DirectorFinanceSection = ({ onDataChanged, locked = false }: DirectorFinanceSectionProps) => {
   const { t } = useTranslation("director-finance");
   const { toast } = useToast();
   const locale = useAppLocale();
@@ -741,55 +743,59 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
         </Card>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("charts.monthlyTitle")}</CardTitle>
-            <CardDescription>{t("charts.monthlyDesc", { year: finance?.currentYear || new Date().getFullYear() })}</CardDescription>
-          </CardHeader>
-          <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={finance?.charts.monthly || []}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="label" fontSize={12} />
-                <YAxis fontSize={12} />
-                <RechartsTooltip formatter={(value: number) => formatMoney(value)} />
-                <Bar dataKey="income" name={t("income")} fill="#16a34a" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expense" name={t("expense")} fill="#dc2626" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      <PlanFeatureLockedOverlay locked={locked}>
+        <div className="grid gap-4 xl:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("charts.monthlyTitle")}</CardTitle>
+              <CardDescription>{t("charts.monthlyDesc", { year: finance?.currentYear || new Date().getFullYear() })}</CardDescription>
+            </CardHeader>
+            <CardContent className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={finance?.charts.monthly || []}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="label" fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <RechartsTooltip formatter={(value: number) => formatMoney(value)} />
+                  <Bar dataKey="income" name={t("income")} fill="#16a34a" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expense" name={t("expense")} fill="#dc2626" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("charts.yearlyTitle")}</CardTitle>
-            <CardDescription>{t("charts.yearlyDesc")}</CardDescription>
-          </CardHeader>
-          <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={finance?.charts.yearly || []}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="label" fontSize={12} />
-                <YAxis fontSize={12} />
-                <RechartsTooltip formatter={(value: number) => formatMoney(value)} />
-                <Bar dataKey="income" name={t("income")} fill="#2563eb" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expense" name={t("expense")} fill="#f59e0b" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("charts.yearlyTitle")}</CardTitle>
+              <CardDescription>{t("charts.yearlyDesc")}</CardDescription>
+            </CardHeader>
+            <CardContent className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={finance?.charts.yearly || []}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="label" fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <RechartsTooltip formatter={(value: number) => formatMoney(value)} />
+                  <Bar dataKey="income" name={t("income")} fill="#2563eb" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expense" name={t("expense")} fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      </PlanFeatureLockedOverlay>
 
-      <DirectorStudentPaymentGrid
-        grid={finance?.studentPaymentGrid}
-        loading={loading}
-        viewYear={viewYear}
-        onViewYearChange={setViewYear}
-        availableYears={availableYears}
-        onExport={handleExportExcel}
-        exportDisabled={loading || !finance}
-      />
+      <PlanFeatureLockedOverlay locked={locked}>
+        <DirectorStudentPaymentGrid
+          grid={finance?.studentPaymentGrid}
+          loading={loading}
+          viewYear={viewYear}
+          onViewYearChange={setViewYear}
+          availableYears={availableYears}
+          onExport={handleExportExcel}
+          exportDisabled={loading || !finance}
+        />
+      </PlanFeatureLockedOverlay>
 
       {canManageFinance && (
         <div className="grid gap-4 xl:grid-cols-3">
@@ -946,18 +952,19 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("studentTable.title")}</CardTitle>
-          <CardDescription>
-            {canManageFinance
-              ? t("studentTable.descManage")
-              : t("studentTable.descView")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
+      <PlanFeatureLockedOverlay locked={locked}>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("studentTable.title")}</CardTitle>
+            <CardDescription>
+              {canManageFinance
+                ? t("studentTable.descManage")
+                : t("studentTable.descView")}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
               <TableRow>
                 <TableHead>{t("studentTable.student")}</TableHead>
                 <TableHead>{t("studentTable.class")}</TableHead>
@@ -1060,10 +1067,12 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
           )}
         </CardContent>
       </Card>
+      </PlanFeatureLockedOverlay>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("staffTable.title")}</CardTitle>
+      <PlanFeatureLockedOverlay locked={locked}>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("staffTable.title")}</CardTitle>
           <CardDescription>
             {canManageFinance
               ? t("staffTable.descManage")
@@ -1180,6 +1189,7 @@ const DirectorFinanceSection = ({ onDataChanged }: DirectorFinanceSectionProps) 
           )}
         </CardContent>
       </Card>
+      </PlanFeatureLockedOverlay>
 
       <Card>
         <CardHeader>
