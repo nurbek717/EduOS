@@ -44,10 +44,10 @@ export const Features = () => {
               <div
                 className="feature-icon mb-5 relative inline-flex h-14 w-14 items-center justify-center rounded-2xl overflow-hidden"
                 style={{
-                  ['--glow' as any]: `hsl(${f.glow})`,
-                  ['--glow-soft' as any]: `hsl(${f.glow} / 0.55)`,
-                  ['--glow-strong' as any]: `hsl(${f.glow} / 0.85)`,
-                }}
+                  '--glow': `hsl(${f.glow})`,
+                  '--glow-soft': `hsl(${f.glow} / 0.55)`,
+                  '--glow-strong': `hsl(${f.glow} / 0.85)`,
+                } as React.CSSProperties}
               >
                 <span
                   aria-hidden
