@@ -272,7 +272,7 @@ const ParentDashboard = () => {
     }
   };
 
-  const fetchChatTargets = async () => {
+  const fetchChatTargets = useCallback(async () => {
     if (!token) return;
     setChatLoadingTargets(true);
     setChatTargetsError("");
@@ -291,9 +291,9 @@ const ParentDashboard = () => {
     } finally {
       setChatLoadingTargets(false);
     }
-  };
+  }, [token, tp]);
 
-  const fetchChatThreads = async (silent = false) => {
+  const fetchChatThreads = useCallback(async (silent = false) => {
     if (!token) return;
     if (!silent) setChatLoadingThreads(true);
     if (!silent) setChatThreadsError("");
@@ -316,9 +316,9 @@ const ParentDashboard = () => {
     } finally {
       if (!silent) setChatLoadingThreads(false);
     }
-  };
+  }, [token, tp]);
 
-  const fetchThreadMessages = async (threadId: string, silent = false) => {
+  const fetchThreadMessages = useCallback(async (threadId: string, silent = false) => {
     if (!token || !threadId) return;
     if (!silent) setChatLoadingMessages(true);
     try {
@@ -333,7 +333,7 @@ const ParentDashboard = () => {
     } finally {
       if (!silent) setChatLoadingMessages(false);
     }
-  };
+  }, [token, tp]);
 
   const openOrCreateThread = async (payload: {
     targetType: "class_teacher" | "subject_teacher";
@@ -412,7 +412,7 @@ const ParentDashboard = () => {
     }
     setUser(parsed);
     setProfileForm(buildParentProfileFormFromStorage());
-  }, [navigate]);
+  }, [navigate, buildParentProfileFormFromStorage]);
 
   useEffect(() => {
     if (section === "profile") {
@@ -550,13 +550,13 @@ const ParentDashboard = () => {
     fetchAttendance();
     fetchHomework();
     fetchExamResults();
-  }, []);
+  }, [token, tp]);
 
   useEffect(() => {
     if (section !== "support" || !token) return;
     void fetchChatTargets();
     void fetchChatThreads();
-  }, [section, token]);
+  }, [section, token, fetchChatTargets, fetchChatThreads]);
 
   useEffect(() => {
     if (!token) return;
@@ -567,7 +567,7 @@ const ParentDashboard = () => {
     }, 2500);
 
     return () => window.clearInterval(id);
-  }, [token]);
+  }, [token, fetchChatThreads]);
 
   useEffect(() => {
     if (section !== "support" || !selectedThreadId || !token) return;
@@ -579,7 +579,7 @@ const ParentDashboard = () => {
     }, 2500);
 
     return () => window.clearInterval(id);
-  }, [section, selectedThreadId, token]);
+  }, [section, selectedThreadId, token, fetchChatThreads, fetchThreadMessages]);
 
   const averageGrade =
     grades.length > 0
@@ -686,7 +686,7 @@ const ParentDashboard = () => {
     }
 
     return next.slice(0, 8);
-  }, [attendance, grades, examResults, chatThreads]);
+  }, [attendance, grades, examResults, chatThreads, tp]);
 
   const notificationsCount = notifications.length.toString();
   const searchItems = [

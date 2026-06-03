@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { AlertTriangle, Users, BookOpen, ClipboardList, Clock, CheckSquare, Pencil, Trash2, Eye, EyeOff, Upload, UserCircle, MapPin, Camera } from "lucide-react";
 import TeacherLayout from "@/components/TeacherLayout";
@@ -1097,7 +1097,7 @@ const TeacherDashboard = () => {
     }
   };
 
-  const fetchTeacherChatThreads = async (silent = false) => {
+  const fetchTeacherChatThreads = useCallback(async (silent = false) => {
     if (!token) return;
     if (!silent) setChatLoadingThreads(true);
     try {
@@ -1119,9 +1119,9 @@ const TeacherDashboard = () => {
     } finally {
       if (!silent) setChatLoadingThreads(false);
     }
-  };
+  }, [token, td, toast]);
 
-  const fetchTeacherThreadMessages = async (threadId: string, silent = false) => {
+  const fetchTeacherThreadMessages = useCallback(async (threadId: string, silent = false) => {
     if (!token || !threadId) return;
     if (!silent) setChatLoadingMessages(true);
     try {
@@ -1136,7 +1136,7 @@ const TeacherDashboard = () => {
     } finally {
       if (!silent) setChatLoadingMessages(false);
     }
-  };
+  }, [token, td]);
 
   const sendTeacherChatMessage = async () => {
     if (!token || !chatSelectedThreadId || !chatMessageText.trim()) return;
@@ -1334,7 +1334,7 @@ const TeacherDashboard = () => {
     }, 2500);
 
     return () => window.clearInterval(intervalId);
-  }, [section, chatSelectedThreadId, token]);
+  }, [section, chatSelectedThreadId, token, fetchTeacherThreadMessages, fetchTeacherChatThreads]);
 
   useEffect(() => {
     if (!isTeacher || !token || section !== "overview") return;
@@ -1351,7 +1351,7 @@ const TeacherDashboard = () => {
     }, 2500);
 
     return () => window.clearInterval(intervalId);
-  }, [isTeacher, token]);
+  }, [isTeacher, token, fetchTeacherChatThreads]);
 
   const todayLessons = React.useMemo(
     () =>

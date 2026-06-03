@@ -11,7 +11,7 @@ const items = [
   { key: "students",  icon: GraduationCap,   gradFrom: "var(--feat-cyan-1)",    gradTo: "var(--feat-cyan-2)",    glow: "var(--feat-cyan-1)" },
   { key: "ejournal",  icon: BookOpen,        gradFrom: "var(--feat-indigo-1)",  gradTo: "var(--feat-indigo-2)",  glow: "var(--feat-indigo-1)" },
   { key: "security",  icon: Shield,          gradFrom: "var(--feat-teal-1)",    gradTo: "var(--feat-teal-2)",    glow: "var(--feat-teal-1)" },
-] as const;
+];
 
 export const Features = () => {
   const { t } = useTranslation("marketing");

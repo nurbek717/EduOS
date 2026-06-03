@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,23 +59,23 @@ const SaasAdminDashboard = () => {
     [token],
   );
 
-  const loadPlans = async () => {
+  const loadPlans = useCallback(async () => {
     const res = await fetch(`${API_BASE_URL}/api/plans`);
     const data = await res.json();
     if (!res.ok) throw new Error(data?.message || "Failed to load plans");
     setPlans(data.plans || []);
-  };
+  }, []);
 
-  const loadTenants = async () => {
+  const loadTenants = useCallback(async () => {
     const res = await fetch(`${API_BASE_URL}/api/tenants`, {
       headers: authHeaders,
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data?.message || "Failed to load tenants");
     setTenants(data.tenants || []);
-  };
+  }, [authHeaders]);
 
-  const refreshAll = async () => {
+  const refreshAll = useCallback(async () => {
     setLoading(true);
     try {
       await Promise.all([loadPlans(), loadTenants()]);
@@ -88,11 +88,11 @@ const SaasAdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast, loadPlans, loadTenants]);
 
   useEffect(() => {
     refreshAll();
-  }, []);
+  }, [refreshAll]);
 
   const handleCreatePlan = async (form: HTMLFormElement) => {
     const formData = new FormData(form);
