@@ -32,6 +32,8 @@ const {
   deleteTimetableEntry,
   getSubscriptionStatus,
   listAttendanceStatsForDirector,
+  getBranchAnalytics,
+  getBranchRankings,
 } = require("../controllers/director.controller");
 const {
   getFinanceOverview,
@@ -73,6 +75,18 @@ router.get("/branches", requireRoles("director"), listBranches);
 router.post("/branches", requireRoles("director"), validators.directorCreateBranch, createBranch);
 router.patch("/branches/:id", requireRoles("director"), validators.directorUpdateBranch, updateBranch);
 router.delete("/branches/:id", requireRoles("director"), validators.idParam, deleteBranch);
+router.get(
+  "/branches/rankings",
+  requireRoles("director"),
+  requirePlanFeature("analytics"),
+  getBranchRankings,
+);
+router.get(
+  "/branches/:id/analytics",
+  requireRoles("director"),
+  requirePlanFeature("analytics"),
+  getBranchAnalytics,
+);
 router.get(
   "/classes/insights",
   validators.directorClassInsightsQuery,

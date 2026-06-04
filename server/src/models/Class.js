@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 
 const classSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, trim: true }, // e.g. "5A"
+    name: { type: String, required: true, trim: true },
     school: { type: mongoose.Schema.Types.ObjectId, ref: "School", required: true },
-    // Sinf rahbari sifatida biriktirilgan o'qituvchi
+    branch: { type: mongoose.Schema.Types.ObjectId, ref: "SchoolBranch", default: null },
     classTeacher: { type: mongoose.Schema.Types.ObjectId, ref: "Teacher", default: null },
   },
   { timestamps: true },

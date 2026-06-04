@@ -64,7 +64,17 @@ const validators = {
   directorCreateClass: validateRequest({
     body: {
       name: nonEmptyStringField({ required: true, minLength: 1, maxLength: 100 }),
+      branch: objectIdField({ nullable: true }),
     },
+  }),
+  directorUpdateClass: validateRequest({
+    params: { id: objectIdField({ required: true }) },
+    body: {
+      name: nonEmptyStringField({ minLength: 1, maxLength: 100 }),
+      classTeacherId: objectIdField({ nullable: true }),
+      branch: objectIdField({ nullable: true }),
+    },
+    rules: [requireAtLeastOne(["name", "classTeacherId", "branch"])],
   }),
   directorCreateBranch: validateRequest({
     body: {
@@ -83,15 +93,6 @@ const validators = {
       managerUserId: objectIdField({ nullable: true }),
     },
     rules: [requireAtLeastOne(["name", "address", "managerUserId"])],
-  }),
-  directorUpdateClass: validateRequest({
-    params: {
-      id: objectIdField({ required: true }),
-    },
-    body: {
-      classTeacherId: objectIdField({ nullable: true }),
-    },
-    rules: [requireAtLeastOne(["classTeacherId"])],
   }),
   directorCreateSubject: validateRequest({
     body: {

@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ListSkeleton, StatsCardsSkeleton, TableSkeleton } from "@/components/ui/skeletons";
 import { useRef } from "react";
-import { BookOpen, Users, GraduationCap, UserCircle, Mail, Lock, Eye, EyeOff, Pencil, Trash2, Upload, Plus, Wallet, AlertTriangle, Info, ShieldAlert, Phone, MapPin, Camera, Calendar, Search, Eraser, ChevronLeft, ChevronRight, ChevronUp, RotateCcw, FileSpreadsheet, FileText } from "lucide-react";
+import { BookOpen, Users, GraduationCap, UserCircle, Mail, Lock, Eye, EyeOff, Pencil, Trash2, Upload, Plus, Wallet, AlertTriangle, Info, ShieldAlert, Phone, MapPin, Camera, Calendar, Search, Eraser, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, RotateCcw, Minus, BarChart3, FileSpreadsheet, FileText } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -72,6 +72,25 @@ type AssignableUser = {
   email: string;
   phone?: string | null;
   role: "school_admin" | "teacher";
+};
+
+type BranchAnalytics = {
+  branch: { id: string; name: string; address: string };
+  students: { total: number; active: number; newThisMonth: number };
+  teachers: { total: number; active: number };
+  finance: { monthIncome: number; nonPayers: number; debt: number };
+  attendance: { averagePercent: number; bestGroup: { name: string; percent: number } | null; worstGroup: { name: string; percent: number } | null };
+  courses: { popularCourse: { name: string; teacherName: string } | null; totalGroups: number };
+  aiRecommendations: string[];
+};
+
+type BranchRanking = {
+  id: string;
+  name: string;
+  rank: number;
+  studentCount: number;
+  teacherCount: number;
+  score: number;
 };
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -616,6 +635,11 @@ const DirectorDashboard = () => {
   const [assignableUsers, setAssignableUsers] = useState<AssignableUser[]>([]);
   const [assignableUsersLoading, setAssignableUsersLoading] = useState(false);
   const [savingBranchAssignment, setSavingBranchAssignment] = useState(false);
+  const [branchAnalyticsOpen, setBranchAnalyticsOpen] = useState(false);
+  const [branchAnalyticsLoading, setBranchAnalyticsLoading] = useState(false);
+  const [selectedBranchAnalytics, setSelectedBranchAnalytics] = useState<BranchAnalytics | null>(null);
+  const [branchRankings, setBranchRankings] = useState<BranchRanking[]>([]);
+  const [branchRankingsLoading, setBranchRankingsLoading] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -702,7 +726,7 @@ const DirectorDashboard = () => {
 
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
 
-  const handleAuthExpiry = (message?: string) => {
+  const handleAuthExpiry = useCallback((message?: string) => {
     const normalized = (message || "").toLowerCase();
     if (
       normalized.includes("invalid or expired token") ||
@@ -717,9 +741,9 @@ const DirectorDashboard = () => {
     }
 
     return false;
-  };
+  }, [navigate]);
 
-  const apiFetch = async (...args: Parameters<typeof fetch>) => {
+  const apiFetch = useCallback(async (...args: Parameters<typeof fetch>) => {
     const res = await fetch(...args);
     if (res.status === 401) {
       const data = await res.clone().json().catch(() => null);
@@ -745,7 +769,7 @@ const DirectorDashboard = () => {
       throw new Error(message);
     }
     return res;
-  };
+  }, [handleAuthExpiry]);
 
   const dayOptions: { value: string; label: string }[] = [
     { value: "1", label: t("days.monday", { defaultValue: "Dushanba" }) },
@@ -1488,6 +1512,48 @@ const DirectorDashboard = () => {
     }
   };
 
+  const fetchBranchAnalytics = useCallback(async (branchId: string) => {
+    if (!token) return;
+    setBranchAnalyticsLoading(true);
+    try {
+      const res = await apiFetch(`${API_BASE_URL}/api/director/branches/${branchId}/analytics`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Analitikani yuklab bo'lmadi");
+      setSelectedBranchAnalytics(data);
+    } catch (err: unknown) {
+      toast({
+        title: "Xatolik",
+        description: err instanceof Error ? err.message : "Analitikani yuklab bo'lmadi",
+        variant: "destructive",
+      });
+    } finally {
+      setBranchAnalyticsLoading(false);
+    }
+  }, [token, toast, apiFetch]);
+
+  const fetchBranchRankings = useCallback(async () => {
+    if (!token) return;
+    setBranchRankingsLoading(true);
+    try {
+      const res = await apiFetch(`${API_BASE_URL}/api/director/branches/rankings`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Reytingni yuklab bo'lmadi");
+      setBranchRankings(Array.isArray(data.rankings) ? data.rankings : []);
+    } catch (err: unknown) {
+      toast({
+        title: "Xatolik",
+        description: err instanceof Error ? err.message : "Reytingni yuklab bo'lmadi",
+        variant: "destructive",
+      });
+    } finally {
+      setBranchRankingsLoading(false);
+    }
+  }, [token, toast, apiFetch]);
+
   const handleCreateSchoolAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
@@ -2011,6 +2077,7 @@ const DirectorDashboard = () => {
 
       if (section === "branches" && !loadedDirectorDataRef.current.branches && !isSchoolAdmin) {
         await fetchBranches();
+        await fetchBranchRankings();
       }
     };
 
@@ -4667,6 +4734,19 @@ const DirectorDashboard = () => {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
+                              onClick={() => {
+                                setSelectedBranchAnalytics(null);
+                                setBranchAnalyticsOpen(true);
+                                void fetchBranchAnalytics(branch.id);
+                              }}
+                              title="Filial analitikasi"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
                               onClick={() => handleEditBranch(branch)}
                               title="Tahrirlash"
                             >
@@ -4699,6 +4779,263 @@ const DirectorDashboard = () => {
               </Table>
             </CardContent>
           </Card>
+
+          {/* Filial reytingi */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-[16px] font-bold text-[#212b36] flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    Filial reytingi
+                  </CardTitle>
+                  <CardDescription className="text-xs text-muted-foreground mt-1">
+                    Filiallarning umumiy ko'rsatkichlar bo'yicha reytingi
+                  </CardDescription>
+                </div>
+                {branchRankingsLoading && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <RotateCcw className="h-3 w-3 animate-spin" />
+                    Yangilanmoqda...
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    <TableHead>Filial</TableHead>
+                    <TableHead className="text-right">O'quvchilar</TableHead>
+                    <TableHead className="text-right">O'qituvchilar</TableHead>
+                    <TableHead className="text-right">Reyting</TableHead>
+                    <TableHead className="w-16">Holat</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {branchRankings.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-6 text-center text-sm text-muted-foreground">
+                        {branchRankingsLoading ? "Yuklanmoqda..." : "Reyting ma'lumotlari mavjud emas."}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    branchRankings.map((r, i) => {
+                      const prevRank = i > 0 ? branchRankings[i - 1].rank : r.rank;
+                      const isUp = i === 0 || r.rank < prevRank;
+                      const isDown = i > 0 && r.rank > prevRank;
+                      return (
+                        <TableRow key={r.id}>
+                          <TableCell className="font-bold text-lg">{r.rank}</TableCell>
+                          <TableCell className="font-medium">{r.name}</TableCell>
+                          <TableCell className="text-right">{r.studentCount}</TableCell>
+                          <TableCell className="text-right">{r.teacherCount}</TableCell>
+                          <TableCell className="text-right font-semibold">{r.score}</TableCell>
+                          <TableCell>
+                            <div className="flex justify-center">
+                              {isUp ? (
+                                <ChevronUp className="h-4 w-4 text-emerald-500" />
+                              ) : isDown ? (
+                                <ChevronDown className="h-4 w-4 text-red-500" />
+                              ) : (
+                                <Minus className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Branch Analytics Dialog */}
+          <Dialog open={branchAnalyticsOpen} onOpenChange={setBranchAnalyticsOpen}>
+            <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-primary" />
+                  Filial Analytics
+                  {selectedBranchAnalytics && (
+                    <span className="text-base font-normal text-muted-foreground ml-1">
+                      — {selectedBranchAnalytics.branch.name}
+                    </span>
+                  )}
+                </DialogTitle>
+              </DialogHeader>
+
+              {branchAnalyticsLoading ? (
+                <div className="py-12 space-y-4">
+                  <Skeleton className="h-6 w-48" />
+                  <div className="grid grid-cols-2 gap-4">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <Skeleton key={i} className="h-24 rounded-xl" />
+                    ))}
+                  </div>
+                  <Skeleton className="h-32 rounded-xl" />
+                </div>
+              ) : selectedBranchAnalytics ? (
+                <div className="space-y-6">
+                  {/* Students */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Users className="h-4 w-4 text-primary" />
+                        Talabalar
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-3 gap-3 text-sm">
+                        <div className="rounded-lg bg-muted/40 p-3 text-center">
+                          <p className="text-2xl font-bold text-foreground">{selectedBranchAnalytics.students.total}</p>
+                          <p className="text-xs text-muted-foreground">Jami o'quvchilar</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 p-3 text-center">
+                          <p className="text-2xl font-bold text-emerald-600">{selectedBranchAnalytics.students.active}</p>
+                          <p className="text-xs text-muted-foreground">Faol o'quvchilar</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 p-3 text-center">
+                          <p className="text-2xl font-bold text-primary">{selectedBranchAnalytics.students.newThisMonth}</p>
+                          <p className="text-xs text-muted-foreground">Yangi qo'shilganlar (oy)</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Teachers */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <GraduationCap className="h-4 w-4 text-primary" />
+                        O'qituvchilar
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-lg bg-muted/40 p-3 text-center">
+                          <p className="text-2xl font-bold text-foreground">{selectedBranchAnalytics.teachers.total}</p>
+                          <p className="text-xs text-muted-foreground">Jami o'qituvchilar</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 p-3 text-center">
+                          <p className="text-2xl font-bold text-emerald-600">{selectedBranchAnalytics.teachers.active}</p>
+                          <p className="text-xs text-muted-foreground">Faol o'qituvchilar</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Finance */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Wallet className="h-4 w-4 text-primary" />
+                        Moliya
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-3 gap-3 text-sm">
+                        <div className="rounded-lg bg-muted/40 p-3 text-center">
+                          <p className="text-lg font-bold text-foreground">{selectedBranchAnalytics.finance.monthIncome.toLocaleString()} so'm</p>
+                          <p className="text-xs text-muted-foreground">Oylik tushum</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 p-3 text-center">
+                          <p className="text-2xl font-bold text-destructive">{selectedBranchAnalytics.finance.nonPayers}</p>
+                          <p className="text-xs text-muted-foreground">To'lov qilmaganlar</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 p-3 text-center">
+                          <p className="text-lg font-bold text-amber-600">{selectedBranchAnalytics.finance.debt.toLocaleString()} so'm</p>
+                          <p className="text-xs text-muted-foreground">Qarzdorlik</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Attendance */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-primary" />
+                        Davomat
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="rounded-lg bg-muted/40 p-3 text-center">
+                        <p className="text-2xl font-bold text-foreground">{selectedBranchAnalytics.attendance.averagePercent}%</p>
+                        <p className="text-xs text-muted-foreground">O'rtacha davomat</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {selectedBranchAnalytics.attendance.bestGroup && (
+                          <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 p-3 text-center">
+                            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{selectedBranchAnalytics.attendance.bestGroup.name}</p>
+                            <p className="text-xs text-muted-foreground">{selectedBranchAnalytics.attendance.bestGroup.percent}% — Eng faol guruh</p>
+                          </div>
+                        )}
+                        {selectedBranchAnalytics.attendance.worstGroup && (
+                          <div className="rounded-lg bg-red-50 dark:bg-red-950/30 p-3 text-center">
+                            <p className="text-sm font-semibold text-red-700 dark:text-red-400">{selectedBranchAnalytics.attendance.worstGroup.name}</p>
+                            <p className="text-xs text-muted-foreground">{selectedBranchAnalytics.attendance.worstGroup.percent}% — Eng past davomat</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Courses */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <BookOpen className="h-4 w-4 text-primary" />
+                        Kurslar
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        {selectedBranchAnalytics.courses.popularCourse && (
+                          <div className="rounded-lg bg-muted/40 p-3 text-center">
+                            <p className="text-sm font-semibold text-foreground">{selectedBranchAnalytics.courses.popularCourse.name}</p>
+                            <p className="text-xs text-muted-foreground">Eng ommabop kurs</p>
+                            {selectedBranchAnalytics.courses.popularCourse.teacherName && (
+                              <p className="text-xs text-muted-foreground mt-1">{selectedBranchAnalytics.courses.popularCourse.teacherName}</p>
+                            )}
+                          </div>
+                        )}
+                        <div className="rounded-lg bg-muted/40 p-3 text-center">
+                          <p className="text-2xl font-bold text-foreground">{selectedBranchAnalytics.courses.totalGroups}</p>
+                          <p className="text-xs text-muted-foreground">Guruhlar soni</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* AI Recommendations (Pro) */}
+                  {selectedBranchAnalytics.aiRecommendations.length > 0 && (
+                    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4 text-amber-500" />
+                          AI Tavsiyalari
+                          <Badge variant="outline" className="text-[10px] ml-auto">Pro</Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2">
+                          {selectedBranchAnalytics.aiRecommendations.map((rec: string, i: number) => (
+                            <li key={i} className="flex items-start gap-2 text-sm">
+                              <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                              <span>{rec}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              ) : null}
+            </DialogContent>
+          </Dialog>
 
           {/* Edit dialog */}
           <Dialog open={editBranchDialogOpen} onOpenChange={setEditBranchDialogOpen}>

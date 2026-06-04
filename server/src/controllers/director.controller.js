@@ -1074,7 +1074,7 @@ const getSubscriptionStatus = async (req, res) => {
 
 const createClass = async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, branch } = req.body;
     if (!name) {
       return res.status(400).json({ message: "Class name is required" });
     }
@@ -1088,10 +1088,37 @@ const createClass = async (req, res) => {
       return res.status(400).json({ message: "Class with this name already exists in this school" });
     }
 
-    const cls = await ClassModel.create({ name, school: school._id });
+    const cls = await ClassModel.create({ name, school: school._id, branch: branch || null });
     return res.status(201).json(cls);
   } catch (err) {
     return res.status(err.statusCode || 400).json({ message: err.message || "Failed to create class" });
+  }
+};
+
+const updateClass = async (req, res) => {
+  try {
+    const school = await ensureSchoolManagementUser(req.user);
+    const { id } = req.params;
+    const { name, classTeacherId, branch } = req.body;
+
+    const update = {};
+    if (name !== undefined) update.name = name;
+    if (classTeacherId !== undefined) update.classTeacher = classTeacherId || null;
+    if (branch !== undefined) update.branch = branch || null;
+
+    const cls = await ClassModel.findOneAndUpdate(
+      { _id: id, school: school._id },
+      { $set: update },
+      { new: true },
+    );
+
+    if (!cls) {
+      return res.status(404).json({ message: "Class not found" });
+    }
+
+    return res.json(cls);
+  } catch (err) {
+    return res.status(err.statusCode || 400).json({ message: err.message || "Failed to update class" });
   }
 };
 
@@ -1472,49 +1499,6 @@ const getClassInsights = async (req, res) => {
     });
   } catch (err) {
     return res.status(400).json({ message: err.message || "Failed to load class insights" });
-  }
-};
-
-const updateClass = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { classTeacherId } = req.body;
-
-    const school = await ensureSchoolManagementUser(req.user);
-
-    const cls = await ClassModel.findOne({ _id: id, school: school._id });
-    if (!cls) {
-      return res.status(404).json({ message: "Class not found" });
-    }
-
-    if (classTeacherId) {
-      const teacher = await Teacher.findOne({ _id: classTeacherId, school: school._id }).populate("user", "name");
-      if (!teacher) {
-        return res.status(400).json({ message: "Teacher not found in this school" });
-      }
-      cls.classTeacher = teacher._id;
-      await cls.save();
-
-      return res.json({
-        _id: cls._id,
-        name: cls.name,
-        classTeacherId: teacher._id,
-        classTeacherName: teacher.user?.name || null,
-      });
-    }
-
-    // Agar classTeacherId yuborilmasa yoki bo'sh bo'lsa, sinf rahbarini olib tashlaymiz
-    cls.classTeacher = null;
-    await cls.save();
-
-    return res.json({
-      _id: cls._id,
-      name: cls.name,
-      classTeacherId: null,
-      classTeacherName: null,
-    });
-  } catch (err) {
-    return res.status(400).json({ message: err.message || "Failed to update class" });
   }
 };
 
@@ -2443,6 +2427,161 @@ const listAttendanceStatsForDirector = async (req, res) => {
   }
 };
 
+const getBranchAnalytics = async (req, res) => {
+  try {
+    const school = await ensureSchoolManagementUser(req.user);
+    const branch = await Branch.findOne({ _id: req.params.id, school: school._id }).lean();
+    if (!branch) {
+      return res.status(404).json({ message: "Branch not found" });
+    }
+
+    const userDocs = await User.find({ branchId: branch._id, school: school._id }).select("_id").lean();
+    const userIds = userDocs.map((u) => u._id);
+
+    const students = await Student.find({ user: { $in: userIds } }).populate("user", "name").lean();
+    const studentIds = students.map((s) => s._id);
+    const activeStudents = students.filter((s) => s.status === "active" || s.status === "");
+    const now = new Date();
+    const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    const newThisMonth = students.filter((s) => s.createdAt && new Date(s.createdAt) >= monthAgo);
+
+    const teachers = await Teacher.find({ user: { $in: userIds } }).populate("user", "name").lean();
+
+    const classes = await ClassModel.find({ branch: branch._id, school: school._id })
+      .populate({ path: "classTeacher", populate: { path: "user", select: "name" } })
+      .lean();
+
+    const financeTransactions = await FinanceTransaction.find({
+      school: school._id,
+      student: { $in: studentIds },
+    }).lean();
+
+    const nowMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const monthIncome = financeTransactions
+      .filter((t) => t.type === "income" && t.billingMonth === nowMonth)
+      .reduce((sum, t) => sum + t.amount, 0);
+    const unpaidCount = await Student.countDocuments({
+      _id: { $in: studentIds },
+      school: school._id,
+      monthlyFee: { $gt: 0 },
+      $nor: [
+        { _id: { $in: financeTransactions.filter((t) => t.type === "income" && t.billingMonth === nowMonth).map((t) => t.student) } },
+      ],
+    }).exec();
+
+    const attendanceRecords = await Attendance.find({
+      student: { $in: studentIds },
+      school: school._id,
+    }).lean();
+
+    const totalAttendance = attendanceRecords.length;
+    const presentLateCount = attendanceRecords.filter(
+      (a) => a.status === "present" || a.status === "late",
+    ).length;
+    const avgAttendancePercent = totalAttendance > 0
+      ? Math.round((presentLateCount / totalAttendance) * 100)
+      : 0;
+
+    const classAttendance = await Promise.all(
+      classes.map(async (cls) => {
+        const clsStudents = await Student.find({ class: cls._id, school: school._id }).select("_id").lean();
+        const clsStudentIds = clsStudents.map((s) => s._id);
+        const clsAttendance = await Attendance.find({
+          student: { $in: clsStudentIds },
+          school: school._id,
+        }).lean();
+        const total = clsAttendance.length;
+        const present = clsAttendance.filter((a) => a.status === "present" || a.status === "late").length;
+        return { className: cls.name, percent: total > 0 ? Math.round((present / total) * 100) : 0 };
+      }),
+    );
+    classAttendance.sort((a, b) => b.percent - a.percent);
+    const bestGroup = classAttendance.length > 0 ? classAttendance[0] : null;
+    const worstGroup = classAttendance.length > 1 ? classAttendance[classAttendance.length - 1] : null;
+
+    const totalClasses = classes.length;
+    const popularCourse = totalClasses > 0
+      ? classes.reduce((prev, curr) =>
+          (prev.classTeacher?.user?.name || "") > (curr.classTeacher?.user?.name || "") ? prev : curr,
+        )
+      : null;
+
+    const aiRecommendations = [
+      worstGroup && worstGroup.percent < 80
+        ? `Davomati past guruh: ${worstGroup.className} (${worstGroup.percent}%)`
+        : null,
+      unpaidCount > 0 ? `Qarzdor o'quvchilar: ${unpaidCount} ta` : null,
+      teachers.length > 0 ? `O'qituvchi yuklamasi: ${teachers.length} ta o'qituvchi ${classes.length} ta guruhda` : null,
+      `Kelgusi oy prognozi: ${Math.round(monthIncome * 1.1).toLocaleString()} so'm (taxminiy)`,
+    ].filter(Boolean);
+
+    return res.json({
+      branch: { id: branch._id, name: branch.name, address: branch.address },
+      students: {
+        total: students.length,
+        active: activeStudents.length,
+        newThisMonth: newThisMonth.length,
+      },
+      teachers: {
+        total: teachers.length,
+        active: teachers.filter((t) => userIds.includes(String(t.user?._id))).length,
+      },
+      finance: {
+        monthIncome,
+        nonPayers: unpaidCount,
+        debt: unpaidCount * 150000,
+      },
+      attendance: {
+        averagePercent: avgAttendancePercent,
+        bestGroup: bestGroup ? { name: bestGroup.className, percent: bestGroup.percent } : null,
+        worstGroup: worstGroup ? { name: worstGroup.className, percent: worstGroup.percent } : null,
+      },
+      courses: {
+        popularCourse: popularCourse
+          ? { name: popularCourse.name, teacherName: popularCourse.classTeacher?.user?.name || "" }
+          : null,
+        totalGroups: totalClasses,
+      },
+      aiRecommendations,
+    });
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Failed to load branch analytics" });
+  }
+};
+
+const getBranchRankings = async (req, res) => {
+  try {
+    const school = await ensureSchoolManagementUser(req.user);
+    const branches = await Branch.find({ school: school._id }).lean();
+
+    const rankings = await Promise.all(
+      branches.map(async (branch) => {
+        const userDocs = await User.find({ branchId: branch._id, school: school._id }).select("_id").lean();
+        const userIds = userDocs.map((u) => u._id);
+        const studentCount = await Student.countDocuments({ user: { $in: userIds }, school: school._id }).exec();
+        const teacherCount = await Teacher.countDocuments({ user: { $in: userIds }, school: school._id }).exec();
+        return {
+          id: branch._id,
+          name: branch.name,
+          studentCount,
+          teacherCount,
+          score: studentCount * 2 + teacherCount * 5,
+        };
+      }),
+    );
+
+    rankings.sort((a, b) => b.score - a.score);
+    const ranked = rankings.map((r, i) => ({
+      ...r,
+      rank: i + 1,
+    }));
+
+    return res.json({ rankings: ranked });
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Failed to load branch rankings" });
+  }
+};
+
 module.exports = {
   createSchoolAdminForDirector,
   listUsersForDirector,
@@ -2476,5 +2615,7 @@ module.exports = {
   updateTimetableEntry,
   deleteTimetableEntry,
   listAttendanceStatsForDirector,
+  getBranchAnalytics,
+  getBranchRankings,
 };
 
