@@ -36,6 +36,15 @@ const {
   getBranchRankings,
 } = require("../controllers/director.controller");
 const {
+  getOverview: getBranchOverview,
+  getFinance: getBranchFinance,
+  getStudents: getBranchStudents,
+  getTeachers: getBranchTeachers,
+  getPremiumInsights,
+  getPremiumForecast,
+  getPremiumAlerts,
+} = require("../controllers/branch-dashboard.controller");
+const {
   getFinanceOverview,
   createFinanceTransaction,
   recordStudentPayment,
@@ -85,6 +94,48 @@ router.get(
   requireRoles("director"),
   requirePlanFeature("analytics"),
   getBranchAnalytics,
+);
+router.get(
+  "/branches/:id/dashboard/overview",
+  requireRoles("director", "school_admin"),
+  requirePlanFeature("analytics"),
+  getBranchOverview,
+);
+router.get(
+  "/branches/:id/dashboard/finance",
+  requireRoles("director", "school_admin"),
+  requirePlanFeature("analytics"),
+  getBranchFinance,
+);
+router.get(
+  "/branches/:id/dashboard/students",
+  requireRoles("director", "school_admin"),
+  requirePlanFeature("analytics"),
+  getBranchStudents,
+);
+router.get(
+  "/branches/:id/dashboard/teachers",
+  requireRoles("director", "school_admin"),
+  requirePlanFeature("analytics"),
+  getBranchTeachers,
+);
+router.get(
+  "/branches/:id/dashboard/premium/insights",
+  requireRoles("director", "school_admin"),
+  requirePlanFeature("ai"),
+  getPremiumInsights,
+);
+router.get(
+  "/branches/:id/dashboard/premium/forecast",
+  requireRoles("director", "school_admin"),
+  requirePlanFeature("ai"),
+  getPremiumForecast,
+);
+router.get(
+  "/branches/:id/dashboard/premium/alerts",
+  requireRoles("director", "school_admin"),
+  requirePlanFeature("ai"),
+  getPremiumAlerts,
 );
 router.get(
   "/classes/insights",

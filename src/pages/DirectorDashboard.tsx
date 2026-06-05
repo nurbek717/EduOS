@@ -31,6 +31,7 @@ import { buildSubscriptionHeaderInfo } from "@/lib/school-subscription";
 import { buildSchoolPlanContext, hasPlanFeature, type SchoolPlanContext } from "@/lib/school-plan-features";
 import PlanFeatureGate from "@/components/director/PlanFeatureGate";
 import PlanFeatureLockedOverlay from "@/components/director/PlanFeatureLockedOverlay";
+import BranchDashboard from "@/components/director/BranchDashboard";
 
 type DirectorSection =
   | "dashboard"
@@ -645,6 +646,7 @@ const DirectorDashboard = () => {
   const [selectedBranchAnalytics, setSelectedBranchAnalytics] = useState<BranchAnalytics | null>(null);
   const [branchRankings, setBranchRankings] = useState<BranchRanking[]>([]);
   const [branchRankingsLoading, setBranchRankingsLoading] = useState(false);
+  const [selectedBranchDashboard, setSelectedBranchDashboard] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -4646,7 +4648,7 @@ const DirectorDashboard = () => {
           </Card>
         )}
 
-        {section === "branches" && !isSchoolAdmin && (
+        {section === "branches" && !isSchoolAdmin && !selectedBranchDashboard && (
           <><Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <div>
@@ -4746,7 +4748,16 @@ const DirectorDashboard = () => {
                               }}
                               title="Filial analitikasi"
                             >
-                              <Eye className="h-4 w-4" />
+                                <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setSelectedBranchDashboard({ id: branch.id, name: branch.name })}
+                              title="Filial dashboardi"
+                            >
+                              <BarChart3 className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
@@ -5143,6 +5154,18 @@ const DirectorDashboard = () => {
             </DialogContent>
           </Dialog>
           </>)}
+
+          {/* Branch Dashboard (individual) */}
+          {section === "branches" && !isSchoolAdmin && selectedBranchDashboard && (
+            <div className="pb-6">
+              <BranchDashboard
+                branchId={selectedBranchDashboard.id}
+                branchName={selectedBranchDashboard.name}
+                schoolPlan={schoolPlan}
+                onBack={() => setSelectedBranchDashboard(null)}
+              />
+            </div>
+          )}
 
         {(section === "teachers" || section === "students") && (
           <Card>
