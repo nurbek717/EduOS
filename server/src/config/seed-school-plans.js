@@ -6,21 +6,21 @@ const ADMIN_SUBSCRIPTION_PLAN_NAMES = ["Bepul", "Standard", "Pro", "Premium"];
 const DEFAULT_PLANS = [
   {
     name: "Bepul",
-    maxStudents: -1,
-    maxBranches: -1,
+    maxStudents: 200,
+    maxBranches: 1,
     price: 0,
     features: {
-      analytics: true,
-      ai: true,
-      payment: true,
+      analytics: false,
+      ai: false,
+      payment: false,
       attendanceReports: true,
-      finance: true,
+      finance: false,
     },
   },
   {
     name: "Standard",
     maxStudents: 500,
-    maxBranches: 1,
+    maxBranches: 3,
     price: 1_500_000,
     features: {
       analytics: false,
@@ -32,9 +32,9 @@ const DEFAULT_PLANS = [
   },
   {
     name: "Pro",
-    maxStudents: 1000,
-    maxBranches: 5,
-    price: 3_000_000,
+    maxStudents: 2000,
+    maxBranches: 10,
+    price: 3_500_000,
     features: {
       analytics: true,
       ai: false,
@@ -47,7 +47,7 @@ const DEFAULT_PLANS = [
     name: "Premium",
     maxStudents: -1,
     maxBranches: -1,
-    price: 6_000_000,
+    price: 7_000_000,
     features: {
       analytics: true,
       ai: true,

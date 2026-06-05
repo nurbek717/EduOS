@@ -2435,6 +2435,9 @@ const getBranchAnalytics = async (req, res) => {
       return res.status(404).json({ message: "Branch not found" });
     }
 
+    const plan = await resolveSchoolPlan(school._id);
+    const isPremium = plan.features.ai === true;
+
     const userDocs = await User.find({ branchId: branch._id, school: school._id }).select("_id").lean();
     const userIds = userDocs.map((u) => u._id);
 
@@ -2443,6 +2446,7 @@ const getBranchAnalytics = async (req, res) => {
     const activeStudents = students.filter((s) => s.status === "active" || s.status === "");
     const now = new Date();
     const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
     const newThisMonth = students.filter((s) => s.createdAt && new Date(s.createdAt) >= monthAgo);
 
     const teachers = await Teacher.find({ user: { $in: userIds } }).populate("user", "name").lean();
@@ -2457,9 +2461,16 @@ const getBranchAnalytics = async (req, res) => {
     }).lean();
 
     const nowMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
+
     const monthIncome = financeTransactions
       .filter((t) => t.type === "income" && t.billingMonth === nowMonth)
       .reduce((sum, t) => sum + t.amount, 0);
+    const prevMonthIncome = financeTransactions
+      .filter((t) => t.type === "income" && t.billingMonth === prevMonthStr)
+      .reduce((sum, t) => sum + t.amount, 0);
+
     const unpaidCount = await Student.countDocuments({
       _id: { $in: studentIds },
       school: school._id,
@@ -2482,6 +2493,19 @@ const getBranchAnalytics = async (req, res) => {
       ? Math.round((presentLateCount / totalAttendance) * 100)
       : 0;
 
+    const attendanceThisMonth = attendanceRecords.filter(
+      (a) => a.date && new Date(a.date) >= monthAgo,
+    );
+    const attendancePrevMonth = attendanceRecords.filter(
+      (a) => a.date && new Date(a.date) >= twoMonthsAgo && new Date(a.date) < monthAgo,
+    );
+    const thisMonthRate = attendanceThisMonth.length > 0
+      ? Math.round((attendanceThisMonth.filter((a) => a.status === "present" || a.status === "late").length / attendanceThisMonth.length) * 100)
+      : 0;
+    const prevMonthRate = attendancePrevMonth.length > 0
+      ? Math.round((attendancePrevMonth.filter((a) => a.status === "present" || a.status === "late").length / attendancePrevMonth.length) * 100)
+      : 0;
+
     const classAttendance = await Promise.all(
       classes.map(async (cls) => {
         const clsStudents = await Student.find({ class: cls._id, school: school._id }).select("_id").lean();
@@ -2499,6 +2523,8 @@ const getBranchAnalytics = async (req, res) => {
     const bestGroup = classAttendance.length > 0 ? classAttendance[0] : null;
     const worstGroup = classAttendance.length > 1 ? classAttendance[classAttendance.length - 1] : null;
 
+    const totalStudents = students.length;
+    const newStudents = newThisMonth.length;
     const totalClasses = classes.length;
     const popularCourse = totalClasses > 0
       ? classes.reduce((prev, curr) =>
@@ -2506,21 +2532,49 @@ const getBranchAnalytics = async (req, res) => {
         )
       : null;
 
-    const aiRecommendations = [
-      worstGroup && worstGroup.percent < 80
-        ? `Davomati past guruh: ${worstGroup.className} (${worstGroup.percent}%)`
-        : null,
-      unpaidCount > 0 ? `Qarzdor o'quvchilar: ${unpaidCount} ta` : null,
-      teachers.length > 0 ? `O'qituvchi yuklamasi: ${teachers.length} ta o'qituvchi ${classes.length} ta guruhda` : null,
-      `Kelgusi oy prognozi: ${Math.round(monthIncome * 1.1).toLocaleString()} so'm (taxminiy)`,
-    ].filter(Boolean);
+    const recommendations = [];
+    if (worstGroup && worstGroup.percent < 80) {
+      recommendations.push(`Davomati past guruh: ${worstGroup.className} (${worstGroup.percent}%)`);
+    }
+    if (unpaidCount > 0) {
+      recommendations.push(`Qarzdor o'quvchilar: ${unpaidCount} ta`);
+    }
+    if (teachers.length > 0) {
+      recommendations.push(`O'qituvchi yuklamasi: ${teachers.length} ta o'qituvchi ${classes.length} ta guruhda`);
+    }
+    if (avgAttendancePercent < 70) {
+      recommendations.push("Davomat darajasi past (70% dan kam). Sababini aniqlash tavsiya etiladi.");
+    }
+
+    if (isPremium) {
+      const activeRatio = totalStudents > 0 ? Math.round((activeStudents.length / totalStudents) * 100) : 0;
+      recommendations.push(`O'quvchilar faolligi: ${activeRatio}% (${activeStudents.length} / ${totalStudents})`);
+      if (prevMonthIncome > 0) {
+        const incomeChange = Math.round(((monthIncome - prevMonthIncome) / prevMonthIncome) * 100);
+        const trend = incomeChange >= 0 ? `${incomeChange}% o'sish` : `${Math.abs(incomeChange)}% pasayish`;
+        recommendations.push(`Moliyaviy o'sish: ${trend} (o'tgan oyga nisbatan)`);
+      }
+      if (attendanceThisMonth.length > 0 && attendancePrevMonth.length > 0) {
+        const change = thisMonthRate - prevMonthRate;
+        const trendText = change >= 0 ? `${change}% yaxshilandi` : `${Math.abs(change)}% yomonlashdi`;
+        recommendations.push(`Davomat trendi: ${trendText} (o'tgan oyga nisbatan)`);
+      }
+      if (bestGroup && bestGroup.percent > 90) {
+        recommendations.push(`Namuna guruh: ${bestGroup.className} (${bestGroup.percent}%) — yuqori davomat. Tajriba almashish tavsiya etiladi.`);
+      }
+      if (newStudents > 0) {
+        recommendations.push(`Yangi o'quvchilar: ${newStudents} ta — filial o'sishda.`);
+      }
+    }
 
     return res.json({
       branch: { id: branch._id, name: branch.name, address: branch.address },
+      isPremium,
+      planName: plan.planName,
       students: {
-        total: students.length,
+        total: totalStudents,
         active: activeStudents.length,
-        newThisMonth: newThisMonth.length,
+        newThisMonth: newStudents,
       },
       teachers: {
         total: teachers.length,
@@ -2528,11 +2582,14 @@ const getBranchAnalytics = async (req, res) => {
       },
       finance: {
         monthIncome,
+        prevMonthIncome,
         nonPayers: unpaidCount,
         debt: unpaidCount * 150000,
       },
       attendance: {
         averagePercent: avgAttendancePercent,
+        thisMonthRate,
+        prevMonthRate,
         bestGroup: bestGroup ? { name: bestGroup.className, percent: bestGroup.percent } : null,
         worstGroup: worstGroup ? { name: worstGroup.className, percent: worstGroup.percent } : null,
       },
@@ -2542,7 +2599,7 @@ const getBranchAnalytics = async (req, res) => {
           : null,
         totalGroups: totalClasses,
       },
-      aiRecommendations,
+      aiRecommendations: recommendations,
     });
   } catch (err) {
     return res.status(400).json({ message: err.message || "Failed to load branch analytics" });
@@ -2552,6 +2609,8 @@ const getBranchAnalytics = async (req, res) => {
 const getBranchRankings = async (req, res) => {
   try {
     const school = await ensureSchoolManagementUser(req.user);
+    const plan = await resolveSchoolPlan(school._id);
+    const hasAnalytics = plan.features.analytics === true;
     const branches = await Branch.find({ school: school._id }).lean();
 
     const rankings = await Promise.all(
@@ -2560,12 +2619,43 @@ const getBranchRankings = async (req, res) => {
         const userIds = userDocs.map((u) => u._id);
         const studentCount = await Student.countDocuments({ user: { $in: userIds }, school: school._id }).exec();
         const teacherCount = await Teacher.countDocuments({ user: { $in: userIds }, school: school._id }).exec();
+        const studentDocs = await Student.find({ user: { $in: userIds }, school: school._id }).select("_id").lean();
+        const branchStudentIds = studentDocs.map((s) => s._id);
+        const classCount = await ClassModel.countDocuments({ branch: branch._id, school: school._id }).exec();
+
+        let attendanceRate = 0;
+        let monthlyIncome = 0;
+        if (hasAnalytics) {
+          const attendanceRecords = await Attendance.find({
+            student: { $in: branchStudentIds },
+            school: school._id,
+          }).lean();
+          const totalAtt = attendanceRecords.length;
+          const presentAtt = attendanceRecords.filter((a) => a.status === "present" || a.status === "late").length;
+          attendanceRate = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 0;
+
+          const now = new Date();
+          const nowMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+          const financeDocs = await FinanceTransaction.find({
+            student: { $in: branchStudentIds },
+            school: school._id,
+            type: "income",
+            billingMonth: nowMonth,
+          }).lean();
+          monthlyIncome = financeDocs.reduce((sum, t) => sum + t.amount, 0);
+        }
+
+        const score = studentCount * 3 + teacherCount * 5 + (attendanceRate > 0 ? Math.round(attendanceRate / 10) : 0) + Math.round(monthlyIncome / 1000000);
+
         return {
           id: branch._id,
           name: branch.name,
           studentCount,
           teacherCount,
-          score: studentCount * 2 + teacherCount * 5,
+          classCount,
+          attendanceRate,
+          monthlyIncome,
+          score,
         };
       }),
     );

@@ -78,7 +78,6 @@ router.delete("/branches/:id", requireRoles("director"), validators.idParam, del
 router.get(
   "/branches/rankings",
   requireRoles("director"),
-  requirePlanFeature("analytics"),
   getBranchRankings,
 );
 router.get(

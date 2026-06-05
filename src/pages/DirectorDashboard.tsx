@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ListSkeleton, StatsCardsSkeleton, TableSkeleton } from "@/components/ui/skeletons";
 import { useRef } from "react";
-import { BookOpen, Users, GraduationCap, UserCircle, Mail, Lock, Eye, EyeOff, Pencil, Trash2, Upload, Plus, Wallet, AlertTriangle, Info, ShieldAlert, Phone, MapPin, Camera, Calendar, Search, Eraser, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, RotateCcw, Minus, BarChart3, FileSpreadsheet, FileText } from "lucide-react";
+import { BookOpen, Users, GraduationCap, UserCircle, Mail, Lock, Eye, EyeOff, Pencil, Trash2, Upload, Plus, Wallet, AlertTriangle, Info, ShieldAlert, Phone, MapPin, Camera, Calendar, Search, Eraser, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, RotateCcw, Minus, BarChart3, FileSpreadsheet, FileText, Sparkles } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -76,10 +76,12 @@ type AssignableUser = {
 
 type BranchAnalytics = {
   branch: { id: string; name: string; address: string };
+  isPremium: boolean;
+  planName: string;
   students: { total: number; active: number; newThisMonth: number };
   teachers: { total: number; active: number };
-  finance: { monthIncome: number; nonPayers: number; debt: number };
-  attendance: { averagePercent: number; bestGroup: { name: string; percent: number } | null; worstGroup: { name: string; percent: number } | null };
+  finance: { monthIncome: number; prevMonthIncome: number; nonPayers: number; debt: number };
+  attendance: { averagePercent: number; thisMonthRate: number; prevMonthRate: number; bestGroup: { name: string; percent: number } | null; worstGroup: { name: string; percent: number } | null };
   courses: { popularCourse: { name: string; teacherName: string } | null; totalGroups: number };
   aiRecommendations: string[];
 };
@@ -90,6 +92,9 @@ type BranchRanking = {
   rank: number;
   studentCount: number;
   teacherCount: number;
+  classCount: number;
+  attendanceRate: number;
+  monthlyIncome: number;
   score: number;
 };
 
@@ -4809,6 +4814,9 @@ const DirectorDashboard = () => {
                     <TableHead>Filial</TableHead>
                     <TableHead className="text-right">O'quvchilar</TableHead>
                     <TableHead className="text-right">O'qituvchilar</TableHead>
+                    <TableHead className="text-right">Guruhlar</TableHead>
+                    <TableHead className="text-right">Davomat</TableHead>
+                    <TableHead className="text-right">Tushum (oy)</TableHead>
                     <TableHead className="text-right">Reyting</TableHead>
                     <TableHead className="w-16">Holat</TableHead>
                   </TableRow>
@@ -4816,7 +4824,7 @@ const DirectorDashboard = () => {
                 <TableBody>
                   {branchRankings.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="py-6 text-center text-sm text-muted-foreground">
+                      <TableCell colSpan={9} className="py-6 text-center text-sm text-muted-foreground">
                         {branchRankingsLoading ? "Yuklanmoqda..." : "Reyting ma'lumotlari mavjud emas."}
                       </TableCell>
                     </TableRow>
@@ -4831,6 +4839,15 @@ const DirectorDashboard = () => {
                           <TableCell className="font-medium">{r.name}</TableCell>
                           <TableCell className="text-right">{r.studentCount}</TableCell>
                           <TableCell className="text-right">{r.teacherCount}</TableCell>
+                          <TableCell className="text-right">{r.classCount ?? 0}</TableCell>
+                          <TableCell className="text-right">
+                            <span className={`font-medium ${r.attendanceRate >= 80 ? "text-emerald-600" : r.attendanceRate >= 60 ? "text-amber-600" : "text-red-600"}`}>
+                              {r.attendanceRate ?? 0}%
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {(r.monthlyIncome ?? 0).toLocaleString()} so'm
+                          </TableCell>
                           <TableCell className="text-right font-semibold">{r.score}</TableCell>
                           <TableCell>
                             <div className="flex justify-center">
@@ -5010,21 +5027,39 @@ const DirectorDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  {/* AI Recommendations (Pro) */}
+                  {/* AI Recommendations (Pro / Premium) */}
                   {selectedBranchAnalytics.aiRecommendations.length > 0 && (
-                    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+                    <Card className={`border-primary/20 bg-gradient-to-br from-primary/5 to-transparent ${selectedBranchAnalytics.isPremium ? "border-purple-400/30 from-purple-500/5" : ""}`}>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-base flex items-center gap-2">
-                          <AlertTriangle className="h-4 w-4 text-amber-500" />
-                          AI Tavsiyalari
-                          <Badge variant="outline" className="text-[10px] ml-auto">Pro</Badge>
+                          {selectedBranchAnalytics.isPremium ? (
+                            <Sparkles className="h-4 w-4 text-purple-500" />
+                          ) : (
+                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                          )}
+                          {selectedBranchAnalytics.isPremium ? "AI Powered Tahlil" : "AI Tavsiyalari"}
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] ml-auto ${selectedBranchAnalytics.isPremium ? "border-purple-400 text-purple-600 dark:text-purple-400" : ""}`}
+                          >
+                            {selectedBranchAnalytics.isPremium ? "Premium" : "Pro"}
+                          </Badge>
                         </CardTitle>
+                        <CardDescription className="text-xs">
+                          {selectedBranchAnalytics.isPremium
+                            ? "Kengaytirilgan AI tahlil va prognozlar"
+                            : "Asosiy tahlillar va tavsiyalar"}
+                        </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <ul className="space-y-2">
                           {selectedBranchAnalytics.aiRecommendations.map((rec: string, i: number) => (
                             <li key={i} className="flex items-start gap-2 text-sm">
-                              <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                              {selectedBranchAnalytics.isPremium ? (
+                                <Sparkles className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
+                              ) : (
+                                <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                              )}
                               <span>{rec}</span>
                             </li>
                           ))}
