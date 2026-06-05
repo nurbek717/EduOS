@@ -14,11 +14,11 @@ const PlanFeatureLockedOverlay = ({ children, locked = false, inline = false, bu
   if (buttonLock) {
     return (
       <div className={`relative ${inline ? "inline-flex" : ""}`}>
-        <div className="pointer-events-none select-none opacity-60">
+        <div className="pointer-events-none select-none opacity-40 blur-[0.5px]">
           {children}
         </div>
-        <div className="absolute inset-0 flex items-center justify-center rounded-md bg-slate-100/80">
-          <Lock className="h-4 w-4 text-slate-400" />
+        <div className="absolute inset-0 flex items-center justify-center rounded-md">
+          <Lock className="h-4 w-4 text-slate-500" />
         </div>
       </div>
     );

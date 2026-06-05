@@ -4750,15 +4750,17 @@ const DirectorDashboard = () => {
                             >
                                 <Eye className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => setSelectedBranchDashboard({ id: branch.id, name: branch.name })}
-                              title="Filial dashboardi"
-                            >
-                              <BarChart3 className="h-4 w-4" />
-                            </Button>
+                            <PlanFeatureLockedOverlay locked={!hasPlanFeature(schoolPlan, "ai")} inline buttonLock>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => setSelectedBranchDashboard({ id: branch.id, name: branch.name })}
+                                title="Filial dashboardi"
+                              >
+                                <BarChart3 className="h-4 w-4" />
+                              </Button>
+                            </PlanFeatureLockedOverlay>
                             <Button
                               variant="ghost"
                               size="icon"
