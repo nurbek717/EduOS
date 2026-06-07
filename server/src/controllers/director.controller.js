@@ -2672,6 +2672,78 @@ const getBranchRankings = async (req, res) => {
   }
 };
 
+const assignBranchManager = async (req, res) => {
+  try {
+    const school = await ensureSchoolManagementUser(req.user);
+    const { id } = req.params;
+    const { name, email, phone, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "name, email and password are required" });
+    }
+
+    const branch = await Branch.findOne({ _id: id, school: school._id });
+    if (!branch) {
+      return res.status(404).json({ message: "Branch not found" });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email already in use" });
+    }
+
+    const user = await User.create({
+      name,
+      email,
+      phone: phone || null,
+      password,
+      role: "branch_admin",
+      school: school._id,
+      branchId: branch._id,
+    });
+
+    branch.managerUser = user._id;
+    await branch.save();
+
+    return res.status(201).json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      branchId: branch._id,
+      branchName: branch.name,
+    });
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Failed to assign branch manager" });
+  }
+};
+
+const removeBranchManager = async (req, res) => {
+  try {
+    const school = await ensureSchoolManagementUser(req.user);
+    const { id } = req.params;
+
+    const branch = await Branch.findOne({ _id: id, school: school._id });
+    if (!branch) {
+      return res.status(404).json({ message: "Branch not found" });
+    }
+
+    const managerUserId = branch.managerUser;
+    if (!managerUserId) {
+      return res.status(400).json({ message: "Branch has no manager assigned" });
+    }
+
+    branch.managerUser = null;
+    await branch.save();
+
+    await User.deleteOne({ _id: managerUserId, school: school._id, role: "branch_admin" });
+
+    return res.json({ message: "Branch manager removed successfully" });
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Failed to remove branch manager" });
+  }
+};
+
 module.exports = {
   createSchoolAdminForDirector,
   listUsersForDirector,
@@ -2707,5 +2779,7 @@ module.exports = {
   listAttendanceStatsForDirector,
   getBranchAnalytics,
   getBranchRankings,
+  assignBranchManager,
+  removeBranchManager,
 };
 

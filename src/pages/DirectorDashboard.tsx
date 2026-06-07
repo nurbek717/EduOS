@@ -641,6 +641,10 @@ const DirectorDashboard = () => {
   const [assignableUsers, setAssignableUsers] = useState<AssignableUser[]>([]);
   const [assignableUsersLoading, setAssignableUsersLoading] = useState(false);
   const [savingBranchAssignment, setSavingBranchAssignment] = useState(false);
+  const [createManagerDialogOpen, setCreateManagerDialogOpen] = useState(false);
+  const [creatingManagerBranch, setCreatingManagerBranch] = useState<BranchRow | null>(null);
+  const [creatingManager, setCreatingManager] = useState(false);
+  const [managerForm, setManagerForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [branchAnalyticsOpen, setBranchAnalyticsOpen] = useState(false);
   const [branchAnalyticsLoading, setBranchAnalyticsLoading] = useState(false);
   const [selectedBranchAnalytics, setSelectedBranchAnalytics] = useState<BranchAnalytics | null>(null);
@@ -1802,6 +1806,72 @@ const DirectorDashboard = () => {
       });
     } finally {
       setSavingBranchAssignment(false);
+    }
+  };
+
+  const handleCreateManager = async () => {
+    if (!token || !creatingManagerBranch) return;
+    setCreatingManager(true);
+    try {
+      const res = await apiFetch(
+        `${API_BASE_URL}/api/director/branches/${creatingManagerBranch.id}/manager`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(managerForm),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Mas'ul yaratilmadi");
+
+      toast({
+        title: t("successTitle"),
+        description: "Mas'ul yaratildi va biriktirildi.",
+      });
+
+      setCreateManagerDialogOpen(false);
+      setCreatingManagerBranch(null);
+      setManagerForm({ name: "", email: "", phone: "", password: "" });
+      await fetchBranches();
+    } catch (err: unknown) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : "Mas'ul yaratilmadi",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingManager(false);
+    }
+  };
+
+  const handleDeleteManager = async (branch: BranchRow) => {
+    if (!token) return;
+    try {
+      const res = await apiFetch(
+        `${API_BASE_URL}/api/director/branches/${branch.id}/manager`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Mas'ul o'chirilmadi");
+
+      toast({
+        title: t("successTitle"),
+        description: "Mas'ul o'chirildi.",
+      });
+
+      await fetchBranches();
+    } catch (err: unknown) {
+      toast({
+        title: t("errorTitle"),
+        description: err instanceof Error ? err.message : "Mas'ul o'chirilmadi",
+        variant: "destructive",
+      });
     }
   };
 
@@ -4722,12 +4792,23 @@ const DirectorDashboard = () => {
                         <TableCell>{branch.address || "—"}</TableCell>
                         <TableCell>
                           {branch.managerUser ? (
-                            <span className="text-sm">
-                              {branch.managerUser.name}
-                              <span className="text-xs text-muted-foreground ml-1">
-                                ({branch.managerUser.role === "school_admin" ? "Admin" : "O'qituvchi"})
+                            <div className="flex items-center gap-1">
+                              <span className="text-sm">
+                                {branch.managerUser.name}
+                                <span className="text-xs text-muted-foreground ml-1">
+                                  ({branch.managerUser.role === "branch_admin" ? "Filial admini" : branch.managerUser.role === "school_admin" ? "Admin" : "O'qituvchi"})
+                                </span>
                               </span>
-                            </span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-destructive hover:text-destructive"
+                                onClick={() => handleDeleteManager(branch)}
+                                title="Adminni o'chirish"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                           ) : (
                             <span className="text-sm text-muted-foreground">—</span>
                           )}
@@ -4774,6 +4855,19 @@ const DirectorDashboard = () => {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
+                              onClick={() => {
+                                setCreatingManagerBranch(branch);
+                                setManagerForm({ name: "", email: "", phone: "", password: "" });
+                                setCreateManagerDialogOpen(true);
+                              }}
+                              title="Yangi mas'ul yaratish"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
                               onClick={() => handleAssignManager(branch)}
                               title="Mas'ul biriktirish"
                             >
@@ -4784,7 +4878,7 @@ const DirectorDashboard = () => {
                               size="icon"
                               className="h-8 w-8 text-destructive hover:text-destructive"
                               onClick={() => handleDeleteBranch(branch)}
-                              title="O'chirish"
+                              title="Filialni o'chirish"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -5150,6 +5244,61 @@ const DirectorDashboard = () => {
                 <DialogFooter>
                   <Button onClick={handleSaveAssignManager} disabled={savingBranchAssignment}>
                     {savingBranchAssignment ? t("saving") : t("save")}
+                  </Button>
+                </DialogFooter>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Create manager dialog */}
+          <Dialog open={createManagerDialogOpen} onOpenChange={setCreateManagerDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  Yangi mas'ul yaratish — {creatingManagerBranch?.name || ""}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="manager-name">Ism</Label>
+                  <Input
+                    id="manager-name"
+                    value={managerForm.name}
+                    onChange={(e) => setManagerForm((prev) => ({ ...prev, name: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="manager-email">Email</Label>
+                  <Input
+                    id="manager-email"
+                    type="email"
+                    value={managerForm.email}
+                    onChange={(e) => setManagerForm((prev) => ({ ...prev, email: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="manager-phone">Telefon (ixtiyoriy)</Label>
+                  <Input
+                    id="manager-phone"
+                    value={managerForm.phone}
+                    onChange={(e) => setManagerForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="manager-password">Parol</Label>
+                  <Input
+                    id="manager-password"
+                    type="password"
+                    value={managerForm.password}
+                    onChange={(e) => setManagerForm((prev) => ({ ...prev, password: e.target.value }))}
+                    required
+                  />
+                </div>
+                <DialogFooter>
+                  <Button onClick={handleCreateManager} disabled={creatingManager}>
+                    {creatingManager ? t("saving") : t("save")}
                   </Button>
                 </DialogFooter>
               </div>

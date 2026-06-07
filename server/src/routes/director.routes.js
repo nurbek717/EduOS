@@ -34,6 +34,8 @@ const {
   listAttendanceStatsForDirector,
   getBranchAnalytics,
   getBranchRankings,
+  assignBranchManager,
+  removeBranchManager,
 } = require("../controllers/director.controller");
 const {
   getOverview: getBranchOverview,
@@ -89,6 +91,8 @@ router.get(
   requireRoles("director"),
   getBranchRankings,
 );
+router.post("/branches/:id/manager", requireRoles("director"), assignBranchManager);
+router.delete("/branches/:id/manager", requireRoles("director"), removeBranchManager);
 router.get(
   "/branches/:id/analytics",
   requireRoles("director"),
