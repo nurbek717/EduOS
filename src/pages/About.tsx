@@ -23,16 +23,16 @@ const About = () => {
   return (
     <Layout>
       {/* Hero */}
-      <section className="gradient-primary py-20">
+      <section className="bg-muted py-24 border-b">
         <div className="container mx-auto px-4 text-center">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-display font-bold text-primary-foreground mb-4"
+            className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4 tracking-tight"
           >
-            Maktab Haqida
+            EduOs Haqida
           </motion.h1>
-          <p className="text-primary-foreground/80 max-w-2xl mx-auto text-lg">
+          <p className="text-muted-foreground max-w-2xl mx-auto text-lg font-medium">
             35 yillik tajriba, minglab bitiruvchilar va zamonaviy ta'lim an'analari
           </p>
         </div>

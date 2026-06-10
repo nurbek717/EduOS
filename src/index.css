@@ -40,7 +40,7 @@
 
     --radius: 5px;
 
-    --hero-overlay: linear-gradient(135deg, hsla(210, 70%, 25%, 0.85), hsla(160, 45%, 30%, 0.75));
+    --hero-overlay: linear-gradient(135deg, hsla(210, 100%, 100%, 0.4), hsla(210, 100%, 100%, 0.2));
     --gradient-primary: linear-gradient(135deg, hsl(210, 70%, 38%), hsl(210, 70%, 28%));
     --gradient-secondary: linear-gradient(135deg, hsl(160, 45%, 40%), hsl(160, 50%, 30%));
     --gradient-accent: linear-gradient(135deg, hsl(40, 85%, 55%), hsl(30, 80%, 50%));
@@ -64,35 +64,7 @@
     --chart-5: hsl(340 75% 52%);
   }
 
-  .dark {
-    --background: 215 25% 10%;
-    --foreground: 210 20% 95%;
-    --card: 215 25% 13%;
-    --card-foreground: 210 20% 95%;
-    --popover: 215 25% 13%;
-    --popover-foreground: 210 20% 95%;
-    --primary: 210 65% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 160 40% 45%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 215 20% 18%;
-    --muted-foreground: 210 15% 60%;
-    --accent: 40 80% 55%;
-    --accent-foreground: 215 25% 10%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 215 20% 20%;
-    --input: 215 20% 20%;
-    --ring: 210 65% 50%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
+
 }
 
 @layer base {

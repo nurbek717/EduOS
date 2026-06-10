@@ -51,18 +51,18 @@ const Index = () => {
             transition={{ duration: 0.8 }}
             className="max-w-2xl"
           >
-            <h1 className="text-4xl md:text-6xl font-display font-bold text-primary-foreground mb-4 leading-tight">
+            <h1 className="text-4xl md:text-6xl font-display font-bold text-foreground mb-4 leading-tight">
               Bilim — Kelajak Kaliti
             </h1>
-            <p className="text-lg md:text-xl text-primary-foreground/90 mb-8 leading-relaxed">
+            <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed font-medium">
               Zamonaviy ta'lim muhitida farzandlaringizning har tomonlama rivojlanishini ta'minlaymiz. 
               EduOs maktabiga xush kelibsiz!
             </p>
             <div className="flex flex-wrap gap-4">
-              <Button asChild size="lg" className="gradient-accent text-accent-foreground font-semibold text-base px-8">
+              <Button asChild size="lg" className="gradient-primary text-primary-foreground font-semibold text-base px-8 shadow-glow">
                 <Link to="/admissions">Qabul haqida</Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground bg-primary-foreground/10 hover:bg-primary-foreground/20 font-semibold text-base px-8">
+              <Button asChild size="lg" variant="outline" className="border-primary/30 text-primary bg-white/50 hover:bg-white/80 font-semibold text-base px-8">
                 <Link to="/about">Batafsil</Link>
               </Button>
             </div>
@@ -165,15 +165,15 @@ const Index = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="gradient-secondary rounded-2xl p-10 md:p-16 text-center"
+            className="bg-primary/5 border border-primary/10 rounded-2xl p-10 md:p-16 text-center"
           >
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-secondary-foreground mb-4">
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
               Farzandingizning kelajagini birga quramiz
             </h2>
-            <p className="text-secondary-foreground/80 max-w-xl mx-auto mb-8">
+            <p className="text-muted-foreground max-w-xl mx-auto mb-8 font-medium">
               Maktabimizga qabul jarayoni boshlandi. Hoziroq ariza topshiring va zamonaviy ta'lim imkoniyatlaridan foydalaning.
             </p>
-            <Button asChild size="lg" className="gradient-accent text-accent-foreground font-semibold text-base px-8">
+            <Button asChild size="lg" className="gradient-primary text-primary-foreground font-semibold text-base px-10 shadow-glow">
               <Link to="/admissions">Ariza topshirish</Link>
             </Button>
           </motion.div>
