@@ -90,17 +90,34 @@ const isDevLocalOrigin = (origin) => {
 app.use(
   cors({
     origin: function (origin, callback) {
-      // In production, browser origin must be explicitly allow-listed.
-      // Requests without origin are allowed only outside production.
+      // 1. Allow non-browser requests (like Postman or server-to-server)
       if (!origin) {
-        return callback(null, !isProduction);
+        return callback(null, true);
       }
 
-      if (allowedOrigins.has(origin) || isDevLocalOrigin(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS ruxsat yo‘q: ${origin}`));
+      // 2. If CORS_ORIGIN is set, check it
+      if (allowedOrigins.has(origin)) {
+        return callback(null, true);
       }
+
+      // 3. Allow local development origins
+      if (isDevLocalOrigin(origin)) {
+        return callback(null, true);
+      }
+
+      // 4. Automatically allow Vercel domains if they match the project
+      if (origin.endsWith(".vercel.app")) {
+        return callback(null, true);
+      }
+
+      // 5. In production, if no CORS_ORIGIN is specified at all, 
+      // we assume it's a same-domain rewrite and allow it.
+      if (isProduction && envOrigins.length === 0) {
+        return callback(null, true);
+      }
+
+      // Default: Deny
+      callback(new Error(`CORS denied: ${origin}`));
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-request-id"],
