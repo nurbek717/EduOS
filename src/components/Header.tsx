@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Phone, Mail, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import schoolLogo from "@/assets/school-logo-optimized.png";
+import schoolLogo from "@/assets/eduos-logo.png";
 
 const navLinks = [
   { label: "Bosh sahifa", path: "/" },
@@ -46,7 +46,7 @@ const Header = () => {
           <Link to="/" className="flex items-center gap-3">
             <img
               src={schoolLogo}
-              alt="Maktab logotipi"
+              alt="EduOs Logo"
               width="48"
               height="48"
               loading="eager"
@@ -54,8 +54,8 @@ const Header = () => {
               className="h-12 w-12 object-contain"
             />
             <div>
-              <h1 className="text-lg font-bold font-display text-foreground leading-tight">Bilim Maskani</h1>
-              <p className="text-xs text-muted-foreground">Umumiy o'rta ta'lim maktabi</p>
+              <h1 className="text-xl font-bold font-display text-foreground leading-tight tracking-tight">EduOs</h1>
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Education System</p>
             </div>
           </Link>
 

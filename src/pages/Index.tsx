@@ -56,7 +56,7 @@ const Index = () => {
             </h1>
             <p className="text-lg md:text-xl text-primary-foreground/90 mb-8 leading-relaxed">
               Zamonaviy ta'lim muhitida farzandlaringizning har tomonlama rivojlanishini ta'minlaymiz. 
-              Bilim Maskani maktabiga xush kelibsiz!
+              EduOs maktabiga xush kelibsiz!
             </p>
             <div className="flex flex-wrap gap-4">
               <Button asChild size="lg" className="gradient-accent text-accent-foreground font-semibold text-base px-8">

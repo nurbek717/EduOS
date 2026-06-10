@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
-import schoolLogo from "@/assets/school-logo-optimized.png";
+import schoolLogo from "@/assets/eduos-logo.png";
 
 const Footer = () => {
   return (
@@ -12,14 +12,14 @@ const Footer = () => {
             <div className="flex items-center gap-3 mb-4">
               <img
                 src={schoolLogo}
-                alt="Logo"
+                alt="EduOs Logo"
                 width="40"
                 height="40"
                 loading="lazy"
                 decoding="async"
                 className="h-10 w-10 object-contain brightness-0 invert"
               />
-              <h3 className="text-lg font-display font-bold">Bilim Maskani</h3>
+              <h3 className="text-lg font-display font-bold">EduOs</h3>
             </div>
             <p className="text-sm opacity-80 leading-relaxed">
               Zamonaviy ta'lim, mustahkam bilim va yorqin kelajak uchun ishlaymiz. 
@@ -73,7 +73,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-primary-foreground/20 mt-8 pt-6 text-center text-sm opacity-60">
-          <p>© 2026 Bilim Maskani maktabi. Barcha huquqlar himoyalangan.</p>
+          <p>© 2026 EduOs. Barcha huquqlar himoyalangan.</p>
         </div>
       </div>
     </footer>

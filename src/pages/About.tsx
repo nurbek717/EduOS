@@ -50,7 +50,7 @@ const About = () => {
               className="prose prose-lg max-w-none text-muted-foreground leading-relaxed space-y-4"
             >
               <p>
-                Bilim Maskani maktabi 1991 yilda tashkil topgan bo'lib, o'z faoliyati davomida minglab
+                EduOs maktabi 1991 yilda tashkil topgan bo'lib, o'z faoliyati davomida minglab
                 iqtidorli o'quvchilarni tarbiyalab, jamiyatga munosib kadrlar yetishtirgan. Maktab o'z
                 tarixi davomida bir necha bor davlat mukofotlari bilan taqdirlangan.
               </p>

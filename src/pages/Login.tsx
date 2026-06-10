@@ -9,7 +9,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { dashboardPathByRole, normalizeUserRole } from "@/lib/auth";
-import schoolLogo from "@/assets/school-logo-optimized.png";
+import schoolLogo from "@/assets/eduos-logo.png";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
@@ -85,7 +85,7 @@ const Login = () => {
             <div className="text-center mb-8">
               <img
                 src={schoolLogo}
-                alt="Logo"
+                alt="EduOs"
                 width="64"
                 height="64"
                 loading="eager"

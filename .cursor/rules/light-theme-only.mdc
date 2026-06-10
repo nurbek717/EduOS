@@ -1,5 +1,5 @@
 ---
-description: CampusOS UI is light theme only; do not add dark mode or toggle html.dark
+description: EduOs UI is light theme only; do not add dark mode or toggle html.dark
 alwaysApply: true
 ---
 
