@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
 const ROLES = ["super_admin", "director", "school_admin", "branch_admin", "teacher", "student", "parent"];
 

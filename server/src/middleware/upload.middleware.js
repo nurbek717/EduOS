@@ -2,16 +2,20 @@ const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
 
-const uploadsRoot = path.join(__dirname, "../../uploads");
+const isVercel = process.env.VERCEL || process.env.NODE_ENV === "production";
+const uploadsRoot = isVercel ? "/tmp/uploads" : path.join(__dirname, "../../uploads");
 const homeworkDir = path.join(uploadsRoot, "homework");
 const submissionDir = path.join(uploadsRoot, "submissions");
 
-if (!fs.existsSync(homeworkDir)) {
-  fs.mkdirSync(homeworkDir, { recursive: true });
-}
-
-if (!fs.existsSync(submissionDir)) {
-  fs.mkdirSync(submissionDir, { recursive: true });
+try {
+  if (!fs.existsSync(homeworkDir)) {
+    fs.mkdirSync(homeworkDir, { recursive: true });
+  }
+  if (!fs.existsSync(submissionDir)) {
+    fs.mkdirSync(submissionDir, { recursive: true });
+  }
+} catch (err) {
+  console.warn("Upload directory creation failed (expected on some read-only hosts):", err.message);
 }
 
 const storage = multer.diskStorage({
