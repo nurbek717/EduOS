@@ -1,14 +1,10 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/server/api/index.js" }
+  "builds": [
+    { "src": "server/api/index.js", "use": "@vercel/node" },
+    { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } }
   ],
-  "functions": {
-    "server/api/index.js": {
-      "maxDuration": 30,
-      "memory": 512
-    }
-  }
+  "routes": [
+    { "src": "/api/(.*)", "dest": "server/api/index.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
 }
