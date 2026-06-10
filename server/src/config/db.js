@@ -21,7 +21,7 @@ const connectDb = async () => {
         "- Internet / VPN ulanishi",
       ].join("\n"),
     );
-    process.exit(1);
+    throw new Error("MongoDB connection error");
   }
 };
 

@@ -23,7 +23,7 @@ type JwtPayload = {
   [key: string]: unknown;
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 let refreshPromise: Promise<{ token: string; user: AuthUser | null }> | null = null;
 
 const decodeBase64Url = (value: string) => {

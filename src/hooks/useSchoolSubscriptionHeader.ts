@@ -8,7 +8,7 @@ import {
 } from "@/lib/school-subscription";
 import { buildSchoolPlanContext, type SchoolPlanContext } from "@/lib/school-plan-features";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 const SCHOOL_ROLES = new Set(["director", "school_admin", "teacher", "student", "parent"]);
 

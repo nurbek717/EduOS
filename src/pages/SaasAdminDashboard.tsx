@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 const API_BASE_URL =
   import.meta.env.VITE_SAAS_API_URL ||
   import.meta.env.VITE_API_URL ||
-  "http://localhost:5001";
+  "";
 
 type Plan = {
   _id: string;

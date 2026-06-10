@@ -34,7 +34,7 @@ import {
 import { Eye, EyeOff, Lock } from "lucide-react";
 import { resolveSubscriptionPlanName } from "@/lib/school-subscription";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 const TABLE_PAGE_SIZE = 5;
 const AdminSchoolsChart = lazy(() => import("@/components/admin/AdminSchoolsChart"));
 const AdminAttentionTrendChart = lazy(() => import("@/components/admin/AdminAttentionTrendChart"));

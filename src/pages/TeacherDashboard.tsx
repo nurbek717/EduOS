@@ -19,7 +19,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 
 type TeacherSection = "overview" | "students" | "classes" | "grades" | "homework" | "exams" | "schedule" | "faceAttendance" | "profile" | "support";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 const RENDER_LEGACY_PROFILE = Boolean(import.meta.env.VITE_RENDER_LEGACY_PROFILE);
 const SUBSCRIPTION_BLOCKED_SECTIONS = new Set<TeacherSection>(["grades", "homework", "exams", "schedule"]);
 

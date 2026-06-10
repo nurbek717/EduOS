@@ -23,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAppLocale } from "@/context/LanguageContext";
 import { useTranslation } from "react-i18next";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 const TABLE_PAGE_SIZE = 5;
 
 type FinanceSummary = {

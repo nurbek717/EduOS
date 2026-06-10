@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { hasPlanFeature, type SchoolPlanContext } from "@/lib/school-plan-features";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 type OverviewKPIs = {
   totalStudents: number; activeStudents: number; totalTeachers: number;

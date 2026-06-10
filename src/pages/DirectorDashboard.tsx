@@ -99,7 +99,7 @@ type BranchRanking = {
   score: number;
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 const ALL_CLASSES_VALUE = "__all__";
 const DIRECTOR_USERS_PAGE_SIZE = 5;
 const STUDENTS_LIST_PAGE_SIZE = 10;
