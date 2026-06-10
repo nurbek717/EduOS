@@ -19,18 +19,6 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes("node_modules")) return;
-
-          // Only split large, React-independent libraries
-          if (id.includes("recharts") || id.includes("d3-")) return "vendor-charts";
-          if (id.includes("face-api.js") || id.includes("@tensorflow")) return "vendor-face";
-          if (id.includes("xlsx")) return "vendor-xlsx";
-        },
-      },
-    },
+    chunkSizeWarningLimit: 2000,
   },
 }));
