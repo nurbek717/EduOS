@@ -72,7 +72,7 @@ const envOrigins = process.env.CORS_ORIGIN
   .filter(Boolean) || [];
 
 if (isProduction && envOrigins.length === 0) {
-  throw new Error("CORS_ORIGIN must be set in production (comma-separated allowed origins)");
+  console.warn("CORS_ORIGIN not set — Vercel same-origin rewrite assumed");
 }
 
 const allowedOrigins = new Set(
