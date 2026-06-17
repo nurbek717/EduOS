@@ -24,7 +24,7 @@ export const Features = () => {
             {t("features.badge")}
           </div>
           <h2 className="text-4xl md:text-5xl font-extrabold">
-            {t("features.titleA")} <span className="gradient-text">myschool</span>{t("features.titleB")}
+            {t("features.titleA")} <span className="gradient-text">EduOs</span>{t("features.titleB")}
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
             {t("features.desc")}

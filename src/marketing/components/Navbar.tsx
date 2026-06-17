@@ -1,4 +1,4 @@
-import { GraduationCap, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/marketing/components/LanguageSwitcher";
@@ -36,11 +36,8 @@ export const Navbar = () => {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl">
       <div className="container flex h-18 items-center justify-between py-4">
         <a href="#" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-icon">
-            <GraduationCap className="h-6 w-6 text-primary-foreground" />
-          </div>
           <span className="text-xl font-extrabold tracking-tight">
-            my<span className="text-primary">school</span>
+            <span className="text-primary">Edu</span><span className="text-feat-amber-2">Os</span>
           </span>
         </a>
 

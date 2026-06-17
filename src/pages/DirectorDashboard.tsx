@@ -2576,6 +2576,8 @@ const DirectorDashboard = () => {
   const handleExportStudentsBase = () => {
     const headers = [
       "FISH",
+      "Email",
+      "Parol",
       "ID",
       "Tug'ilgan sana",
       "Jinsi",
@@ -2592,7 +2594,9 @@ const DirectorDashboard = () => {
       "Ota-ona yoki vasiy telefon raqami",
       "Viloyat",
       "Tuman",
-      "To'liq manzil"
+      "To'liq manzil",
+      "O'quv yili",
+      "Sinfga qabul sanasi",
     ];
     const formatExportDate = (value?: string | null) => {
       if (!value) return "";
@@ -2618,6 +2622,8 @@ const DirectorDashboard = () => {
     );
     const rows = sortedStudents.map((student) => [
       decodeHtmlEntities(student.name || ""),
+      student.email || "",
+      "", // Parol (exportda bo'sh qoladi)
       student.studentCode || student.id || "",
       formatExportDate(student.birthDate),
       genderLabel(student.gender),
@@ -2635,21 +2641,15 @@ const DirectorDashboard = () => {
       student.region || "",
       student.district || "",
       student.address || "",
+      student.academicYear || "",
+      formatExportDate(student.classAcceptedDate),
     ]);
 
     // SheetJS orqali .xlsx fayl yaratish
     const wsData = [headers, ...rows];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
-    // Ustun kengliklarini belgilash (masalan, har bir ustun uchun 20)
-    // Ustunlar: A=25, D=28, F=28, N=28, qolganlari 20
-    ws['!cols'] = headers.map((_, idx) => {
-      // A=0, D=3, F=5, N=13
-      if (idx === 0) return { wch: 27 }; // A
-      if (idx === 3) return { wch: 28 }; // D
-      if (idx === 5) return { wch: 28 }; // F
-      if (idx === 13) return { wch: 28 }; // N
-      return { wch: 20 };
-    });
+    // Ustun kengliklarini belgilash
+    ws["!cols"] = headers.map((header) => ({ wch: Math.max(16, header.length + 4) }));
 
     // Header ustunlariga to'q ko'k rang (Excel default header) berish
     const headerFill = {
