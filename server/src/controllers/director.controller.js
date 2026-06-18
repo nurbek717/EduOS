@@ -573,6 +573,7 @@ const updateUserForDirector = async (req, res) => {
       email,
       phone,
       password,
+      photoUrl,
       classId,
       subjectId,
       studentId,
@@ -612,6 +613,10 @@ const updateUserForDirector = async (req, res) => {
 
     if (password) {
       user.password = password;
+    }
+
+    if (typeof photoUrl !== "undefined") {
+      user.photoUrl = photoUrl || null;
     }
 
     if (faceDescriptor !== undefined) {
@@ -1743,6 +1748,7 @@ const createStudent = async (req, res) => {
       region,
       district,
       address,
+      photoUrl,
       faceDescriptor,
     } = req.body;
     if (!name || !email || !password || !classId) {
@@ -1772,6 +1778,7 @@ const createStudent = async (req, res) => {
       password,
       role: "student",
       school: school._id,
+      photoUrl: photoUrl || null,
       faceDescriptor: Array.isArray(faceDescriptor) && faceDescriptor.length === 128 ? faceDescriptor : null,
     });
 

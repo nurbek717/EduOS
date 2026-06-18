@@ -265,7 +265,7 @@ const TeacherDashboard = () => {
   const faceVideoRef = React.useRef<HTMLVideoElement>(null);
   const faceStreamRef = React.useRef<MediaStream | null>(null);
   const [faceClassId, setFaceClassId] = useState("");
-  const [faceResult, setFaceResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [faceResult, setFaceResult] = useState<{ type: "success" | "error" | "warning"; message: string } | null>(null);
   const [faceLoading, setFaceLoading] = useState(false);
   const [faceCameraOn, setFaceCameraOn] = useState(false);
 
@@ -3389,22 +3389,42 @@ const TeacherDashboard = () => {
 
                     {/* Result overlay */}
                     {faceResult && (
-                      <div className={`absolute inset-0 flex items-center justify-center ${faceResult.type === "success" ? "bg-green-900/60" : "bg-red-900/60"} backdrop-blur-[2px]`}>
-                        <div className={`flex flex-col items-center gap-3 rounded-2xl px-8 py-6 shadow-2xl border text-white ${faceResult.type === "success" ? "bg-green-600/90 border-green-400" : "bg-red-600/90 border-red-400"}`}>
-                          <div className={`flex h-14 w-14 items-center justify-center rounded-full ${faceResult.type === "success" ? "bg-green-400/30" : "bg-red-400/30"}`}>
+                      <div className={`absolute inset-0 flex items-center justify-center backdrop-blur-[2px] ${
+                        faceResult.type === "success" ? "bg-green-900/60" :
+                        faceResult.type === "warning" ? "bg-amber-900/60" :
+                        "bg-red-900/60"
+                      }`}>
+                        <div className={`flex flex-col items-center gap-3 rounded-2xl px-8 py-6 shadow-2xl border text-white ${
+                          faceResult.type === "success" ? "bg-green-600/90 border-green-400" :
+                          faceResult.type === "warning" ? "bg-amber-500/90 border-amber-300" :
+                          "bg-red-600/90 border-red-400"
+                        }`}>
+                          <div className={`flex h-14 w-14 items-center justify-center rounded-full ${
+                            faceResult.type === "success" ? "bg-green-400/30" :
+                            faceResult.type === "warning" ? "bg-amber-300/30" :
+                            "bg-red-400/30"
+                          }`}>
                             {faceResult.type === "success" ? (
                               <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                            ) : faceResult.type === "warning" ? (
+                              /* Allaqachon davomatlangan — clock icon */
+                              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                             ) : (
                               <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
                             )}
                           </div>
-                          <p className="text-center text-sm font-semibold leading-snug">{faceResult.message}</p>
-                          {faceResult.type === "error" && (
+                          <p className="text-center text-sm font-bold leading-snug">
+                            {faceResult.type === "success" ? "✓ Davomatga qo'yildi" :
+                             faceResult.type === "warning" ? "⚠ Allaqachon belgilangan" :
+                             "✗ Xatolik"}
+                          </p>
+                          <p className="text-center text-xs opacity-90 leading-snug">{faceResult.message}</p>
+                          {(faceResult.type === "error" || faceResult.type === "warning") && (
                             <button
                               onClick={() => setFaceResult(null)}
                               className="mt-1 rounded-lg bg-white/20 px-4 py-1.5 text-xs font-medium hover:bg-white/30 transition-colors"
                             >
-                              Qayta urinish
+                              {faceResult.type === "warning" ? "Yopish" : "Qayta urinish"}
                             </button>
                           )}
                         </div>
@@ -3477,6 +3497,12 @@ const TeacherDashboard = () => {
                                   body: JSON.stringify({ descriptor, classId: faceClassId }),
                                 });
                                 const data = await res.json();
+                                if (res.status === 409 && data.alreadyMarked) {
+                                  // O'quvchi bugun allaqachon davomatlangan
+                                  setFaceResult({ type: "warning", message: data.message || `${data.studentName || "O'quvchi"} bugun allaqachon davomatga qo'yilgan` });
+                                  setTimeout(() => setFaceResult(null), 5000);
+                                  return;
+                                }
                                 if (!res.ok) {
                                   setFaceResult({ type: "error", message: data.message || td("face.markFailed") });
                                   return;

@@ -355,18 +355,30 @@ const setAttendanceByFace = async (req, res) => {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    await Attendance.findOneAndUpdate(
-      { student: best.student._id, date: today, school: teacher.school._id },
-      {
-        $set: {
-          status: "present",
-          school: teacher.school._id,
-          student: best.student._id,
-          date: today,
-        },
-      },
-      { upsert: true, returnDocument: "after" },
-    );
+
+    // Duplicate tekshiruv: bugun allaqachon davomatlangan bo'lsa qayta qo'shmaymiz
+    const existing = await Attendance.findOne({
+      student: best.student._id,
+      date: today,
+      school: teacher.school._id,
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        alreadyMarked: true,
+        matched: true,
+        studentName: best.student.user?.name,
+        studentId: best.student._id,
+        message: `${best.student.user?.name || "O'quvchi"} bugun allaqachon davomatga qo'yilgan`,
+      });
+    }
+
+    await Attendance.create({
+      status: "present",
+      school: teacher.school._id,
+      student: best.student._id,
+      date: today,
+    });
 
     return res.json({
       matched: true,

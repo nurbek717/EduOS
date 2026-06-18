@@ -149,6 +149,7 @@ const validators = {
       region: nullableStringField({ maxLength: 100 }),
       district: nullableStringField({ maxLength: 100 }),
       address: nullableStringField({ maxLength: 255 }),
+      photoUrl: nullableStringField({ maxLength: PHOTO_URL_MAX_LENGTH }),
       faceDescriptor: { type: "descriptor", nullable: true },
     },
   }),
@@ -405,6 +406,7 @@ const validators = {
       email: { type: "email" },
       phone: nonEmptyStringField({ minLength: 7, maxLength: 50 }),
       password: { type: "password" },
+      photoUrl: nullableStringField({ maxLength: PHOTO_URL_MAX_LENGTH }),
       classId: objectIdField(),
       subjectId: objectIdField(),
       studentId: objectIdField(),
@@ -414,7 +416,7 @@ const validators = {
       classAcceptedDate: nonEmptyStringField({ maxLength: 30 }),
       faceDescriptor: { type: "descriptor", nullable: true },
     },
-    rules: [requireAtLeastOne(["name", "email", "phone", "password", "classId", "subjectId", "studentId", "academicYear", "educationLanguage", "admissionOrderDate", "classAcceptedDate", "faceDescriptor"])],
+    rules: [requireAtLeastOne(["name", "email", "phone", "password", "photoUrl", "classId", "subjectId", "studentId", "academicYear", "educationLanguage", "admissionOrderDate", "classAcceptedDate", "faceDescriptor"])],
   }),
   teacherCreateTimetable: validateRequest({
     body: {

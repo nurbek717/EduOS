@@ -3009,6 +3009,7 @@ const DirectorDashboard = () => {
       setEditPhone(loaded.phone || "");
       setEditRelatedId(loaded.relatedId || "");
       setEditFaceDescriptor(data.faceDescriptor || null);
+      setEditPhotoUrl(data.photoUrl || null);
       setEditPassword("");
       setDirectorUserDialogOpen(true);
     } catch (err: unknown) {
