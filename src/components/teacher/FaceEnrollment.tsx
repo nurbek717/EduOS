@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { Camera, CheckCircle2, Upload, User, Loader2, X, RefreshCw } from "lucide-react";
+import { Camera, CheckCircle2, Upload, User, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getDescriptorFromImage } from "@/lib/faceApi";
 import { useToast } from "@/hooks/use-toast";
 
 interface FaceEnrollmentProps {
-  onCapture: (descriptor: number[], imageSrc?: string) => void;
+  onCapture: (descriptor: number[] | null, imageSrc?: string) => void;
   savedDescriptor?: number[] | null;
 }
 
@@ -16,37 +16,67 @@ export const FaceEnrollment: React.FC<FaceEnrollmentProps> = ({ onCapture, saved
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCaptured, setIsCaptured] = useState(!!savedDescriptor);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const currentBlobUrlRef = React.useRef<string | null>(null);
+
+  const compressImage = (file: File, maxSize = 800, quality = 0.7): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = Math.round((height / width) * maxSize);
+            width = maxSize;
+          } else {
+            width = Math.round((width / height) * maxSize);
+            height = maxSize;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject(new Error("Canvas context not available")); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image load failed")); };
+      img.src = url;
+    });
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Create preview
+    if (currentBlobUrlRef.current) {
+      URL.revokeObjectURL(currentBlobUrlRef.current);
+    }
+
     const url = URL.createObjectURL(file);
+    currentBlobUrlRef.current = url;
     setPreviewUrl(url);
     setIsProcessing(true);
     setIsCaptured(false);
 
     try {
-      // Process image to get face descriptor
-      const descriptor = await getDescriptorFromImage(url);
-      
+      const [descriptor, compressed] = await Promise.all([
+        getDescriptorFromImage(url),
+        compressImage(file),
+      ]);
+
       if (!descriptor) {
         toast({
           title: "Yuz aniqlanmadi",
-          description: "Rasmda yuz topilmadi. Iltimos, aniqroq rasm yuklang.",
+          description: "Rasm saqlandi, lekin yuz topilmadi. Face ID tizimi ishlamaydi.",
           variant: "destructive",
         });
-        setPreviewUrl(null);
+        onCapture(null, compressed);
+        setIsCaptured(true);
       } else {
-        // Convert blob to base64 to send to server
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64 = reader.result as string;
-          onCapture(descriptor, base64);
-        };
-        reader.readAsDataURL(file);
-        
+        onCapture(descriptor, compressed);
         setIsCaptured(true);
         toast({
           title: "Muvaffaqiyatli",
@@ -62,8 +92,6 @@ export const FaceEnrollment: React.FC<FaceEnrollmentProps> = ({ onCapture, saved
       setPreviewUrl(null);
     } finally {
       setIsProcessing(false);
-      // Clean up URL to avoid memory leaks
-      // URL.revokeObjectURL(url); // Don't revoke yet so it shows in preview
     }
   };
 
@@ -72,6 +100,10 @@ export const FaceEnrollment: React.FC<FaceEnrollmentProps> = ({ onCapture, saved
   };
 
   const reset = () => {
+    if (currentBlobUrlRef.current) {
+      URL.revokeObjectURL(currentBlobUrlRef.current);
+      currentBlobUrlRef.current = null;
+    }
     setPreviewUrl(null);
     setIsCaptured(false);
     if (fileInputRef.current) fileInputRef.current.value = "";

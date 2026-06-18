@@ -6838,7 +6838,7 @@ const DirectorDashboard = () => {
                   <div className="p-4 rounded-xl border-2 border-primary/10 bg-primary/5">
                     <FaceEnrollment 
                       onCapture={(descriptor, imageSrc) => {
-                        setEditFaceDescriptor(descriptor);
+                        if (descriptor) setEditFaceDescriptor(descriptor);
                         if (imageSrc) setEditPhotoUrl(imageSrc);
                       }} 
                       savedDescriptor={editFaceDescriptor}

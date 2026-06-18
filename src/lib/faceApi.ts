@@ -40,22 +40,45 @@ export async function getDescriptorFromImage(
     img = input;
   }
 
-  const detection = await faceapi
-    .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
-    .withFaceLandmarks()
-    .withFaceDescriptor()
-    .run();
+  const timeout = new Promise<null>((_, reject) =>
+    setTimeout(() => reject(new Error("Face detection timeout")), 20000)
+  );
 
-  if (!detection?.descriptor) return null;
-  return Array.from(detection.descriptor);
+  try {
+    const detection = await Promise.race([
+      faceapi
+        .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 416 }))
+        .withFaceLandmarks()
+        .withFaceDescriptor()
+        .run(),
+      timeout,
+    ]);
+
+    if (!detection?.descriptor) return null;
+    return Array.from(detection.descriptor);
+  } catch {
+    return null;
+  }
 }
 
 function createImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = reject;
+    if (src.startsWith("http")) {
+      img.crossOrigin = "anonymous";
+    }
+    const timer = setTimeout(() => {
+      img.src = "";
+      reject(new Error("Image load timeout"));
+    }, 10000);
+    img.onload = () => {
+      clearTimeout(timer);
+      resolve(img);
+    };
+    img.onerror = () => {
+      clearTimeout(timer);
+      reject(new Error("Image load failed"));
+    };
     img.src = src;
   });
 }
@@ -67,12 +90,23 @@ export async function getDescriptorFromVideo(video: HTMLVideoElement): Promise<n
   const ok = await loadFaceApiModels();
   if (!ok) return null;
 
-  const detection = await faceapi
-    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-    .withFaceLandmarks()
-    .withFaceDescriptor()
-    .run();
+  const timeout = new Promise<null>((_, reject) =>
+    setTimeout(() => reject(new Error("Face detection timeout")), 20000)
+  );
 
-  if (!detection?.descriptor) return null;
-  return Array.from(detection.descriptor);
+  try {
+    const detection = await Promise.race([
+      faceapi
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416 }))
+        .withFaceLandmarks()
+        .withFaceDescriptor()
+        .run(),
+      timeout,
+    ]);
+
+    if (!detection?.descriptor) return null;
+    return Array.from(detection.descriptor);
+  } catch {
+    return null;
+  }
 }
