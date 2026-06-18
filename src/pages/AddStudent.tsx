@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { getStoredAuth } from "@/lib/auth";
+import { FaceEnrollment } from "@/components/teacher/FaceEnrollment";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
@@ -49,6 +50,7 @@ const AddStudent = () => {
     region: "",
     district: "",
     address: "",
+    faceDescriptor: null as number[] | null,
   });
 
   const setField = (name: keyof typeof form, value: string) => {
@@ -132,6 +134,7 @@ const AddStudent = () => {
         region: form.region || undefined,
         district: form.district || undefined,
         address: form.address || undefined,
+        faceDescriptor: form.faceDescriptor || undefined,
       };
 
       const res = await fetch(`${API_BASE_URL}/api/director/students`, {
@@ -210,9 +213,17 @@ const AddStudent = () => {
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">Asosiy ma'lumotlar</h3>
                   <p className="text-xs text-muted-foreground">
-                    O'quvchining shaxsiy ma'lumotlari va maktabdagi holati.
                   </p>
                 </div>
+
+                {/* Face ID Registration Section */}
+                <div className="p-4 rounded-xl border-2 border-primary/10 bg-primary/5 mb-6">
+                  <FaceEnrollment 
+                    onCapture={(descriptor) => setForm(prev => ({ ...prev, faceDescriptor: descriptor }))} 
+                    savedDescriptor={form.faceDescriptor}
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="name">F.I.Sh. *</Label>

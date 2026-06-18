@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ListSkeleton, StatsCardsSkeleton, TableSkeleton } from "@/components/ui/skeletons";
 import { useRef } from "react";
-import { BookOpen, Users, GraduationCap, UserCircle, Mail, Lock, Eye, EyeOff, Pencil, Trash2, Upload, Plus, Wallet, AlertTriangle, Info, ShieldAlert, Phone, MapPin, Camera, Calendar, Search, Eraser, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, RotateCcw, Minus, BarChart3, FileSpreadsheet, FileText, Sparkles } from "lucide-react";
+import { BookOpen, Users, GraduationCap, UserCircle, Mail, Lock, Eye, EyeOff, Pencil, Trash2, Upload, Plus, Wallet, AlertTriangle, Info, ShieldAlert, Phone, MapPin, Camera, Calendar, Search, Eraser, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, RotateCcw, Minus, BarChart3, FileSpreadsheet, FileText, Sparkles, CheckCircle2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -32,6 +32,7 @@ import { buildSchoolPlanContext, hasPlanFeature, type SchoolPlanContext } from "
 import PlanFeatureGate from "@/components/director/PlanFeatureGate";
 import PlanFeatureLockedOverlay from "@/components/director/PlanFeatureLockedOverlay";
 import BranchDashboard from "@/components/director/BranchDashboard";
+import { FaceEnrollment } from "@/components/teacher/FaceEnrollment";
 
 type DirectorSection =
   | "dashboard"
@@ -414,6 +415,7 @@ type DirectorManagedUser = {
   debtAmount?: number | null;
   relatedLabel?: string | null;
   relatedId?: string | null;
+  faceDescriptor?: number[] | null;
   createdAt?: string;
 };
 
@@ -727,6 +729,8 @@ const DirectorDashboard = () => {
   const [editingTeacher, setEditingTeacher] = useState<TeacherRow | null>(null);
   const [selectedDirectorUser, setSelectedDirectorUser] = useState<DirectorManagedUser | null>(null);
   const [editName, setEditName] = useState("");
+  const [editFaceDescriptor, setEditFaceDescriptor] = useState<number[] | null>(null);
+  const [editPhotoUrl, setEditPhotoUrl] = useState<string | null>(null);
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editRelatedId, setEditRelatedId] = useState("");
@@ -3004,6 +3008,7 @@ const DirectorDashboard = () => {
       setEditEmail(loaded.email);
       setEditPhone(loaded.phone || "");
       setEditRelatedId(loaded.relatedId || "");
+      setEditFaceDescriptor(data.faceDescriptor || null);
       setEditPassword("");
       setDirectorUserDialogOpen(true);
     } catch (err: unknown) {
@@ -3030,6 +3035,8 @@ const DirectorDashboard = () => {
           name: editName,
           email: editEmail,
           phone: editPhone,
+          photoUrl: editPhotoUrl,
+          faceDescriptor: editFaceDescriptor,
           password: editPassword || undefined,
           classId: selectedDirectorUser.role === "student" ? (editRelatedId || undefined) : undefined,
           subjectId: selectedDirectorUser.role === "teacher" ? (editRelatedId || undefined) : undefined,
@@ -5699,6 +5706,7 @@ const DirectorDashboard = () => {
                               <TableHead>SINF</TableHead>
                               <TableHead>Qo&apos;shimcha</TableHead>
                               <TableHead>Yaratilgan</TableHead>
+                              <TableHead>Face ID</TableHead>
                               {isSchoolAdmin && <TableHead className="text-right">Amallar</TableHead>}
                             </TableRow>
                           </TableHeader>
@@ -5716,7 +5724,15 @@ const DirectorDashboard = () => {
                                 <TableRow key={user.id}>
                                   <TableCell>{filteredStudentUsersPageStart + index + 1}</TableCell>
                                   <TableCell>
-                                    <div className="font-medium text-foreground">{decodeHtmlEntities(user.name)}</div>
+                                    <div className="flex items-center gap-3">
+                                      <Avatar className="h-8 w-8 border">
+                                        <AvatarImage src={user.photoUrl || ""} alt={user.name} />
+                                        <AvatarFallback className="bg-primary/5 text-primary text-[10px]">
+                                          {user.name.substring(0, 2).toUpperCase()}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div className="font-medium text-foreground">{decodeHtmlEntities(user.name)}</div>
+                                    </div>
                                   </TableCell>
                                   <TableCell>
                                     <Badge variant="outline">
@@ -5733,6 +5749,15 @@ const DirectorDashboard = () => {
                                   <TableCell>{typeof user.debtAmount === "number" ? `${Math.round(user.debtAmount)} so'm` : "—"}</TableCell>
                                   <TableCell>
                                     {user.createdAt ? new Date(user.createdAt).toLocaleDateString(locale) : "—"}
+                                  </TableCell>
+                                  <TableCell>
+                                    {user.faceDescriptor ? (
+                                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
+                                        <CheckCircle2 className="h-3 w-3" /> Bor
+                                      </Badge>
+                                    ) : (
+                                      <span className="text-xs text-muted-foreground">Yo'q</span>
+                                    )}
                                   </TableCell>
                                   {isSchoolAdmin && (
                                     <TableCell className="text-right">
@@ -6808,6 +6833,17 @@ const DirectorDashboard = () => {
                     placeholder="+998901234567"
                   />
                 </div>
+                {selectedDirectorUser.role === "student" && (
+                  <div className="p-4 rounded-xl border-2 border-primary/10 bg-primary/5">
+                    <FaceEnrollment 
+                      onCapture={(descriptor, imageSrc) => {
+                        setEditFaceDescriptor(descriptor);
+                        if (imageSrc) setEditPhotoUrl(imageSrc);
+                      }} 
+                      savedDescriptor={editFaceDescriptor}
+                    />
+                  </div>
+                )}
                 {(selectedDirectorUser.role === "student" || selectedDirectorUser.role === "parent") && (
                   <div className="space-y-2">
                     <Label>{t("table.debt")}</Label>

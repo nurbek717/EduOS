@@ -446,6 +446,7 @@ const listUsersForDirector = async (req, res) => {
           parentName,
           debtAmount,
           relatedLabel,
+          faceDescriptor: user.faceDescriptor || null,
           createdAt: user.createdAt,
         };
       }),
@@ -554,6 +555,8 @@ const getUserForDirector = async (req, res) => {
       debtAmount,
       relatedLabel,
       relatedId,
+      isFaceEnrolled: !!user.faceDescriptor,
+      faceDescriptor: user.faceDescriptor || null,
       createdAt: user.createdAt,
     });
   } catch (err) {
@@ -577,6 +580,7 @@ const updateUserForDirector = async (req, res) => {
       educationLanguage,
       admissionOrderDate,
       classAcceptedDate,
+      faceDescriptor,
     } = req.body;
     const manageableRoles = getManageableSchoolUserRoles(req.user.role);
 
@@ -608,6 +612,10 @@ const updateUserForDirector = async (req, res) => {
 
     if (password) {
       user.password = password;
+    }
+
+    if (faceDescriptor !== undefined) {
+      user.faceDescriptor = Array.isArray(faceDescriptor) && faceDescriptor.length === 128 ? faceDescriptor : null;
     }
 
     if (
@@ -1660,6 +1668,10 @@ const updateTeacher = async (req, res) => {
     if (password) {
       user.password = password;
     }
+    
+    if (faceDescriptor !== undefined) {
+      user.faceDescriptor = Array.isArray(faceDescriptor) && faceDescriptor.length === 128 ? faceDescriptor : null;
+    }
 
     if (subjectId) {
       const subject = await Subject.findOne({ _id: subjectId, school: school._id });
@@ -1731,6 +1743,7 @@ const createStudent = async (req, res) => {
       region,
       district,
       address,
+      faceDescriptor,
     } = req.body;
     if (!name || !email || !password || !classId) {
       return res.status(400).json({ message: "name, email, password and classId are required" });
@@ -1759,6 +1772,7 @@ const createStudent = async (req, res) => {
       password,
       role: "student",
       school: school._id,
+      faceDescriptor: Array.isArray(faceDescriptor) && faceDescriptor.length === 128 ? faceDescriptor : null,
     });
 
     const student = await Student.create({

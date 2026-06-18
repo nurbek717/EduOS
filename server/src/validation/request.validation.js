@@ -149,6 +149,7 @@ const validators = {
       region: nullableStringField({ maxLength: 100 }),
       district: nullableStringField({ maxLength: 100 }),
       address: nullableStringField({ maxLength: 255 }),
+      faceDescriptor: { type: "descriptor", nullable: true },
     },
   }),
   directorUpdateStudent: validateRequest({
@@ -411,8 +412,9 @@ const validators = {
       educationLanguage: nonEmptyStringField({ maxLength: 50 }),
       admissionOrderDate: nonEmptyStringField({ maxLength: 30 }),
       classAcceptedDate: nonEmptyStringField({ maxLength: 30 }),
+      faceDescriptor: { type: "descriptor", nullable: true },
     },
-    rules: [requireAtLeastOne(["name", "email", "phone", "password", "classId", "subjectId", "studentId", "academicYear", "educationLanguage", "admissionOrderDate", "classAcceptedDate"])],
+    rules: [requireAtLeastOne(["name", "email", "phone", "password", "classId", "subjectId", "studentId", "academicYear", "educationLanguage", "admissionOrderDate", "classAcceptedDate", "faceDescriptor"])],
   }),
   teacherCreateTimetable: validateRequest({
     body: {
