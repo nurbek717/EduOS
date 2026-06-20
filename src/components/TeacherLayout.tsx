@@ -11,7 +11,7 @@ import {
   FileText,
   FileCheck,
   UserCircle,
-  ScanFace,
+  CalendarCheck,
   MessageCircle,
 } from "lucide-react";
 import {
@@ -34,7 +34,7 @@ import HeaderActions from "@/components/dashboard/HeaderActions";
 import { useSchoolSubscriptionHeader } from "@/hooks/useSchoolSubscriptionHeader";
 import { useTranslation } from "react-i18next";
 
-type TeacherSection = "overview" | "students" | "classes" | "grades" | "homework" | "exams" | "schedule" | "faceAttendance" | "profile" | "support";
+type TeacherSection = "overview" | "students" | "classes" | "grades" | "homework" | "exams" | "schedule" | "attendance" | "profile" | "support";
 
 interface TeacherLayoutProps {
   children: ReactNode;
@@ -69,7 +69,7 @@ const TeacherLayout = ({
     { label: t("teacher.nav.homework"), section: "homework", icon: FileText as typeof LayoutDashboard },
     { label: t("teacher.nav.exams"), section: "exams", icon: FileCheck as typeof LayoutDashboard },
     { label: t("teacher.nav.schedule"), section: "schedule", icon: Clock as typeof LayoutDashboard },
-    { label: t("teacher.nav.faceAttendance"), section: "faceAttendance", icon: ScanFace as typeof LayoutDashboard },
+    { label: t("teacher.nav.attendance"), section: "attendance", icon: CalendarCheck as typeof LayoutDashboard },
     { label: t("teacher.nav.support"), section: "support", icon: MessageCircle as typeof LayoutDashboard },
     { label: t("teacher.nav.profile"), section: "profile", icon: UserCircle as typeof LayoutDashboard },
   ];
@@ -82,7 +82,7 @@ const TeacherLayout = ({
     homework: t("teacher.nav.homework"),
     exams: t("teacher.nav.exams"),
     schedule: t("teacher.nav.schedule"),
-    faceAttendance: t("teacher.nav.faceAttendance"),
+    attendance: t("teacher.nav.attendance"),
     support: t("teacher.nav.support"),
     profile: t("teacher.nav.profile"),
   };

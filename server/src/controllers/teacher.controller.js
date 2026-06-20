@@ -9,6 +9,36 @@ const User = require("../models/User");
 const Timetable = require("../models/Timetable");
 const { getSchoolAttendanceStats } = require("../utils/schoolAttendanceStats");
 
+// Toshkent vaqti (UTC+5) offseti daqiqalarda
+const TZ_OFFSET = 5 * 60;
+
+// "YYYY-MM-DD" stringini Toshkent yarim tuni (UTC+5 00:00) ga mos UTC Date qilib yaratadi.
+// Masalan: "2026-06-19" → 2026-06-18T19:00:00.000Z
+const getTashkentDateFromStr = (str) => {
+  const [y, m, d] = str.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 0, 0, 0) - TZ_OFFSET * 60000);
+};
+
+// Bugungi Toshkent sanasidagi yarim tuni (00:00 UTC+5) ga mos UTC Date qilib qaytaradi.
+const getTodayTashkentMidnight = () => {
+  const now = new Date();
+  const tzDate = now.toLocaleDateString("en-CA", { timeZone: "Asia/Tashkent" });
+  return getTashkentDateFromStr(tzDate);
+};
+
+// Hozirgi Toshkent vaqti bo'yicha (UTC+5) auto-status
+const getAutoStatus = () => {
+  const now = new Date();
+  const tzTime = now.toLocaleTimeString("en-GB", { timeZone: "Asia/Tashkent" });
+  const [hours, minutes] = tzTime.split(":").map(Number);
+  const totalMinutes = hours * 60 + minutes;
+  const lessonStart = 9 * 60;
+  const lateEnd = 9 * 60 + 30;
+  if (totalMinutes <= lessonStart) return "present";
+  else if (totalMinutes <= lateEnd) return "late";
+  else return "absent";
+};
+
 const buildAttachmentUrl = (req, filename) =>
   `${req.protocol}://${req.get("host")}/uploads/homework/${filename}`;
 
@@ -353,8 +383,7 @@ const setAttendanceByFace = async (req, res) => {
       return res.status(404).json({ message: "Yuz aniqlanmadi yoki tizimda topilmadi", matched: false });
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getTodayTashkentMidnight();
 
     // Duplicate tekshiruv: bugun allaqachon davomatlangan bo'lsa qayta qo'shmaymiz
     const existing = await Attendance.findOne({
@@ -408,27 +437,61 @@ const setAttendanceForClass = async (req, res) => {
     const studentsInClass = await Student.find({ class: classId, school: teacher.school._id }).select("_id");
     const allowedStudentIds = new Set(studentsInClass.map((s) => s._id.toString()));
 
-    const targetDate = new Date(date);
+    const targetDate = getTashkentDateFromStr(date);
+    const todayStart = getTodayTashkentMidnight();
 
-    const operations = entries
-      .filter((e) => allowedStudentIds.has(e.studentId))
-      .map((e) =>
-        Attendance.findOneAndUpdate(
-          { student: e.studentId, date: targetDate, school: teacher.school._id },
+    const isToday = targetDate.getTime() === todayStart.getTime();
+    const autoStatus = isToday ? getAutoStatus() : null;
+
+    // Check for existing today's attendance records to detect duplicates
+    const existingRecords = isToday
+      ? await Attendance.find({
+          student: { $in: studentsInClass.map((s) => s._id) },
+          date: targetDate,
+          school: teacher.school._id,
+        }).lean()
+      : [];
+
+    const existingStudentIds = new Set(existingRecords.map((r) => r.student.toString()));
+
+    const skippedDuplicates = [];
+    const upsertedEntries = [];
+
+    for (const entry of entries) {
+      if (!allowedStudentIds.has(entry.studentId)) continue;
+
+      // If auto-status is active, override the teacher's choice
+      const finalStatus = autoStatus || entry.status;
+
+      if (isToday && existingStudentIds.has(entry.studentId)) {
+        // Update existing record (in case status changed)
+        await Attendance.findOneAndUpdate(
+          { student: entry.studentId, date: targetDate, school: teacher.school._id },
+          { $set: { status: finalStatus } },
+        );
+        skippedDuplicates.push(entry.studentId);
+      } else {
+        const result = await Attendance.findOneAndUpdate(
+          { student: entry.studentId, date: targetDate, school: teacher.school._id },
           {
             $set: {
-              status: e.status,
+              status: finalStatus,
               school: teacher.school._id,
-              student: e.studentId,
+              student: entry.studentId,
               date: targetDate,
             },
           },
           { upsert: true, returnDocument: "after" },
-        ),
-      );
+        );
+        upsertedEntries.push(result);
+      }
+    }
 
-    const results = await Promise.all(operations);
-    return res.status(200).json(results);
+    return res.status(200).json({
+      saved: upsertedEntries.length,
+      updated: skippedDuplicates.length,
+      autoStatusUsed: isToday ? autoStatus : null,
+    });
   } catch (err) {
     return res.status(400).json({ message: err.message || "Failed to set attendance" });
   }
@@ -898,6 +961,105 @@ const listAttendanceStatsForTeacher = async (req, res) => {
   }
 };
 
+const listAttendanceTodayForTeacher = async (req, res) => {
+  try {
+    const teacher = await getTeacherForUser(req.user);
+    const { classId } = req.query;
+
+    const today = getTodayTashkentMidnight();
+
+    const query = {
+      school: teacher.school._id,
+      date: today,
+    };
+
+    if (classId) {
+      const studentsInClass = await Student.find({ class: classId, school: teacher.school._id }).select("_id");
+      query.student = { $in: studentsInClass.map((s) => s._id) };
+    }
+
+    const records = await Attendance.find(query)
+      .populate({
+        path: "student",
+        populate: { path: "user class", select: "name className" },
+      })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const result = records.map((r) => ({
+      id: r._id,
+      studentId: r.student?._id,
+      studentName: r.student?.user?.name || "Noma'lum",
+      className: r.student?.class?.name || "",
+      status: r.status,
+      markedAt: r.createdAt || r.date,
+    }));
+
+    return res.json(result);
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Failed to fetch today's attendance" });
+  }
+};
+
+const listAttendancePercentForTeacher = async (req, res) => {
+  try {
+    const teacher = await getTeacherForUser(req.user);
+    const { classId } = req.query;
+
+    const match = { school: teacher.school._id };
+    if (classId) {
+      match.class = classId;
+    }
+
+    const students = await Student.find(match)
+      .populate("user", "name email photoUrl")
+      .populate("class", "name")
+      .lean();
+
+    const studentIds = students.map((s) => s._id);
+
+    const stats = await Attendance.aggregate([
+      { $match: { student: { $in: studentIds }, school: teacher.school._id } },
+      {
+        $group: {
+          _id: "$student",
+          total: { $sum: 1 },
+          presentLate: {
+            $sum: { $cond: [{ $in: ["$status", ["present", "late"]] }, 1, 0] },
+          },
+          present: { $sum: { $cond: [{ $eq: ["$status", "present"] }, 1, 0] } },
+          late: { $sum: { $cond: [{ $eq: ["$status", "late"] }, 1, 0] } },
+          absent: { $sum: { $cond: [{ $eq: ["$status", "absent"] }, 1, 0] } },
+        },
+      },
+    ]);
+
+    const statsMap = new Map(stats.map((s) => [s._id.toString(), s]));
+
+    const result = students.map((s) => {
+      const st = statsMap.get(s._id.toString());
+      const total = st?.total || 0;
+      const attended = st?.presentLate || 0;
+      return {
+        id: s._id,
+        userId: s.user?._id,
+        name: s.user?.name,
+        email: s.user?.email,
+        photoUrl: s.user?.photoUrl || null,
+        classId: s.class?._id,
+        className: s.class?.name,
+        attendancePercent: total > 0 ? Math.round((attended / total) * 100) : 0,
+        attendanceTotal: total,
+        attendanceAttended: attended,
+      };
+    });
+
+    return res.json(result);
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Failed to fetch attendance percentages" });
+  }
+};
+
 module.exports = {
   listClassesForTeacher,
   listStudents,
@@ -919,5 +1081,7 @@ module.exports = {
   createTimetableForTeacher,
   deleteTimetableForTeacher,
   listAttendanceStatsForTeacher,
+  listAttendanceTodayForTeacher,
+  listAttendancePercentForTeacher,
 };
 

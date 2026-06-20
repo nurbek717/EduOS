@@ -177,7 +177,15 @@
       "save": "Save attendance",
       "saved": "Attendance saved.",
       "pickClass": "Select a class first.",
-      "noStudents": "No students in this class yet."
+      "noStudents": "No students in this class yet.",
+      "alreadyMarked": "Already marked today",
+      "autoPresent": "On time",
+      "autoLate": "Late",
+      "autoAbsent": "Absent",
+      "todaySummary": "Today's Attendance Summary",
+      "todaySummaryDesc": "Only today's attendance records",
+      "markedTime": "Marked at",
+      "status": "Status"
     },
     "edit": {
       "title": "Edit student",

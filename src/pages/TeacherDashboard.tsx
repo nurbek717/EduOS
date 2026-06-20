@@ -13,11 +13,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ChatSkeleton, ListSkeleton, StatsCardsSkeleton } from "@/components/ui/skeletons";
 import LiveDateTimeBadge from "@/components/dashboard/LiveDateTimeBadge";
 import TeacherAttendanceOverviewChart from "@/components/teacher/TeacherAttendanceOverviewChart";
+import TeacherAttendanceView from "@/components/teacher/TeacherAttendanceView";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-type TeacherSection = "overview" | "students" | "classes" | "grades" | "homework" | "exams" | "schedule" | "faceAttendance" | "profile" | "support";
+type TeacherSection = "overview" | "students" | "classes" | "grades" | "homework" | "exams" | "schedule" | "attendance" | "profile" | "support";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 const RENDER_LEGACY_PROFILE = Boolean(import.meta.env.VITE_RENDER_LEGACY_PROFILE);
@@ -202,6 +203,32 @@ const loadFaceApiModule = async (): Promise<FaceApiModule> => {
 
 const normalizeOptionKey = (value?: string | null) => (value || "").toString().trim().toUpperCase();
 
+const CLASS_START_HOUR = 9;
+const CLASS_START_MINUTE = 0;
+const LATE_THRESHOLD_MINUTES = 30;
+
+const getAutoStatus = (): "present" | "absent" | "late" => {
+  const now = new Date();
+  const tzTime = now.toLocaleTimeString("en-GB", { timeZone: "Asia/Tashkent" });
+  const [hours, minutes] = tzTime.split(":").map(Number);
+  const totalMinutes = hours * 60 + minutes;
+  const lessonStartMinutes = CLASS_START_HOUR * 60 + CLASS_START_MINUTE;
+  const lateEndMinutes = lessonStartMinutes + LATE_THRESHOLD_MINUTES;
+
+  if (totalMinutes <= lessonStartMinutes) return "present";
+  if (totalMinutes <= lateEndMinutes) return "late";
+  return "absent";
+};
+
+type TodayAttendanceRow = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  className: string;
+  status: "present" | "absent" | "late";
+  markedAt: string;
+};
+
 const TeacherDashboard = () => {
   const { t } = useTranslation("dashboard");
   const { t: td, i18n } = useTranslation("teacher-dashboard");
@@ -217,7 +244,10 @@ const TeacherDashboard = () => {
     new Date().toLocaleDateString("en-CA"),
   );
   const [attendanceRowStatus, setAttendanceRowStatus] = useState<Record<string, "present" | "absent" | "late">>({});
-  const [savingClassAttendance, setSavingClassAttendance] = useState(false);
+  const [todayAttendanceRows, setTodayAttendanceRows] = useState<TodayAttendanceRow[]>([]);
+  const [todayAllAttendanceRows, setTodayAllAttendanceRows] = useState<TodayAttendanceRow[]>([]);
+  const [attendancePercentMap, setAttendancePercentMap] = useState<Record<string, number>>({});
+  const [alreadyMarkedToday, setAlreadyMarkedToday] = useState<Set<string>>(new Set());
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [newStudentName, setNewStudentName] = useState("");
@@ -604,14 +634,6 @@ const TeacherDashboard = () => {
     }
   };
 
-  useEffect(() => {
-    const next: Record<string, "present" | "absent" | "late"> = {};
-    for (const s of students) {
-      next[s.id] = "present";
-    }
-    setAttendanceRowStatus(next);
-  }, [students]);
-
   const fetchGrades = async (classId?: string) => {
     if (!token) return;
     setLoadingGrades(true);
@@ -699,30 +721,6 @@ const TeacherDashboard = () => {
     }
   };
 
-  const fetchAttendanceStats = async (range: "1d" | "1w" | "1m") => {
-    if (!token) return;
-    setLoadingAttendanceStats(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/teacher/attendance/stats?range=${range}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || td("errors.fetchAttendanceStats"));
-      }
-      setAttendanceStatsSeries(Array.isArray(data.series) ? data.series : []);
-      setAttendanceStatsBucket(data.bucket === "hour" ? "hour" : "day");
-    } catch (err: unknown) {
-      toast({
-        title: td("toasts.error"),
-        description: err instanceof Error ? err.message : td("errors.fetchAttendanceStats"),
-        variant: "destructive",
-      });
-      setAttendanceStatsSeries([]);
-    } finally {
-      setLoadingAttendanceStats(false);
-    }
-  };
 
   const fetchHomework = async (classId?: string) => {
     if (!token) return;
@@ -1242,12 +1240,6 @@ const TeacherDashboard = () => {
 
   useEffect(() => {
     if (!isTeacher) return;
-    if (section !== "faceAttendance") {
-      faceStreamRef.current?.getTracks().forEach((t) => t.stop());
-      faceStreamRef.current = null;
-      setFaceCameraOn(false);
-    }
-
     const loadSectionData = async () => {
       if (isSubscriptionExpired && SUBSCRIPTION_BLOCKED_SECTIONS.has(section)) {
         return;
@@ -1272,7 +1264,7 @@ const TeacherDashboard = () => {
         section === "homework" ||
         section === "exams" ||
         section === "schedule" ||
-        section === "faceAttendance" ||
+        section === "attendance" ||
         section === "support"
       ) {
         if (!loadedTeacherDataRef.current.classes) {
@@ -1319,7 +1311,6 @@ const TeacherDashboard = () => {
         await fetchTeacherChatThreads();
       }
     };
-
     void loadSectionData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, isTeacher, isSubscriptionExpired]);
@@ -1336,11 +1327,6 @@ const TeacherDashboard = () => {
     return () => window.clearInterval(intervalId);
   }, [section, chatSelectedThreadId, token, fetchTeacherThreadMessages, fetchTeacherChatThreads]);
 
-  useEffect(() => {
-    if (!isTeacher || !token || section !== "overview") return;
-    void fetchAttendanceStats(attendanceStatsRange);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTeacher, token, section, attendanceStatsRange]);
 
   useEffect(() => {
     if (!isTeacher || !token) return;
@@ -1543,6 +1529,12 @@ const TeacherDashboard = () => {
     ],
     [classes, students, grades, homework, exams, timetable, td],
   );
+
+  useEffect(() => {
+    if (!isTeacher || section !== "students") return;
+    const targetClassId = selectedClassId || undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClassId]);
 
   useEffect(() => {
     if (!isTeacher || section !== "grades") return;
@@ -1855,61 +1847,6 @@ const TeacherDashboard = () => {
     }
   };
 
-  const handleSaveClassAttendance = async () => {
-    if (!token || !selectedClassId) {
-      toast({
-        title: td("toasts.insufficient"),
-        description: td("students.attendance.pickClass"),
-        variant: "destructive",
-      });
-      return;
-    }
-    if (students.length === 0) {
-      toast({
-        title: td("toasts.insufficient"),
-        description: td("students.attendance.noStudents"),
-        variant: "destructive",
-      });
-      return;
-    }
-    setSavingClassAttendance(true);
-    try {
-      const entries = students.map((s) => ({
-        studentId: s.id,
-        status: attendanceRowStatus[s.id] ?? "present",
-      }));
-      const res = await fetch(`${API_BASE_URL}/api/teacher/attendance`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          classId: selectedClassId,
-          date: attendanceDayDate,
-          entries,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || td("errors.saveAttendance"));
-      }
-      toast({
-        title: td("toasts.success"),
-        description: td("students.attendance.saved"),
-      });
-      void fetchAttendanceStats(attendanceStatsRange);
-    } catch (err: unknown) {
-      toast({
-        title: td("toasts.error"),
-        description: err instanceof Error ? err.message : td("errors.saveAttendance"),
-        variant: "destructive",
-      });
-    } finally {
-      setSavingClassAttendance(false);
-    }
-  };
-
   const openEditStudent = (student: StudentRow) => {
     setEditingStudent(student);
     setEditName(student.name || "");
@@ -2029,57 +1966,7 @@ const TeacherDashboard = () => {
               </div>
             )}
 
-            <TeacherAttendanceOverviewChart
-              data={attendanceStatsSeries}
-              bucket={attendanceStatsBucket}
-              range={attendanceStatsRange}
-              onRangeChange={setAttendanceStatsRange}
-              loading={loadingAttendanceStats}
-              locale={uiLocale}
-            />
-
-            {loadingClasses || loadingStudents || loadingTimetable || loadingGrades ? (
-              <>
-                <div className="grid gap-4 lg:grid-cols-[2fr,3fr]">
-                  <Card>
-                    <CardHeader className="space-y-2">
-                      <Skeleton className="h-5 w-40" />
-                      <Skeleton className="h-4 w-56" />
-                    </CardHeader>
-                    <CardContent>
-                      <ListSkeleton rows={3} />
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="space-y-2">
-                      <Skeleton className="h-5 w-40" />
-                      <Skeleton className="h-4 w-56" />
-                    </CardHeader>
-                    <CardContent>
-                      <ListSkeleton rows={3} />
-                    </CardContent>
-                  </Card>
-                </div>
-                <Card>
-                  <CardHeader className="space-y-2">
-                    <Skeleton className="h-5 w-40" />
-                    <Skeleton className="h-4 w-56" />
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <div key={index} className="grid grid-cols-5 gap-4 rounded-md border p-4">
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="mx-auto h-7 w-7 rounded-full" />
-                        <Skeleton className="ml-auto h-4 w-20" />
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              </>
-            ) : (
-              <>
+            <>
                 <div className="grid gap-4 lg:grid-cols-[2fr,3fr]">
                   <Card>
                     <CardHeader>
@@ -2222,7 +2109,6 @@ const TeacherDashboard = () => {
                   </CardContent>
                 </Card>
               </>
-            )}
           </>
         )}
 
@@ -2367,74 +2253,6 @@ const TeacherDashboard = () => {
                 </div>
               </form>
 
-              {selectedClassId ? (
-                <div className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-                    <div>
-                      <h4 className="text-sm font-semibold text-foreground">{td("students.attendance.title")}</h4>
-                      <p className="text-xs text-muted-foreground max-w-xl">{td("students.attendance.hint")}</p>
-                    </div>
-                    <div className="flex flex-wrap items-end gap-2">
-                      <div className="space-y-1">
-                        <label className="block text-xs font-medium text-muted-foreground" htmlFor="attendance-date">
-                          {td("students.attendance.dateLabel")}
-                        </label>
-                        <input
-                          id="attendance-date"
-                          type="date"
-                          value={attendanceDayDate}
-                          onChange={(e) => setAttendanceDayDate(e.target.value)}
-                          className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={savingClassAttendance || loadingStudents || students.length === 0}
-                        onClick={() => void handleSaveClassAttendance()}
-                      >
-                        {savingClassAttendance ? td("common.saving") : td("students.attendance.save")}
-                      </Button>
-                    </div>
-                  </div>
-                  {!loadingStudents && students.length > 0 && (
-                    <div className="space-y-2 max-h-[min(420px,55vh)] overflow-y-auto pr-1">
-                      {students.map((s) => (
-                        <div
-                          key={s.id}
-                          className="flex flex-col gap-2 rounded-md border bg-background px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-                        >
-                          <span className="text-sm font-medium text-foreground">{s.name}</span>
-                          <ToggleGroup
-                            type="single"
-                            variant="outline"
-                            size="sm"
-                            className="justify-start sm:justify-end"
-                            value={attendanceRowStatus[s.id] ?? "present"}
-                            onValueChange={(v) => {
-                              if (!v) return;
-                              setAttendanceRowStatus((prev) => ({
-                                ...prev,
-                                [s.id]: v as "present" | "absent" | "late",
-                              }));
-                            }}
-                          >
-                            <ToggleGroupItem value="present" className="text-xs px-2">
-                              {td("students.attendance.present")}
-                            </ToggleGroupItem>
-                            <ToggleGroupItem value="absent" className="text-xs px-2">
-                              {td("students.attendance.absent")}
-                            </ToggleGroupItem>
-                            <ToggleGroupItem value="late" className="text-xs px-2">
-                              {td("students.attendance.late")}
-                            </ToggleGroupItem>
-                          </ToggleGroup>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : null}
 
               <div className="border rounded-md overflow-hidden">
                 <table className="w-full text-sm">
@@ -3318,332 +3136,13 @@ const TeacherDashboard = () => {
           </div>
         )}
 
-        {section === "faceAttendance" && (
-          <div className="space-y-5">
-            {/* ── Header ── */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 p-6 text-white shadow-xl shadow-primary/20">
-              <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/5" />
-              <div className="absolute -bottom-4 -left-4 h-24 w-24 rounded-full bg-white/5" />
-              <div className="relative flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-sm shadow-inner">
-                  <Camera className="h-7 w-7" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold tracking-tight">{td("face.title")}</h2>
-                  <p className="mt-0.5 text-sm text-white/75">{td("face.desc")}</p>
-                </div>
-                <div className="ml-auto">
-                  <div className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
-                    <span className={`h-2 w-2 rounded-full ${faceCameraOn ? "bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.8)]" : "bg-white/40"}`} />
-                    {faceCameraOn ? "Live" : "Standby"}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ── Main card ── */}
-            <div className="grid gap-5 lg:grid-cols-5">
-              {/* Camera section (3/5) */}
-              <div className="lg:col-span-3">
-                <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-                  {/* Camera viewport */}
-                  <div className="relative aspect-video w-full bg-slate-900">
-                    <video
-                      ref={faceVideoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className={`h-full w-full object-cover transition-opacity duration-500 ${faceCameraOn ? "opacity-100" : "opacity-0"}`}
-                    />
-
-                    {/* Overlay scanning frame when camera is on */}
-                    {faceCameraOn && !faceResult && (
-                      <div className="pointer-events-none absolute inset-0">
-                        {/* Corner accents */}
-                        <div className="absolute left-6 top-6 h-10 w-10 border-l-2 border-t-2 border-primary rounded-tl-lg" />
-                        <div className="absolute right-6 top-6 h-10 w-10 border-r-2 border-t-2 border-primary rounded-tr-lg" />
-                        <div className="absolute bottom-6 left-6 h-10 w-10 border-b-2 border-l-2 border-primary rounded-bl-lg" />
-                        <div className="absolute bottom-6 right-6 h-10 w-10 border-b-2 border-r-2 border-primary rounded-br-lg" />
-                        {/* Face oval guide */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="h-52 w-40 rounded-full border-2 border-dashed border-primary/40 animate-[spin_12s_linear_infinite]" />
-                        </div>
-                        {/* Scanning line */}
-                        <div className="absolute left-8 right-8 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_12px_rgba(99,102,241,0.7)] animate-[scan_2.5s_ease-in-out_infinite]"
-                          style={{ top: "50%", animation: "scan 2.5s ease-in-out infinite" }} />
-                      </div>
-                    )}
-
-                    {/* Processing overlay */}
-                    {faceLoading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-[2px]">
-                        <div className="flex flex-col items-center gap-3 rounded-2xl border border-primary/20 bg-background/90 px-8 py-6 shadow-2xl">
-                          <div className="relative">
-                            <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
-                            <Camera className="absolute inset-0 m-auto h-5 w-5 text-primary" />
-                          </div>
-                          <p className="text-sm font-semibold animate-pulse">{td("face.processing")}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Result overlay */}
-                    {faceResult && (
-                      <div className={`absolute inset-0 flex items-center justify-center backdrop-blur-[2px] ${
-                        faceResult.type === "success" ? "bg-green-900/60" :
-                        faceResult.type === "warning" ? "bg-amber-900/60" :
-                        "bg-red-900/60"
-                      }`}>
-                        <div className={`flex flex-col items-center gap-3 rounded-2xl px-8 py-6 shadow-2xl border text-white ${
-                          faceResult.type === "success" ? "bg-green-600/90 border-green-400" :
-                          faceResult.type === "warning" ? "bg-amber-500/90 border-amber-300" :
-                          "bg-red-600/90 border-red-400"
-                        }`}>
-                          <div className={`flex h-14 w-14 items-center justify-center rounded-full ${
-                            faceResult.type === "success" ? "bg-green-400/30" :
-                            faceResult.type === "warning" ? "bg-amber-300/30" :
-                            "bg-red-400/30"
-                          }`}>
-                            {faceResult.type === "success" ? (
-                              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-                            ) : faceResult.type === "warning" ? (
-                              /* Allaqachon davomatlangan — clock icon */
-                              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            ) : (
-                              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
-                            )}
-                          </div>
-                          <p className="text-center text-sm font-bold leading-snug">
-                            {faceResult.type === "success" ? "✓ Davomatga qo'yildi" :
-                             faceResult.type === "warning" ? "⚠ Allaqachon belgilangan" :
-                             "✗ Xatolik"}
-                          </p>
-                          <p className="text-center text-xs opacity-90 leading-snug">{faceResult.message}</p>
-                          {(faceResult.type === "error" || faceResult.type === "warning") && (
-                            <button
-                              onClick={() => setFaceResult(null)}
-                              className="mt-1 rounded-lg bg-white/20 px-4 py-1.5 text-xs font-medium hover:bg-white/30 transition-colors"
-                            >
-                              {faceResult.type === "warning" ? "Yopish" : "Qayta urinish"}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Placeholder when camera off */}
-                    {!faceCameraOn && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-900">
-                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/5 border border-white/10">
-                          <Camera className="h-10 w-10 text-white/30" />
-                        </div>
-                        <p className="text-sm text-white/40">Kamera o'chirilgan</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Controls bar */}
-                  <div className="flex items-center justify-between border-t bg-muted/30 px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className={`h-2 w-2 rounded-full transition-colors ${faceCameraOn ? "bg-green-500 animate-pulse" : "bg-slate-400"}`} />
-                      <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                        {faceCameraOn ? "Live Camera" : "Standby"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {faceCameraOn ? (
-                        <>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-9"
-                            onClick={() => {
-                              faceStreamRef.current?.getTracks().forEach((t) => t.stop());
-                              faceStreamRef.current = null;
-                              setFaceCameraOn(false);
-                              setFaceResult(null);
-                            }}
-                          >
-                            {td("face.cameraOff")}
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            disabled={faceLoading || !faceClassId || !!faceResult}
-                            className="h-9 bg-primary px-5 shadow-lg shadow-primary/20 hover:bg-primary/90 active:scale-95 transition-all"
-                            onClick={async () => {
-                              if (!token || !faceVideoRef.current || !faceClassId) return;
-                              setFaceResult(null);
-                              setFaceLoading(true);
-                              try {
-                                const { loadFaceApiModels, getDescriptorFromVideo } = await loadFaceApiModule();
-                                const ok = await loadFaceApiModels();
-                                if (!ok) {
-                                  setFaceResult({ type: "error", message: td("face.modelsLoadFailed") });
-                                  return;
-                                }
-                                const descriptor = await getDescriptorFromVideo(faceVideoRef.current);
-                                if (!descriptor || descriptor.length !== 128) {
-                                  setFaceResult({ type: "error", message: td("face.notDetected") });
-                                  return;
-                                }
-                                const res = await fetch(`${API_BASE_URL}/api/teacher/attendance/face`, {
-                                  method: "POST",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                    Authorization: `Bearer ${token}`,
-                                  },
-                                  body: JSON.stringify({ descriptor, classId: faceClassId }),
-                                });
-                                const data = await res.json();
-                                if (res.status === 409 && data.alreadyMarked) {
-                                  // O'quvchi bugun allaqachon davomatlangan
-                                  setFaceResult({ type: "warning", message: data.message || `${data.studentName || "O'quvchi"} bugun allaqachon davomatga qo'yilgan` });
-                                  setTimeout(() => setFaceResult(null), 5000);
-                                  return;
-                                }
-                                if (!res.ok) {
-                                  setFaceResult({ type: "error", message: data.message || td("face.markFailed") });
-                                  return;
-                                }
-                                setFaceResult({ type: "success", message: data.message || td("face.marked", { student: data.studentName }) });
-                                setTimeout(() => setFaceResult(null), 4000);
-                              } catch (e) {
-                                setFaceResult({ type: "error", message: e instanceof Error ? e.message : td("errors.generic") });
-                              } finally {
-                                setFaceLoading(false);
-                              }
-                            }}
-                          >
-                            <UserCircle className="mr-2 h-4 w-4" />
-                            {td("face.markAttendance")}
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          type="button"
-                          size="sm"
-                          className="h-9 bg-primary px-5 shadow-lg shadow-primary/20 hover:bg-primary/90 active:scale-95 transition-all"
-                          onClick={async () => {
-                            try {
-                              const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } } });
-                              faceStreamRef.current = stream;
-                              if (faceVideoRef.current) faceVideoRef.current.srcObject = stream;
-                              setFaceCameraOn(true);
-                              setFaceResult(null);
-                            } catch (e) {
-                              setFaceResult({ type: "error", message: td("face.cameraOpenFailed") });
-                            }
-                          }}
-                        >
-                          <Camera className="mr-2 h-4 w-4" />
-                          {td("face.cameraOn")}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right panel (2/5) */}
-              <div className="flex flex-col gap-4 lg:col-span-2">
-                {/* Class selector card */}
-                <div className="rounded-2xl border bg-card p-5 shadow-sm space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                      <Users className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="text-sm font-semibold">{td("face.classRequired")}</span>
-                  </div>
-                  <div className="relative">
-                    <select
-                      value={faceClassId}
-                      onChange={(e) => setFaceClassId(e.target.value)}
-                      className="w-full appearance-none rounded-xl border border-input bg-background/80 px-4 py-2.5 pr-10 text-sm font-medium shadow-sm ring-1 ring-transparent transition focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    >
-                      <option value="">{td("face.selectClass")}</option>
-                      {classes.map((c) => (
-                        <option key={c._id} value={c._id}>{c.name}</option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-                      <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                    </div>
-                  </div>
-                  {faceClassId && (
-                    <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2">
-                      <div className="h-2 w-2 rounded-full bg-green-500" />
-                      <span className="text-xs font-medium text-green-700">
-                        {classes.find(c => c._id === faceClassId)?.name} — tanlandi
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Instructions card */}
-                <div className="rounded-2xl border bg-card p-5 shadow-sm space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
-                      <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <span className="text-sm font-semibold">Ko'rsatmalar</span>
-                  </div>
-                  <ul className="space-y-2">
-                    {[
-                      "Sinfni tanlang",
-                      "Kamerani yoqing",
-                      "O'quvchi kameraga qarasin",
-                      "\"Davomatni belgilash\" tugmasini bosing",
-                    ].map((step, i) => (
-                      <li key={i} className="flex items-start gap-2.5 text-xs text-muted-foreground">
-                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">{i + 1}</span>
-                        {step}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Status card */}
-                <div className="rounded-2xl border bg-card p-5 shadow-sm">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50">
-                      <svg className="h-4 w-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                    </div>
-                    <span className="text-sm font-semibold">Tizim holati</span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Kamera</span>
-                      <Badge variant="outline" className={faceCameraOn ? "bg-green-50 text-green-700 border-green-200" : "bg-slate-50 text-slate-500"}>
-                        {faceCameraOn ? "Faol" : "O'chiq"}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Sinf</span>
-                      <Badge variant="outline" className={faceClassId ? "bg-green-50 text-green-700 border-green-200" : "bg-amber-50 text-amber-600 border-amber-200"}>
-                        {faceClassId ? "Tanlangan" : "Tanlanmagan"}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Tayyor holat</span>
-                      <Badge variant="outline" className={faceCameraOn && faceClassId ? "bg-green-50 text-green-700 border-green-200" : "bg-slate-50 text-slate-500"}>
-                        {faceCameraOn && faceClassId ? "✓ Tayyor" : "Kutilmoqda"}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* scan animation style */}
-            <style>{`
-              @keyframes scan {
-                0%, 100% { top: 20%; opacity: 0.8; }
-                50% { top: 80%; opacity: 0.4; }
-              }
-            `}</style>
-          </div>
+        {section === "attendance" && (
+          <TeacherAttendanceView
+            token={token}
+            td={td}
+            uiLocale={uiLocale}
+            toast={toast}
+          />
         )}
 
         {section === "profile" && (

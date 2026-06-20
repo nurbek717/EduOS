@@ -391,6 +391,11 @@ const validators = {
       range: { type: "enum", values: ["1d", "1w", "1m"], nullable: true },
     },
   }),
+  teacherAttendanceQuery: validateRequest({
+    query: {
+      classId: objectIdField(),
+    },
+  }),
   directorUsersQuery: validateRequest({
     query: {
       role: { type: "enum", values: ["teacher", "student", "parent", "school_admin"] },

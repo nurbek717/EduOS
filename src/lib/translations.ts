@@ -72,7 +72,7 @@ export type TranslationKey =
 	| "teacher.nav.homework"
 	| "teacher.nav.exams"
 	| "teacher.nav.schedule"
-	| "teacher.nav.faceAttendance"
+	| "teacher.nav.attendance"
 	| "teacher.nav.support"
 	| "teacher.nav.profile"
 	| "student.badge"
@@ -191,7 +191,7 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 		"teacher.nav.homework": "Uy vazifasi",
 		"teacher.nav.exams": "Imtihon",
 		"teacher.nav.schedule": "Dars jadvali",
-		"teacher.nav.faceAttendance": "Face ID davomat",
+		"teacher.nav.attendance": "Davomat",
 		"teacher.nav.support": "Murojaatlar",
 		"teacher.nav.profile": "Profil (Face ID)",
 		"student.badge": "O'QUVCHI",
@@ -307,7 +307,7 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 		"teacher.nav.homework": "Домашнее задание",
 		"teacher.nav.exams": "Экзамен",
 		"teacher.nav.schedule": "Расписание",
-		"teacher.nav.faceAttendance": "Посещаемость Face ID",
+		"teacher.nav.attendance": "Посещаемость",
 		"teacher.nav.support": "Обращения",
 		"teacher.nav.profile": "Профиль (Face ID)",
 		"student.badge": "УЧЕНИК",
@@ -423,7 +423,7 @@ export const translations: Record<AppLanguage, TranslationMap> = {
 		"teacher.nav.homework": "Homework",
 		"teacher.nav.exams": "Exam",
 		"teacher.nav.schedule": "Schedule",
-		"teacher.nav.faceAttendance": "Face ID Attendance",
+		"teacher.nav.attendance": "Attendance",
 		"teacher.nav.support": "Support",
 		"teacher.nav.profile": "Profile (Face ID)",
 		"student.badge": "STUDENT",

@@ -177,7 +177,15 @@
       "save": "Davomatni saqlash",
       "saved": "Davomat saqlandi.",
       "pickClass": "Avval sinfni tanlang.",
-      "noStudents": "Bu sinfda o'quvchilar ro'yxati bo'sh."
+      "noStudents": "Bu sinfda o'quvchilar ro'yxati bo'sh.",
+      "alreadyMarked": "Bugun davomatdan o'tgan",
+      "autoPresent": "O'z vaqtida",
+      "autoLate": "Kechikdi",
+      "autoAbsent": "Kelmadi",
+      "todaySummary": "Bugungi Davomat Xulosasi",
+      "todaySummaryDesc": "Faqat shu kungi davomat ro'yxati",
+      "markedTime": "Davomatdan o'tgan vaqti",
+      "status": "Holati"
     },
     "edit": {
       "title": "O'quvchini tahrirlash",
