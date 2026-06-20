@@ -71,7 +71,6 @@ const classNames = ["5A", "5B", "6A", "6B", "7A", "8A", "9A", "10A", "11A"];
 async function seedDemo() {
   const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/school_saas";
   await mongoose.connect(uri);
-  // eslint-disable-next-line no-console
   console.log("MongoDB ulandi. Demo ma'lumotlar qo'shilmoqda...");
 
   try {
@@ -83,7 +82,6 @@ async function seedDemo() {
     for (const s of demoSchools) {
       const existingSchool = await School.findOne({ name: s.name });
       if (existingSchool) {
-        // eslint-disable-next-line no-console
         console.log(`Maktab mavjud: ${s.name}`);
         createdSchools.push(existingSchool);
         continue;
@@ -111,7 +109,6 @@ async function seedDemo() {
       director.school = school._id;
       await director.save();
       createdSchools.push(school);
-      // eslint-disable-next-line no-console
       console.log(`Maktab yaratildi: ${s.name}`);
     }
 
@@ -150,7 +147,6 @@ async function seedDemo() {
           subject: subjectsForSchool[i]._id,
           school: school1._id,
         });
-        // eslint-disable-next-line no-console
         console.log(`O'qituvchi yaratildi: ${t.name}`);
       }
     }
@@ -174,7 +170,6 @@ async function seedDemo() {
             class: class5A._id,
             school: school1._id,
           });
-          // eslint-disable-next-line no-console
           console.log(`O'quvchi yaratildi: ${st.name}`);
         }
       }
@@ -199,7 +194,6 @@ async function seedDemo() {
           student: st._id,
           school: school1._id,
         });
-        // eslint-disable-next-line no-console
         console.log(`Ota-ona yaratildi: ${p.name}`);
       }
     }

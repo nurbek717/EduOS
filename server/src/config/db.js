@@ -6,12 +6,9 @@ const connectDb = async () => {
     await mongoose.connect(uri, {
       autoIndex: true,
     });
-    // eslint-disable-next-line no-console
     console.log("MongoDB connected");
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error("MongoDB connection error:", err?.message || err);
-    // eslint-disable-next-line no-console
     console.error(
       [
         "Tekshirish ro‘yxati:",

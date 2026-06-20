@@ -560,7 +560,7 @@ const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({ token, td
                     variant={faceCameraOn ? "destructive" : "default"}
                     size="sm"
                     className="w-full gap-1.5"
-                    onClick={() => { faceCameraOn ? stopCamera() : void startCamera(); }}
+                    onClick={() => faceCameraOn ? stopCamera() : startCamera()}
                   >
                     <Camera className="h-4 w-4" />
                     {faceCameraOn ? (td("face.cameraOff") || "Kamerani o'chirish") : (td("face.cameraOn") || "Kamerani yoqish")}
