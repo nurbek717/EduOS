@@ -5514,7 +5514,7 @@ const DirectorDashboard = () => {
                             </DialogTrigger>
                           )}
 
-                        <DialogContent>
+                        {studentsView !== "base" && <DialogContent>
                           <DialogHeader>
                             <DialogTitle>{t("dialogs.createStudentTitle")}</DialogTitle>
                             <CardDescription>{t("dialogs.createStudentDescription")}</CardDescription>
@@ -5605,7 +5605,7 @@ const DirectorDashboard = () => {
                               <Button type="submit">{t("students.create")}</Button>
                             </DialogFooter>
                           </form>
-                        </DialogContent>
+                        </DialogContent>}
                         </Dialog>
                       </>
                     )}
