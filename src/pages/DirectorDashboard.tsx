@@ -57,7 +57,7 @@ type SchoolAdminRow = {
 type BranchManager = {
   id: string;
   name: string;
-  role: "school_admin" | "teacher";
+  role: "school_admin" | "teacher" | "branch_admin";
 };
 
 type BranchRow = {
